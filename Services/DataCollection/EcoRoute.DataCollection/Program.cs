@@ -1,6 +1,25 @@
+using EcoRoute.DataCollection.Context;
+using EcoRoute.DataCollection.Services.BinLogServices;
+using EcoRoute.DataCollection.Services.EnvLogServices;
+using EcoRoute.DataCollection.Services.ProcessDataServices;
+using EcoRoute.DataCollection.Services.SensorServices;
+using EcoRoute.DataCollection.Services.WasteBinServices;
+using Microsoft.EntityFrameworkCore;
+using System.Reflection;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+builder.Services.AddScoped<IBinLogService, BinLogService>();
+builder.Services.AddScoped<IEnvLogService, EnvLogServices>();
+builder.Services.AddScoped<IProcessDataService, ProcessDataService>();
+builder.Services.AddScoped<ISensorService, SensorService>();
+builder.Services.AddScoped<IWasteBinService, WasteBinService>();
+
+builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
+
+builder.Services.AddDbContext<DataCollectionContext>();
+//    (opt =>
+//opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -1,33 +1,54 @@
-﻿using EcoRoute.DataCollection.Dtos.BinLogDtos;
+﻿using AutoMapper;
+using EcoRoute.DataCollection.Context;
+using EcoRoute.DataCollection.Dtos.BinLogDtos;
+using EcoRoute.DataCollection.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace EcoRoute.DataCollection.Services.BinLogServices
 {
     public class BinLogService : IBinLogService
     {
-        private readonly 
-        public Task CreateBinLogAsync(CreateBinLogDto createBinLogDto)
+        private readonly DataCollectionContext _context;
+        private readonly IMapper _mapper;
+
+        public BinLogService(DataCollectionContext context, IMapper mapper)
         {
-            throw new NotImplementedException();
+            _context = context;
+            _mapper = mapper;
         }
 
-        public Task DeleteBinLogAsync(Guid id)
+        public async Task CreateBinLogAsync(CreateBinLogDto createBinLogDto)
         {
-            throw new NotImplementedException();
+            var binLog = _mapper.Map<BinLog>(createBinLogDto);
+            await _context.BinLogs.AddAsync(binLog);
+            await _context.SaveChangesAsync();
         }
 
-        public Task<List<ResultBinLogDto>> GetAllBinLogAsync()
+        public async Task DeleteBinLogAsync(Guid id)
         {
-            throw new NotImplementedException();
+            var binLog = await _context.BinLogs.FirstOrDefaultAsync(c => c.BinLogId == id);
+            _context.BinLogs.Remove(binLog);
+            await _context.SaveChangesAsync();
         }
 
-        public Task<GetByIdBinLogDto> GetByIdBinLogAsync(Guid id)
+        public async Task<List<ResultBinLogDto>> GetAllBinLogAsync()
         {
-            throw new NotImplementedException();
+            var binLogs = await _context.BinLogs.ToListAsync();
+            return _mapper.Map<List<ResultBinLogDto>>(binLogs);
         }
 
-        public Task UpdateBinLogAsync(UpdateBinLogDto updateBinLogDto)
+        public async Task<GetByIdBinLogDto> GetByIdBinLogAsync(Guid id)
         {
-            throw new NotImplementedException();
+            var binLogs = await _context.BinLogs.FirstOrDefaultAsync(b => b.BinLogId == id);
+            return _mapper.Map<GetByIdBinLogDto>(binLogs);
+        }
+
+        public async Task UpdateBinLogAsync(UpdateBinLogDto updateBinLogDto)
+        {
+            var updatedBinLog = await _context.BinLogs.FirstOrDefaultAsync(b => b.BinLogId == updateBinLogDto.BinLogId);
+            _mapper.Map(updateBinLogDto, updatedBinLog);
+            _context.BinLogs.Update(updatedBinLog);
+            await _context.SaveChangesAsync();
         }
     }
 }

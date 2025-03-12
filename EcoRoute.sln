@@ -1,13 +1,25 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35527.113 d17.12
+VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Services", "Services", "{6A5A8676-22CE-49D4-9724-C30070F2483C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataCollection", "DataCollection", "{9D19FD45-57D6-46E2-9302-0EEFC1389F63}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.DataCollection", "Services\DataCollection\EcoRoute.DataCollection\EcoRoute.DataCollection.csproj", "{0C314D9B-C1CB-46C5-9785-6B5D5FE61F8C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "DataProcessing", "DataProcessing", "{C18D51D0-1DDF-413F-AA7A-82ED217F8A58}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.DataProcessing", "Services\DataProcessing\EcoRoute.DataProcessing\EcoRoute.DataProcessing.csproj", "{2502E095-7189-44BF-91D1-31B00737D3AC}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RouteOptimization", "RouteOptimization", "{337A281D-F7C4-4D6F-95AD-6DF6A0071B15}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Notification", "Notification", "{0B2B837B-2A26-4723-8582-5E0F866B359D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Report", "Report", "{385DB217-BFA2-4F86-B3A3-F20D58724F1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.RouteOptimization", "Services\RouteOptimization\EcoRoute.RouteOptimization\EcoRoute.RouteOptimization.csproj", "{D1C72AF0-18BE-447A-8307-0BD46518C762}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -19,6 +31,14 @@ Global
 		{0C314D9B-C1CB-46C5-9785-6B5D5FE61F8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0C314D9B-C1CB-46C5-9785-6B5D5FE61F8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0C314D9B-C1CB-46C5-9785-6B5D5FE61F8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2502E095-7189-44BF-91D1-31B00737D3AC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2502E095-7189-44BF-91D1-31B00737D3AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2502E095-7189-44BF-91D1-31B00737D3AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2502E095-7189-44BF-91D1-31B00737D3AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D1C72AF0-18BE-447A-8307-0BD46518C762}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D1C72AF0-18BE-447A-8307-0BD46518C762}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D1C72AF0-18BE-447A-8307-0BD46518C762}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D1C72AF0-18BE-447A-8307-0BD46518C762}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -26,5 +46,11 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{9D19FD45-57D6-46E2-9302-0EEFC1389F63} = {6A5A8676-22CE-49D4-9724-C30070F2483C}
 		{0C314D9B-C1CB-46C5-9785-6B5D5FE61F8C} = {9D19FD45-57D6-46E2-9302-0EEFC1389F63}
+		{C18D51D0-1DDF-413F-AA7A-82ED217F8A58} = {6A5A8676-22CE-49D4-9724-C30070F2483C}
+		{2502E095-7189-44BF-91D1-31B00737D3AC} = {C18D51D0-1DDF-413F-AA7A-82ED217F8A58}
+		{337A281D-F7C4-4D6F-95AD-6DF6A0071B15} = {6A5A8676-22CE-49D4-9724-C30070F2483C}
+		{0B2B837B-2A26-4723-8582-5E0F866B359D} = {6A5A8676-22CE-49D4-9724-C30070F2483C}
+		{385DB217-BFA2-4F86-B3A3-F20D58724F1B} = {6A5A8676-22CE-49D4-9724-C30070F2483C}
+		{D1C72AF0-18BE-447A-8307-0BD46518C762} = {337A281D-F7C4-4D6F-95AD-6DF6A0071B15}
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,6 @@
+@EcoRoute.RouteOptimization_HostAddress = http://localhost:5120
+
+GET {{EcoRoute.RouteOptimization_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
