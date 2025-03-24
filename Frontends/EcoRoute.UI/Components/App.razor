@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" href="EcoRoute.UI.styles.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <HeadOutlet />
+    <script>    
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#e7f8ef',
+                            100: '#c5edd8',
+                            200: '#9fe3be',
+                            300: '#74d8a3',
+                            400: '#4acd87',
+                            500: '#2ba86d', // Primary color
+                            600: '#1f8c58',
+                            700: '#166e44',
+                            800: '#0e5031',
+                            900: '#06321d',
+                        },
+                        secondary: {
+                            50: '#e8f4fd',
+                            100: '#c7e3fb',
+                            200: '#a1d0f8',
+                            300: '#7abef5',
+                            400: '#54acf2',
+                            500: '#3089d6', // Secondary color
+                            600: '#246fb3',
+                            700: '#19568f',
+                            800: '#0f3d6c',
+                            900: '#062448',
+                        },
+                        warning: '#ffc107',
+                        danger: '#dc3545',
+                        success: '#28a745',
+                        info: '#17a2b8',
+                        dark: '#343a40',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/css">
+        :root {
+            --color-primary: #2ba86d;
+            --color-primary-light: #74d8a3;
+            --color-primary-dark: #166e44;
+            --color-secondary: #3089d6;
+            --color-secondary-light: #7abef5;
+            --color-secondary-dark: #19568f;
+            --color-warning: #ffc107;
+            --color-danger: #dc3545;
+            --color-success: #28a745;
+            --color-info: #17a2b8;
+            --color-background: #f8f9fa;
+            --color-text: #343a40;
+        }
+
+        .dark {
+            --color-background: #1a1a1a;
+            --color-text: #f8f9fa;
+        }
+        /* Animations */
+        @@keyframes fadeIn {
+            from
+
+        {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+
+        }
+
+        @@keyframes slideInLeft {
+            from
+
+        {
+            transform: translateX(-20px);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        }
+
+        @@keyframes pulse {
+            0%
+
+        {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+
+        100% {
+            transform: scale(1);
+        }
+
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .animate-slideIn {
+            animation: slideInLeft 0.5s ease-in-out;
+        }
+
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        .menu-item:hover {
+            transform: translateX(5px);
+            transition: transform 0.3s ease;
+        }
+
+        .card {
+            transition: all 0.3s ease;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+
+    </style>
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-800 transition-colors duration-300">
+    <Routes />
+    <script src="_framework/blazor.web.js"></script>
+    <script>
+          // Toggle user dropdown
+        const userMenuButton = document.getElementById('user-menu-button');
+        const userDropdown = document.getElementById('user-dropdown');
+
+        userMenuButton.addEventListener('click', () => {
+            userDropdown.classList.toggle('hidden');
+        });
+
+        // Close the dropdown when clicking outside
+        document.addEventListener('click', (event) => {
+            if (!userMenuButton.contains(event.target) && !userDropdown.contains(event.target)) {
+                userDropdown.classList.add('hidden');
+            }
+        });
+
+        // Toggle dark mode
+        const darkModeToggle = document.getElementById('darkModeToggle');
+
+        darkModeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+        });
+
+        // Check for saved dark mode preference
+        if (localStorage.getItem('darkMode') === 'true' ||
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+
+        mobileMenuButton.addEventListener('click', () => {
+            const sidebar = document.querySelector('.md\\:flex-shrink-0');
+            sidebar.classList.toggle('hidden');
+            sidebar.classList.toggle('block');
+        });
+
+        // Simulate some real-time data updates
+        setInterval(() => {
+            // Update random progress bars to simulate changing data
+            const progressBars = document.querySelectorAll('.bg-primary-500, .bg-blue-500, .bg-yellow-500, .bg-green-500');
+            const randomBar = progressBars[Math.floor(Math.random() * progressBars.length)];
+
+            if (randomBar) {
+                const currentWidth = parseInt(randomBar.style.width);
+                const newWidth = Math.max(5, Math.min(100, currentWidth + (Math.random() > 0.5 ? 2 : -2)));
+                randomBar.style.width = `${newWidth}%`;
+
+                // Update the text if there's a corresponding text element
+                const parentDiv = randomBar.closest('div').parentElement;
+                const textElement = parentDiv.querySelector('span:last-child');
+                if (textElement) {
+                    textElement.textContent = `${newWidth}%`;
+                }
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

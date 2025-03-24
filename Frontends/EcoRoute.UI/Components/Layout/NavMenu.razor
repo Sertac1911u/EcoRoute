@@ -1,0 +1,76 @@
+﻿@inject NavigationManager NavigationManager
+<div class="hidden md:flex md:flex-shrink-0">
+    <div class="flex flex-col w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-center h-16 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <i class="fas fa-recycle text-primary-500 text-2xl mr-2"></i>
+                <h1 class="text-xl font-semibold text-gray-800 dark:text-white">Atık Yönetimi</h1>
+            </div>
+        </div>
+        <div class="flex flex-col flex-grow px-4 py-4 overflow-y-auto">
+            <nav class="flex-1 space-y-2">
+                <a href="/home" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group @(currentPage == "home" ? "active bg-primary-100 dark:bg-primary-900" : "")">
+                    <i class="fas fa-tachometer-alt mr-3 text-primary-500"></i>
+                    <span>Ana Dashboard</span>
+                </a>
+                <a href="/users" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group @(currentPage == "users" ? "active bg-primary-100 dark:bg-primary-900" : "")">
+                    <i class="fas fa-users mr-3 text-primary-500"></i>
+                    <span>Kullanıcı Yönetimi</span>
+                </a>
+                <a href="/bins" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group @(currentPage == "bins" ? "active bg-primary-100 dark:bg-primary-900" : "")">
+                    <i class="fas fa-trash-alt mr-3 text-primary-500"></i>
+                    <span>Atık Kutusu Yönetimi</span>
+                </a>
+                <a href="/routes" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group @(currentPage == "routes" ? "active bg-primary-100 dark:bg-primary-900" : "")">
+                    <i class="fas fa-route mr-3 text-primary-500"></i>
+                    <span>Rota Yönetimi</span>
+                </a>
+                <a href="/reports" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group @(currentPage == "reports" ? "active bg-primary-100 dark:bg-primary-900" : "")">
+                    <i class="fas fa-chart-bar mr-3 text-primary-500"></i>
+                    <span>Raporlama ve Analiz</span>
+                </a>
+                <a href="/settings" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group @(currentPage == "settings" ? "active bg-primary-100 dark:bg-primary-900" : "")">
+                    <i class="fas fa-cog mr-3 text-primary-500"></i>
+                    <span>Sistem Ayarları</span>
+                </a>
+                <a href="/notifications" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group @(currentPage == "notifications" ? "active bg-primary-100 dark:bg-primary-900" : "")">
+                    <i class="fas fa-bell mr-3 text-primary-500"></i>
+                    <span>Bildirimler</span>
+                    <span class="ml-auto bg-red-500 text-white text-xs font-medium px-2 py-1 rounded-full">3</span>
+                </a>
+                <a href="/contact" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group @(currentPage == "contact" ? "active bg-primary-100 dark:bg-primary-900" : "")">
+                    <i class="fas fa-headset mr-3 text-primary-500"></i>
+                    <span>Destek</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+</div>
+@code
+{
+    private string currentPage;
+
+    protected override void OnInitialized()
+    {
+        currentPage = GetPageFromUri(NavigationManager.Uri);
+        NavigationManager.LocationChanged += HandleLocationChanged;
+    }
+
+    private void HandleLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        currentPage = GetPageFromUri(e.Location);
+        StateHasChanged();
+    }
+
+    private string GetPageFromUri(string uri)
+    {
+        var relativeUri = NavigationManager.ToBaseRelativePath(uri);
+        return relativeUri.Split('/')[0].ToLower();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= HandleLocationChanged;
+    }
+
+}
