@@ -29,8 +29,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.IdentityServer", "
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Data", "Data", "{67A441CE-84F2-4B3B-AC47-2A4F703A3D82}"
 	ProjectSection(SolutionItems) = preProject
+		ports.txt = ports.txt
 		users.txt = users.txt
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.UI", "Frontends\EcoRoute.UI\EcoRoute.UI.csproj", "{A6F2CCCB-9E14-4361-93B7-70BF37937752}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.DtoLayer", "Frontends\EcoRoute.DtoLayer\EcoRoute.DtoLayer.csproj", "{92928667-20CA-4825-948B-E3FB98C26E53}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -54,6 +59,14 @@ Global
 		{72891031-A6AB-EE4F-0A1F-E82DFC4D04C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{72891031-A6AB-EE4F-0A1F-E82DFC4D04C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{72891031-A6AB-EE4F-0A1F-E82DFC4D04C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6F2CCCB-9E14-4361-93B7-70BF37937752}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6F2CCCB-9E14-4361-93B7-70BF37937752}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6F2CCCB-9E14-4361-93B7-70BF37937752}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6F2CCCB-9E14-4361-93B7-70BF37937752}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92928667-20CA-4825-948B-E3FB98C26E53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92928667-20CA-4825-948B-E3FB98C26E53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92928667-20CA-4825-948B-E3FB98C26E53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92928667-20CA-4825-948B-E3FB98C26E53}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -68,6 +81,8 @@ Global
 		{385DB217-BFA2-4F86-B3A3-F20D58724F1B} = {6A5A8676-22CE-49D4-9724-C30070F2483C}
 		{D1C72AF0-18BE-447A-8307-0BD46518C762} = {337A281D-F7C4-4D6F-95AD-6DF6A0071B15}
 		{72891031-A6AB-EE4F-0A1F-E82DFC4D04C9} = {CB1489CE-FDE8-4A44-915B-702A0F035DEC}
+		{A6F2CCCB-9E14-4361-93B7-70BF37937752} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{92928667-20CA-4825-948B-E3FB98C26E53} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E3BEE716-F6D6-42BF-95AF-701725F611A1}

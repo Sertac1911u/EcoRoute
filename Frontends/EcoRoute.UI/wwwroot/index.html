@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EcoRoute.UI</title>
+    <base href="/" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="EcoRoute.UI.styles.css" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#e7f8ef',
+                            100: '#c5edd8',
+                            200: '#9fe3be',
+                            300: '#74d8a3',
+                            400: '#4acd87',
+                            500: '#2ba86d', // Primary color
+                            600: '#1f8c58',
+                            700: '#166e44',
+                            800: '#0e5031',
+                            900: '#06321d',
+                        },
+                        secondary: {
+                            50: '#e8f4fd',
+                            100: '#c7e3fb',
+                            200: '#a1d0f8',
+                            300: '#7abef5',
+                            400: '#54acf2',
+                            500: '#3089d6', // Secondary color
+                            600: '#246fb3',
+                            700: '#19568f',
+                            800: '#0f3d6c',
+                            900: '#062448',
+                        },
+                        warning: '#ffc107',
+                        danger: '#dc3545',
+                        success: '#28a745',
+                        info: '#17a2b8',
+                        dark: '#343a40',
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/css">
+        :root {
+            --color-primary: #2ba86d;
+            --color-primary-light: #74d8a3;
+            --color-primary-dark: #166e44;
+            --color-secondary: #3089d6;
+            --color-secondary-light: #7abef5;
+            --color-secondary-dark: #19568f;
+            --color-warning: #ffc107;
+            --color-danger: #dc3545;
+            --color-success: #28a745;
+            --color-info: #17a2b8;
+            --color-background: #f8f9fa;
+            --color-text: #343a40;
+        }
+
+        .dark {
+            --color-background: #1a1a1a;
+            --color-text: #f8f9fa;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .animate-slideIn {
+            animation: slideInLeft 0.5s ease-in-out;
+        }
+
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        .menu-item:hover {
+            transform: translateX(5px);
+            transition: transform 0.3s ease;
+        }
+
+        .card {
+            transition: all 0.3s ease;
+        }
+
+            .card:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="flex items-center justify-center h-screen animate-fadeIn bg-white dark:bg-gray-900">
+            <div class="text-center">
+                <i class="fas fa-spinner fa-spin text-4xl text-primary-500"></i>
+                <p class="mt-4 text-gray-700 dark:text-gray-300">Yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="blazor-error-ui" class="fixed bottom-0 inset-x-0 bg-red-600 text-white text-sm p-3 z-50 hidden">
+        <span>⚠️ Uygulama hatayla karşılaştı.</span>
+        <a href="" class="underline ml-4">Yeniden Yükle</a>
+        <a class="ml-4 cursor-pointer" onclick="this.parentElement.classList.add('hidden')">🗙</a>
+    </div>
+
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="js/script.js"></script>
+
+</body>
+
+</html>

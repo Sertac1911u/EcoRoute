@@ -1,6 +1,7 @@
 ﻿using EcoRoute.IdentityServer.Dtos;
 using EcoRoute.IdentityServer.Models;
 using EcoRoute.IdentityServer.Tools;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 
 namespace EcoRoute.IdentityServer.Controllers
 {
+    [EnableCors("AllowBlazorClient")]
     [Route("api/[controller]")]
     [ApiController]
     public class LoginsController : ControllerBase
@@ -35,7 +37,7 @@ namespace EcoRoute.IdentityServer.Controllers
             }
             else
             {
-                return Ok("Access Denied !!");
+                return Unauthorized(new { message = "Access Denied" });
             }
         }
     }

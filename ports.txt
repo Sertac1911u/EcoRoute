@@ -1,0 +1,6 @@
+services
+	RouteOptimization 5003
+	DataProcessing 5002
+	DataCollection 5000
+	IdentityServer 5001
+	UI 5004

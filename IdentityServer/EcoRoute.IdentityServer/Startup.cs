@@ -33,6 +33,21 @@ namespace EcoRoute.IdentityServer
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowBlazorClient", builder =>
+                {
+                    builder
+                        .WithOrigins(
+                            "http://localhost:5004",
+                            "http://localhost:5054" // bunu mutlaka ekle!
+                        )
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+            });
+
 
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -82,7 +97,10 @@ namespace EcoRoute.IdentityServer
             app.UseStaticFiles();
 
             app.UseRouting();
+            app.UseCors("AllowBlazorClient"); // Add this line BEFORE UseAuthentication and UseAuthorization
+
             app.UseIdentityServer();
+
             app.UseAuthentication();    
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>

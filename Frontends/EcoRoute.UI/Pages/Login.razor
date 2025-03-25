@@ -1,0 +1,72 @@
+﻿@page "/login"
+@layout LoginLayout
+
+@using Blazored.LocalStorage
+@using EcoRoute.UI.Auth
+@using EcoRoute.UI.Services
+@inject AuthService AuthService
+@inject CustomAuthStateProvider AuthStateProvider
+@inject ILocalStorageService localStorage
+@inject NavigationManager NavigationManager
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="text-red-600 text-sm mb-4">@errorMessage</div>
+}
+
+<div class="space-y-6">
+    <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kullanıcı Adı</label>
+        <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-user text-gray-400"></i>
+            </div>
+            <input @bind="username" class="pl-10 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white h-10" placeholder="Kullanıcı adınızı girin" />
+        </div>
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Şifre</label>
+        <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-lock text-gray-400"></i>
+            </div>
+            <input type="password" @bind="password" class="pl-10 w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white h-10" placeholder="Şifrenizi girin" />
+        </div>
+    </div>
+
+    <button class="w-full py-2 px-4 rounded-md text-white bg-primary-600 hover:bg-primary-700 transition" @onclick="LoginUser">
+        <i class="fas fa-sign-in-alt mr-2"></i> Giriş Yap
+    </button>
+</div>
+
+@code {
+    private string username;
+    private string password;
+    private string errorMessage;
+
+    private async Task LoginUser()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            var token = await AuthService.LoginAsync(username, password);
+
+            if (token != null && !string.IsNullOrWhiteSpace(token.Token))
+            {
+                await localStorage.SetItemAsync("authToken", token.Token);
+                AuthStateProvider.NotifyUserAuthentication(token.Token);
+                NavigationManager.NavigateTo("/", forceLoad: true);
+            }
+            else
+            {
+                errorMessage = "Giriş başarısız. Bilgilerinizi kontrol edin.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Bir hata oluştu: {ex.Message}";
+        }
+    }
+}
