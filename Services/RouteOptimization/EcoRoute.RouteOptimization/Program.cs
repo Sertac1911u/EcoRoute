@@ -2,11 +2,17 @@ using EcoRoute.RouteOptimization.Context;
 using EcoRoute.RouteOptimization.Services.MyRouteServices;
 using EcoRoute.RouteOptimization.Services.RouteOptimizationResultServices;
 using EcoRoute.RouteOptimization.Services.WaypointServices;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(opt =>
+{
+    opt.Authority = builder.Configuration["IdentityServerUrl"];
+    opt.Audience = "ResourceRouteOptimization";
+    opt.RequireHttpsMetadata = false;
+});
 builder.Services.AddScoped<IMyRouteService, MyRouteService>();
 builder.Services.AddScoped<IWaypointService, WaypointService>();
 builder.Services.AddScoped<IRouteOptimizationResultService, RouteOptimizationResultService>();
@@ -32,7 +38,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

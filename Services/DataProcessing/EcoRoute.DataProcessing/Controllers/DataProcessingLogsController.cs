@@ -1,10 +1,12 @@
 ﻿using EcoRoute.DataProcessing.Dtos.DataProcessingLogDtos;
 using EcoRoute.DataProcessing.Services.DataProcessingLogServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcoRoute.DataProcessing.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class DataProcessingLogsController : ControllerBase

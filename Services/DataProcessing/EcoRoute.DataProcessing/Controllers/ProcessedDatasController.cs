@@ -1,11 +1,13 @@
 ﻿using EcoRoute.DataProcessing.Dtos.ProcessedDataDtos;
 using EcoRoute.DataProcessing.Services.ProcessedDataServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Runtime.CompilerServices;
 
 namespace EcoRoute.DataProcessing.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ProcessedDatasController : ControllerBase

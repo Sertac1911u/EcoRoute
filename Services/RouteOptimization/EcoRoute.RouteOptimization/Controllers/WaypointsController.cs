@@ -1,10 +1,12 @@
 ﻿using EcoRoute.RouteOptimization.Dtos.WaypointDtos;
 using EcoRoute.RouteOptimization.Services.WaypointServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcoRoute.RouteOptimization.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class WaypointsController : ControllerBase

@@ -4,10 +4,18 @@ using EcoRoute.DataCollection.Services.EnvLogServices;
 using EcoRoute.DataCollection.Services.ProcessDataServices;
 using EcoRoute.DataCollection.Services.SensorServices;
 using EcoRoute.DataCollection.Services.WasteBinServices;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(opt =>
+{
+    opt.Authority = builder.Configuration["IdentityServerUrl"];
+    opt.Audience = "ResourceDataCollection";
+    opt.RequireHttpsMetadata = false;
+});
 
 builder.Services.AddScoped<IBinLogService, BinLogService>();
 builder.Services.AddScoped<IEnvLogService, EnvLogServices>();
@@ -37,6 +45,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

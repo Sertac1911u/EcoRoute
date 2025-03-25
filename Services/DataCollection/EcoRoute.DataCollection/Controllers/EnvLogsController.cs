@@ -1,10 +1,12 @@
 ﻿using EcoRoute.DataCollection.Dtos.EnvLogDtos;
 using EcoRoute.DataCollection.Services.EnvLogServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcoRoute.DataCollection.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class EnvLogsController : ControllerBase

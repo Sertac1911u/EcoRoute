@@ -1,0 +1,99 @@
+﻿@page "/login"
+@using EcoRoute.DtoLayer.IdentityDtos
+@using Blazored.LocalStorage
+@using EcoRoute.UI.Auth
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Text.Json
+@rendermode InteractiveServer
+@inject HttpClient Http
+@inject ILocalStorageService localStorage
+@inject AuthenticationStateProvider authProvider
+@inject NavigationManager navManager
+@inject IJSRuntime JSRuntime
+
+<h3>Giriş Yap</h3>
+
+<EditForm Model="@userLoginDto" OnValidSubmit="LoginUser" FormName="loginForm">
+    <InputText @bind-Value="userLoginDto.Username" placeholder="Kullanıcı Adı" class="form-control mb-2" />
+    <InputText type="password" @bind-Value="userLoginDto.Password" placeholder="Şifre" class="form-control mb-2" />
+    <button type="submit" class="btn btn-primary">Giriş</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p class="text-danger">@errorMessage</p>
+}
+
+@code {
+    UserLoginDto userLoginDto = new();
+    string errorMessage;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                // Use IJSRuntime to remove token after first render
+                await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error clearing token: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task LoginUser()
+    {
+        errorMessage = string.Empty;
+
+        try
+        {
+            // 1. Authenticate via API
+            var response = await Http.PostAsJsonAsync("https://localhost:5001/api/Logins", userLoginDto);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = "Giriş başarısız. Kullanıcı adı veya şifre hatalı.";
+                return;
+            }
+
+            var tokenResult = await response.Content.ReadFromJsonAsync<TokenResponse>();
+
+            if (tokenResult == null || string.IsNullOrWhiteSpace(tokenResult.Token))
+            {
+                errorMessage = "Token alınamadı.";
+                return;
+            }
+
+            // 2. Manually create authentication request to Blazor app
+            using var client = new HttpClient();
+            var loginResponse = await client.PostAsJsonAsync("http://localhost:5005/login", tokenResult.Token);
+
+            if (!loginResponse.IsSuccessStatusCode)
+            {
+                errorMessage = "Oturum açılamadı.";
+                return;
+            }
+
+            // 3. Store token in localStorage using IJSRuntime
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", tokenResult.Token);
+
+            // 4. Navigate to home page
+            navManager.NavigateTo("/home", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Beklenmeyen hata: {ex.Message}";
+            Console.WriteLine($"[ERROR] {ex}");
+        }
+    }
+
+    // Match the token response from your Identity Server
+    public class TokenResponse
+    {
+        public string Token { get; set; }
+        public DateTime ExpireDate { get; set; }
+    }
+}

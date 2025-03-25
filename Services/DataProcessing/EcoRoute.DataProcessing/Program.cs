@@ -1,13 +1,20 @@
 using EcoRoute.DataProcessing.Context;
 using EcoRoute.DataProcessing.Services.DataProcessingLogServices;
 using EcoRoute.DataProcessing.Services.ProcessedDataServices;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(opt =>
+{
+    opt.Authority = builder.Configuration["IdentityServerUrl"];
+    opt.Audience = "ResourceDataProcessing";
+    opt.RequireHttpsMetadata = false;
+});
 
 builder.Services.AddScoped<IDataProcessingLogService, DataProcessingLogService>();
-builder.Services.AddScoped<IProcessedDataService , ProcessedDataService>();
+builder.Services.AddScoped<IProcessedDataService, ProcessedDataService>();
 
 builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
@@ -29,6 +36,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

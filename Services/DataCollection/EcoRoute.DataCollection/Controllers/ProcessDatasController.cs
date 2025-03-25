@@ -1,11 +1,13 @@
 ﻿using EcoRoute.DataCollection.Dtos.ProcessDataDtos;
 using EcoRoute.DataCollection.Services.ProcessDataServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Formats.Asn1;
 
 namespace EcoRoute.DataCollection.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ProcessDatasController : ControllerBase

@@ -1,13 +1,32 @@
-﻿@inherits LayoutComponentBase
-
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inherits LayoutComponentBase
 
 <div>
-    <div class="flex h-screen overflow-hidden">
-        <NavMenu></NavMenu>
-        <div class="flex flex-col flex-1 overflow-hidden">
-            <!-- Top Navbar -->
-            <TopNavMenu></TopNavMenu>
-            @Body
+    @if (IsAuthenticated)
+    {
+        <div class="flex h-screen overflow-hidden">
+            <NavMenu></NavMenu>
+            <div class="flex flex-col flex-1 overflow-hidden">
+                <TopNavMenu></TopNavMenu>
+                @Body
+            </div>
         </div>
-    </div>
+    }
+    else
+    {
+        @Body
+    }
 </div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthState { get; set; }
+
+    private bool IsAuthenticated { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthState;
+        IsAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+    }
+}
