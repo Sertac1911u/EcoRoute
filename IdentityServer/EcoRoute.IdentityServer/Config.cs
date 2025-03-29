@@ -38,6 +38,13 @@ namespace EcoRoute.IdentityServer
                         "RouteOptimizationReadPermission",
                     }
                 },
+                  new ApiResource("ResourceOcelot")
+                {
+                    Scopes =
+                    {
+                        "OcelotFullPermission"
+                    }
+                },
                  new ApiResource(IdentityServerConstants.LocalApi.ScopeName)
 
         };
@@ -57,6 +64,7 @@ namespace EcoRoute.IdentityServer
                 new ApiScope("DataProcessingReadPermission","Read authority for dp operations"),
                 new ApiScope("RouteOptimizationFullPermission","Full authority for ro operations"),
                 new ApiScope("RouteOptimizationReadPermission","Read authority for ro operations"),
+                new ApiScope("OcelotFullPermission","Full for oc operations"),
                 new ApiScope(IdentityServerConstants.LocalApi.ScopeName)
         };
 
@@ -69,7 +77,7 @@ namespace EcoRoute.IdentityServer
                     ClientName="EcoRoute Super Admin",
                     AllowedGrantTypes=GrantTypes.ClientCredentials,
                     ClientSecrets={new Secret("ecoroutesecret".Sha256())},
-                    AllowedScopes={ "DataCollectionFullPermission", "DataProcessingFullPermission", "RouteOptimizationFullPermission",
+                    AllowedScopes={ "DataCollectionFullPermission", "OcelotFullPermission","DataProcessingFullPermission", "RouteOptimizationFullPermission",
                     IdentityServerConstants.LocalApi.ScopeName,
                     IdentityServerConstants.StandardScopes.Email,
                     IdentityServerConstants.StandardScopes.OpenId,
@@ -78,7 +86,7 @@ namespace EcoRoute.IdentityServer
                     AccessTokenLifetime=300
                 },
 
-                 //Admin
+                 //manager
                 new Client
                 {
                     ClientId="EcoRouteAdminId",

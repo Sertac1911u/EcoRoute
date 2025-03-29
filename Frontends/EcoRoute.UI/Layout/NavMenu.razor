@@ -1,4 +1,25 @@
 ﻿@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ILocalStorageService localStorage
+@using System.Security.Claims
+@using Blazored.LocalStorage
+@using Microsoft.AspNetCore.Components.Authorization
+
+@code {
+    private List<string> userRoles = new();
+    private bool isSuperAdmin = false;
+    private bool isManager = false;
+    private bool isDriver = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        userRoles = await localStorage.GetItemAsync<List<string>>("userRoles") ?? new();
+
+        isSuperAdmin = userRoles.Contains("SuperAdmin");
+        isManager = userRoles.Contains("Manager");
+        isDriver = userRoles.Contains("Driver");
+    }
+}
 
 <div class="hidden md:flex md:flex-shrink-0">
     <div class="flex flex-col w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700">
@@ -14,31 +35,52 @@
                     <i class="fas fa-tachometer-alt mr-3 text-primary-500"></i>
                     <span>Ana Dashboard</span>
                 </NavLink>
-                <NavLink href="/users" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
-                    <i class="fas fa-users mr-3 text-primary-500"></i>
-                    <span>Kullanıcı Yönetimi</span>
-                </NavLink>
-                <NavLink href="/bins" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
-                    <i class="fas fa-trash-alt mr-3 text-primary-500"></i>
-                    <span>Atık Kutusu Yönetimi</span>
-                </NavLink>
-                <NavLink href="/routes" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
-                    <i class="fas fa-route mr-3 text-primary-500"></i>
-                    <span>Rota Yönetimi</span>
-                </NavLink>
-                <NavLink href="/reports" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
-                    <i class="fas fa-chart-bar mr-3 text-primary-500"></i>
-                    <span>Raporlama ve Analiz</span>
-                </NavLink>
-                <NavLink href="/settings" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
-                    <i class="fas fa-cog mr-3 text-primary-500"></i>
-                    <span>Sistem Ayarları</span>
-                </NavLink>
+
+                @if (isSuperAdmin)
+                {
+                    <NavLink href="/users" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
+                        <i class="fas fa-users mr-3 text-primary-500"></i>
+                        <span>Kullanıcı Yönetimi</span>
+                    </NavLink>
+
+                    <NavLink href="/settings" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
+                        <i class="fas fa-cog mr-3 text-primary-500"></i>
+                        <span>Sistem Ayarları</span>
+                    </NavLink>
+                }
+
+                @if (isSuperAdmin || isManager)
+                {
+                    <NavLink href="/bins" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
+                        <i class="fas fa-trash-alt mr-3 text-primary-500"></i>
+                        <span>Atık Kutusu Yönetimi</span>
+                    </NavLink>
+
+                    <NavLink href="/routes" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
+                        <i class="fas fa-route mr-3 text-primary-500"></i>
+                        <span>Rota Yönetimi</span>
+                    </NavLink>
+
+                    <NavLink href="/reports" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
+                        <i class="fas fa-chart-bar mr-3 text-primary-500"></i>
+                        <span>Raporlama ve Analiz</span>
+                    </NavLink>
+                }
+
+                @if (isDriver)
+                {
+                    <NavLink href="/driver-routes" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
+                        <i class="fas fa-map-marked-alt mr-3 text-primary-500"></i>
+                        <span>Benim Rotalarım</span>
+                    </NavLink>
+                }
+
                 <NavLink href="/notifications" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
                     <i class="fas fa-bell mr-3 text-primary-500"></i>
                     <span>Bildirimler</span>
                     <span class="ml-auto bg-red-500 text-white text-xs font-medium px-2 py-1 rounded-full">3</span>
                 </NavLink>
+
                 <NavLink href="/supports" class="menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group" activeClass="bg-primary-100 dark:bg-primary-900">
                     <i class="fas fa-headset mr-3 text-primary-500"></i>
                     <span>Destek</span>

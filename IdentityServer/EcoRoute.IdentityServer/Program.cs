@@ -47,11 +47,9 @@ namespace EcoRoute.IdentityServer
 
                 if (seed)
                 {
-                    Log.Information("Seeding database...");
-                    var config = host.Services.GetRequiredService<IConfiguration>();
-                    var connectionString = config.GetConnectionString("DefaultConnection");
-                    SeedData.EnsureSeedData(connectionString);
-                    Log.Information("Done seeding database.");
+                    Log.Information("Seeding roles and users...");
+                    SeedRolesAndUsers.EnsureSeedData(host.Services);
+                    Log.Information("Done seeding.");
                     return 0;
                 }
 

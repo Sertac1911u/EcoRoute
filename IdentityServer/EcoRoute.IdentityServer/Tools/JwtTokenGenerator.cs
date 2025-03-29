@@ -9,26 +9,36 @@ namespace EcoRoute.IdentityServer.Tools
 {
     public class JwtTokenGenerator
     {
-        public static TokenResponseViewModel GenerateToken(GetCheckAppUserViewModel getCheckAppUserViewModel)
+        public static TokenResponseViewModel GenerateToken(GetCheckAppUserViewModel user, IList<string> roles)
         {
-            var claims = new List<Claim>();
-            if (!string.IsNullOrWhiteSpace(getCheckAppUserViewModel.Role))
-                claims.Add(new Claim(ClaimTypes.Role, getCheckAppUserViewModel.Role));
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim("Username", user.Username ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
 
-            claims.Add(new Claim(ClaimTypes.NameIdentifier, getCheckAppUserViewModel.Id));
-
-            if (!string.IsNullOrWhiteSpace(getCheckAppUserViewModel.Username))
-                claims.Add(new Claim("Username", getCheckAppUserViewModel.Username));
+            // Roller claim'e ekleniyor
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtTokenDefaults.Key));
             var signingCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var expiredDate = DateTime.UtcNow.AddDays(JwtTokenDefaults.Expire);
 
-            JwtSecurityToken token = new JwtSecurityToken(issuer: JwtTokenDefaults.ValidIssuer, audience: JwtTokenDefaults.ValidAudience, claims: claims, notBefore: DateTime.UtcNow, expires: expiredDate, signingCredentials: signingCredentials);
+            var token = new JwtSecurityToken(
+                issuer: JwtTokenDefaults.ValidIssuer,
+                audience: JwtTokenDefaults.ValidAudience,
+                claims: claims,
+                notBefore: DateTime.UtcNow,
+                expires: expiredDate,
+                signingCredentials: signingCredentials
+            );
 
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+            var tokenHandler = new JwtSecurityTokenHandler();
             return new TokenResponseViewModel(tokenHandler.WriteToken(token), expiredDate);
-
         }
     }
 }

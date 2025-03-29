@@ -1,7 +1,9 @@
 ﻿using Blazored.LocalStorage;
 using EcoRoute.DtoLayer.IdentityDtos;
 using EcoRoute.UI.Auth;
+using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Json;
+using System.Security.Claims;
 
 namespace EcoRoute.UI.Services
 {
@@ -32,6 +34,24 @@ namespace EcoRoute.UI.Services
             }
 
             var token = await response.Content.ReadFromJsonAsync<TokenResponseViewModel>();
+
+            if (token != null)
+            {
+                await _localStorage.SetItemAsync("authToken", token.Token);
+
+                // JWT içindeki roller çözümleniyor
+                var handler = new JwtSecurityTokenHandler();
+                var jwt = handler.ReadJwtToken(token.Token);
+
+                var roles = jwt.Claims
+                    .Where(c => c.Type == ClaimTypes.Role || c.Type == "role")
+                    .Select(c => c.Value)
+                    .ToList();
+
+                // İstersen roller listesi de kaydedebilirsin
+                await _localStorage.SetItemAsync("userRoles", roles);
+            }
+
             return token;
         }
 

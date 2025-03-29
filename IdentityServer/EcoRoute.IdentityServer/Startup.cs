@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using System;
 
 namespace EcoRoute.IdentityServer
 {
@@ -33,6 +34,7 @@ namespace EcoRoute.IdentityServer
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowBlazorClient", builder =>
@@ -86,7 +88,7 @@ namespace EcoRoute.IdentityServer
                 });
         }
 
-        public void Configure(IApplicationBuilder app)
+        public void Configure(IApplicationBuilder app ,IWebHostEnvironment env, IServiceProvider serviceProvider)
         {
             if (Environment.IsDevelopment())
             {
@@ -107,6 +109,9 @@ namespace EcoRoute.IdentityServer
             {
                 endpoints.MapDefaultControllerRoute();
             });
+
+            SeedRolesAndUsers.EnsureSeedData(serviceProvider);
+
         }
     }
 }

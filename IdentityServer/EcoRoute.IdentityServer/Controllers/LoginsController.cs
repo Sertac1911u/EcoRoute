@@ -27,12 +27,18 @@ namespace EcoRoute.IdentityServer.Controllers
         {
             var result = await _signInManager.PasswordSignInAsync(userLoginDto.Username, userLoginDto.Password, false, false);
             var user = await _userManager.FindByNameAsync(userLoginDto.Username);
-            if (result.Succeeded)
+
+            if (result.Succeeded && user != null)
             {
-                GetCheckAppUserViewModel model = new GetCheckAppUserViewModel();
-                model.Username = userLoginDto.Username;
-                model.Id = user.Id;
-                var token = JwtTokenGenerator.GenerateToken(model);
+                var userRoles = await _userManager.GetRolesAsync(user);
+
+                var model = new GetCheckAppUserViewModel
+                {
+                    Username = user.UserName,
+                    Id = user.Id
+                };
+
+                var token = JwtTokenGenerator.GenerateToken(model, userRoles);
                 return Ok(token);
             }
             else
