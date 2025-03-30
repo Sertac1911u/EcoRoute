@@ -1,8 +1,263 @@
 ﻿@page "/users"
+@using EcoRoute.DtoLayer.IdentityDtos
+@using EcoRoute.UI.Services
 @using Microsoft.AspNetCore.Authorization
+@inject UserService UserService
+
 @attribute [Authorize(Roles = "SuperAdmin")]
 
-<div>
-    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Ana Dashboard</h2>
-Burası Users kısmı
+<div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden">
+    <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Kullanıcı Yönetimi</h2>
+        <button class="flex items-center bg-indigo-500 text-white px-4 py-2 rounded-md hover:bg-indigo-600 transition duration-300" @onclick="OpenCreateModal">
+            <i class="fas fa-plus mr-2"></i> Yeni Kullanıcı Ekle
+        </button>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700">
+                <tr>
+                    <th class="px-6 py-3">#</th>
+                    <th class="px-6 py-3">Ad Soyad</th>
+                    <th class="px-6 py-3">E-posta</th>
+                    <th class="px-6 py-3">Yetki</th>
+                    <th class="px-6 py-3">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                @if (users == null)
+                {
+                    <tr><td colspan="5" class="text-center p-4">Yükleniyor...</td></tr>
+                }
+                else
+                {
+                    @foreach (var user in users.Select((u, i) => new { Index = i + 1, User = u }))
+                    {
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition duration-200">
+                            <td class="px-6 py-4">@user.Index</td>
+                            <td class="px-6 py-4 flex items-center">
+                                <img class="h-10 w-10 rounded-full mr-3" src="https://picsum.photos/200?random=@user.Index" />
+                                <span>@user.User.Name @user.User.Surname</span>
+                            </td>
+                            <td class="px-6 py-4">@user.User.Email</td>
+                            <td class="px-6 py-4">
+                                @foreach (var role in user.User.Roles)
+                                {
+                                    <span class="@GetRoleBadgeClass(role)">@role</span>
+                                }
+                            </td>
+                            <td class="px-6 py-4">
+                                <button class="text-info-500 hover:text-info-700" title="Kullanıcı Bilgileri" @onclick="() => ShowUserDetails(user.User)">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                                <button class="text-yellow-500 hover:text-yellow-700" title="Düzenle" @onclick="() => ShowEditModal(user.User)">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="text-red-500 hover:text-red-700" title="Sil" @onclick="() => DeleteUser(user.User.Id)">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
+
+@if (selectedUser != null)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-lg relative">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Kullanıcı Bilgileri</h3>
+            <div class="space-y-2">
+                <p><strong>Ad Soyad:</strong> @selectedUser.Name @selectedUser.Surname</p>
+                <p><strong>E-posta:</strong> @selectedUser.Email</p>
+                <p><strong>Kullanıcı Adı:</strong> @selectedUser.UserName</p>
+                <p><strong>Yetkiler:</strong> @string.Join(", ", selectedUser.Roles)</p>
+            </div>
+            <div class="mt-4 flex justify-end">
+                <button class="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600" @onclick="CloseModal">Kapat</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (editingUser != null)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-lg relative">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Kullanıcıyı Güncelle</h3>
+            <div class="space-y-2">
+                <input class="w-full px-3 py-2 rounded border" @bind="editingUser.Name" placeholder="Ad" />
+                <input class="w-full px-3 py-2 rounded border" @bind="editingUser.Surname" placeholder="Soyad" />
+                <input class="w-full px-3 py-2 rounded border" @bind="editingUser.Email" placeholder="E-posta" />
+                <input class="w-full px-3 py-2 rounded border" @bind="editingUser.UserName" placeholder="Kullanıcı Adı" />
+
+                <div class="relative">
+                    <input class="w-full px-3 py-2 rounded border pr-10" type="@(_showPassword ? "text" : "password")" @bind="editingUser.Password" placeholder="Yeni Şifre (opsiyonel)" />
+                    <button type="button" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-gray-600" @onclick="TogglePasswordVisibility">
+                        <i class="fas @( _showPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                    </button>
+                </div>
+
+                <select class="w-full px-3 py-2 rounded border" @bind="editingUser.SelectedRole">
+                    <option disabled selected value>Rol Seçiniz</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Driver">Driver</option>
+                </select>
+            </div>
+            <div class="mt-4 flex justify-end space-x-2">
+                <button class="bg-gray-400 text-white px-4 py-2 rounded" @onclick="() => editingUser = null">İptal</button>
+                <button class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700" @onclick="UpdateUser">Kaydet</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (isCreateModalOpen)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-md p-6">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Yeni Kullanıcı Ekle</h3>
+                <button class="text-gray-400 hover:text-gray-600" @onclick="CloseCreateModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <input class="w-full px-3 py-2 rounded border" @bind="newUser.Name" placeholder="Ad" />
+                <input class="w-full px-3 py-2 rounded border" @bind="newUser.Surname" placeholder="Soyad" />
+                <input class="w-full px-3 py-2 rounded border" @bind="newUser.UserName" placeholder="Kullanıcı Adı" />
+                <input class="w-full px-3 py-2 rounded border" @bind="newUser.Email" placeholder="E-posta" />
+                <input class="w-full px-3 py-2 rounded border" @bind="newUser.Password" placeholder="Şifre" type="password" />
+                <select class="w-full px-3 py-2 rounded border" @bind="newUser.Role">
+                    <option disabled selected value="">Rol Seçiniz</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Driver">Driver</option>
+                </select>
+            </div>
+
+            <div class="mt-4 flex justify-end space-x-2">
+                <button class="bg-gray-400 text-white px-4 py-2 rounded" @onclick="CloseCreateModal">İptal</button>
+                <button class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700" @onclick="CreateUser">Kaydet</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ResultUserDto> users;
+    private ResultUserDto? selectedUser;
+    private ResultUserDto? editingUser;
+    private CreateUserDto newUser = new();
+    private bool isCreateModalOpen = false;
+    private bool _showPassword = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsers();
+    }
+
+    private async Task LoadUsers()
+    {
+        users = await UserService.GetAllUsersAsync();
+    }
+
+    private void ShowUserDetails(ResultUserDto user)
+    {
+        selectedUser = user;
+    }
+
+    private void CloseModal()
+    {
+        selectedUser = null;
+    }
+
+    private void TogglePasswordVisibility()
+    {
+        _showPassword = !_showPassword;
+    }
+
+    private void ShowEditModal(ResultUserDto user)
+    {
+        editingUser = new ResultUserDto
+        {
+            Id = user.Id,
+            Name = user.Name,
+            Surname = user.Surname,
+            Email = user.Email,
+            UserName = user.UserName,
+            Roles = user.Roles,
+            SelectedRole = user.Roles.FirstOrDefault()
+        };
+    }
+
+    private async Task UpdateUser()
+    {
+        if (editingUser != null)
+        {
+            var updateDto = new UpdateUserDto
+            {
+                Id = editingUser.Id,
+                Name = editingUser.Name,
+                Surname = editingUser.Surname,
+                Email = editingUser.Email,
+                UserName = editingUser.UserName,
+                Role = editingUser.SelectedRole,
+                Password = editingUser.Password
+            };
+
+            var success = await UserService.UpdateUserAsync(updateDto);
+            if (success)
+            {
+                editingUser = null;
+                await LoadUsers();
+            }
+        }
+    }
+
+    private async Task CreateUser()
+    {
+        if (await UserService.CreateUserAsync(newUser))
+        {
+            await LoadUsers();
+            CloseCreateModal();
+        }
+    }
+
+    private void OpenCreateModal()
+    {
+        newUser = new();
+        isCreateModalOpen = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        isCreateModalOpen = false;
+    }
+
+    private async Task DeleteUser(string id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Bu kullanıcıyı silmek istediğinize emin misiniz?");
+        if (confirmed && await UserService.DeleteUserAsync(id))
+        {
+            await LoadUsers();
+        }
+    }
+
+    [Inject] private IJSRuntime JS { get; set; }
+
+    private string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            "SuperAdmin" => "px-2 py-1 inline-flex text-xs rounded-full bg-red-100 text-red-800",
+            "Manager" => "px-2 py-1 inline-flex text-xs rounded-full bg-blue-100 text-blue-800",
+            "Driver" => "px-2 py-1 inline-flex text-xs rounded-full bg-yellow-100 text-yellow-800",
+            _ => "px-2 py-1 inline-flex text-xs rounded-full bg-gray-100 text-gray-800"
+        };
+    }
+}

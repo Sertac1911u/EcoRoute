@@ -14,11 +14,11 @@ namespace EcoRoute.IdentityServer.Tools
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id), // EKLENDİ ✅
                 new Claim("Username", user.Username ?? string.Empty),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            // Roller claim'e ekleniyor
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));

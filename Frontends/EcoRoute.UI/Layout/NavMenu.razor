@@ -13,12 +13,14 @@
 
     protected override async Task OnInitializedAsync()
     {
-        userRoles = await localStorage.GetItemAsync<List<string>>("userRoles") ?? new();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
 
-        isSuperAdmin = userRoles.Contains("SuperAdmin");
-        isManager = userRoles.Contains("Manager");
-        isDriver = userRoles.Contains("Driver");
+        isSuperAdmin = user.IsInRole("SuperAdmin");
+        isManager = user.IsInRole("Manager");
+        isDriver = user.IsInRole("Driver");
     }
+
 }
 
 <div class="hidden md:flex md:flex-shrink-0">
