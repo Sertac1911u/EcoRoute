@@ -5,6 +5,7 @@ using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using EcoRoute.UI.Auth;
 using EcoRoute.UI.Services;
+using Blazored.Toast;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -38,4 +39,6 @@ builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 
+// Blazor Toast Entegrasyonu
+builder.Services.AddBlazoredToast();
 await builder.Build().RunAsync();
