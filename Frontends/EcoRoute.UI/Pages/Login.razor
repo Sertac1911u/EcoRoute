@@ -10,10 +10,8 @@
 
 <div class="transition-all duration-500 opacity-100 animate-fadeIn">
     <div class="text-center mb-8">
-        <h1 class="text-2xl font-bold text-primary-600 dark:text-primary-400 mb-2">Giriş Yap</h1>
-        <p class="text-gray-600 dark:text-gray-400">EcoRoute'a hoş geldiniz</p>
+        <h1 class="text-2xl font-bold text-primary-600 dark:text-primary-400 mb-2">Hoş Geldin</h1>
     </div>
-
     @if (!string.IsNullOrEmpty(errorMessage))
     {
         <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-md animate-shake">
@@ -23,34 +21,38 @@
             </div>
         </div>
     }
-
     <div class="space-y-6">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kullanıcı Adı</label>
-            <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <i class="fas fa-user text-gray-400"></i>
-                </div>
+        <div class="relative">
+            <div class="input-container relative">
                 <input @bind="username"
-                       class="pl-10 w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white h-12
-                              focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-300
-                              shadow-sm"
-                       placeholder="Kullanıcı adınızı girin" />
+                       @onfocus="() => isUsernameFocused = true"
+                       @onblur="() => isUsernameFocused = username != string.Empty"
+                       class="input-field w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white h-12
+                              focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-300
+                              shadow-sm px-3 pt-5 pb-2"
+                       id="username" />
+                <label for="username"
+                       class="absolute left-3 transition-all duration-200 pointer-events-none
+                             @(isUsernameFocused ? "text-xs text-primary-600 dark:text-primary-400 top-1" : "text-gray-500 top-3")">
+                    Kullanıcı adı
+                </label>
             </div>
         </div>
-
-        <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Şifre</label>
-            <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <i class="fas fa-lock text-gray-400"></i>
-                </div>
+        <div class="relative">
+            <div class="input-container relative">
                 <input type="@(showPassword ? "text" : "password")"
                        @bind="password"
-                       class="pl-10 pr-10 w-full rounded-lg border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white h-12
-                              focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors duration-300
-                              shadow-sm"
-                       placeholder="Şifrenizi girin" />
+                       @onfocus="() => isPasswordFocused = true"
+                       @onblur="() => isPasswordFocused = password != string.Empty"
+                       class="input-field w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white h-12
+                              focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-300
+                              shadow-sm px-3 pt-5 pb-2 pr-10"
+                       id="password" />
+                <label for="password"
+                       class="absolute left-3 transition-all duration-200 pointer-events-none
+                             @(isPasswordFocused ? "text-xs text-primary-600 dark:text-primary-400 top-1" : "text-gray-500 top-3")">
+                    Şifre
+                </label>
                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
                     <button type="button" @onclick="TogglePasswordVisibility" class="focus:outline-none text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">
                         <i class="@(showPassword ? "fas fa-eye-slash" : "fas fa-eye")"></i>
@@ -58,29 +60,39 @@
                 </div>
             </div>
         </div>
-
         <div class="flex items-center">
             <input id="remember-me" type="checkbox" class="h-4 w-4 accent-primary-600 focus:ring-primary-500 border-gray-300 rounded">
             <label for="remember-me" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
                 Beni hatırla
             </label>
         </div>
-
-
         <button class="w-full py-3 px-4 rounded-lg text-white bg-primary-600 hover:bg-primary-700
                      transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2
                      focus:ring-primary-500 flex items-center justify-center"
                 @onclick="LoginUser">
-            <i class="fas fa-sign-in-alt mr-2"></i> Giriş Yap
+            Giriş Yap
         </button>
     </div>
 </div>
+
+<style>
+    /* Input field animations */
+    .input-container {
+        position: relative;
+    }
+
+    .input-field:focus {
+        outline: none;
+    }
+</style>
 
 @code {
     private string username;
     private string password;
     private string errorMessage;
     private bool showPassword = false;
+    private bool isUsernameFocused = false;
+    private bool isPasswordFocused = false;
 
     private void TogglePasswordVisibility()
     {

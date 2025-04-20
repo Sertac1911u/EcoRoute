@@ -1,8 +1,135 @@
 ﻿@page "/profile"
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+@using Blazored.LocalStorage
 @attribute [Authorize]
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ILocalStorageService LocalStorage
+@inject NavigationManager NavigationManager
 
-<div>
-    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Ana Dashboard</h2>
-    Burası kullanıcı profili kısmı
+<div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden max-w-2xl mx-auto my-8">
+    <div class="p-6">
+        <div class="flex items-center mb-6">
+            <div class="bg-primary-500 rounded-full w-16 h-16 flex items-center justify-center text-white text-2xl">
+                <i class="fas fa-user"></i>
+            </div>
+            <div class="ml-4">
+                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">@userInfo.FullName</h1>
+                <p class="text-gray-600 dark:text-gray-300">@string.Join(", ", userRoles)</p>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">E-posta</label>
+                        <div class="text-gray-900 dark:text-white">@userInfo.Email</div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Kullanıcı Adı</label>
+                        <div class="text-gray-900 dark:text-white">@userInfo.Username</div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefon</label>
+                        <div class="text-gray-900 dark:text-white">@userInfo.Phone</div>
+                    </div>
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Son Giriş</label>
+                        <div class="text-gray-900 dark:text-white">@userInfo.LastLogin.ToString("dd.MM.yyyy HH:mm")</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">İstatistikler</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Toplam Görev</div>
+                    <div class="text-2xl font-semibold text-gray-900 dark:text-white">@userInfo.TotalTasks</div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Tamamlanan</div>
+                    <div class="text-2xl font-semibold text-green-600 dark:text-green-400">@userInfo.CompletedTasks</div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                    <div class="text-sm text-gray-600 dark:text-gray-400">Bekleyen</div>
+                    <div class="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">@userInfo.PendingTasks</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6 flex justify-end">
+            <button class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-md transition duration-200 flex items-center"
+                    @onclick="EditProfile">
+                <i class="fas fa-edit mr-2"></i>
+                Profili Düzenle
+            </button>
+        </div>
+    </div>
 </div>
+
+@code {
+    private List<string> userRoles = new();
+    private bool isSuperAdmin = false;
+    private bool isManager = false;
+    private bool isDriver = false;
+
+    private UserProfileInfo userInfo = new UserProfileInfo();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            isSuperAdmin = user.IsInRole("SuperAdmin");
+            isManager = user.IsInRole("Manager");
+            isDriver = user.IsInRole("Driver");
+
+            if (isSuperAdmin) userRoles.Add("Süper Admin");
+            if (isManager) userRoles.Add("Yönetici");
+            if (isDriver) userRoles.Add("Sürücü");
+
+            // Gerçek uygulamada, verileri bir API'den alacaksınız
+            // Bu örnekte örnek veriler kullanıyoruz
+            userInfo = new UserProfileInfo
+                {
+                    FullName = user.FindFirst(ClaimTypes.Name)?.Value ?? "Kullanıcı Adı",
+                    Email = user.FindFirst(ClaimTypes.Email)?.Value ?? "ornek@email.com",
+                    Username = user.Identity.Name ?? "kullanici",
+                    Phone = "+90 555 123 4567",
+                    LastLogin = DateTime.Now.AddDays(-1),
+                    TotalTasks = 45,
+                    CompletedTasks = 38,
+                    PendingTasks = 7
+                };
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+    }
+
+    private void EditProfile()
+    {
+        NavigationManager.NavigateTo("/profile/edit");
+    }
+
+    private class UserProfileInfo
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public DateTime LastLogin { get; set; }
+        public int TotalTasks { get; set; }
+        public int CompletedTasks { get; set; }
+        public int PendingTasks { get; set; }
+    }
+}
