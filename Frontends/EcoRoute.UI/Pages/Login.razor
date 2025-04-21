@@ -23,41 +23,30 @@
     }
     <div class="space-y-6">
         <div class="relative">
-            <div class="input-container relative">
-                <input @bind="username"
-                       @onfocus="() => isUsernameFocused = true"
-                       @onblur="() => isUsernameFocused = username != string.Empty"
-                       class="input-field w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white h-12
-                              focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-300
-                              shadow-sm px-3 pt-5 pb-2"
-                       id="username" />
-                <label for="username"
-                       class="absolute left-3 transition-all duration-200 pointer-events-none
-                             @(isUsernameFocused ? "text-xs text-primary-600 dark:text-primary-400 top-1" : "text-gray-500 top-3")">
-                    Kullanıcı adı
-                </label>
-            </div>
+            <input type="text"
+                   id="username"
+                   class="block px-2.5 pb-2.5 pt-4 w-full text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
+                   @bind="username"
+                   placeholder=" " />
+            <label for="username"
+                   class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">
+                Kullanıcı adı
+            </label>
         </div>
         <div class="relative">
-            <div class="input-container relative">
-                <input type="@(showPassword ? "text" : "password")"
-                       @bind="password"
-                       @onfocus="() => isPasswordFocused = true"
-                       @onblur="() => isPasswordFocused = password != string.Empty"
-                       class="input-field w-full rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:text-white h-12
-                              focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors duration-300
-                              shadow-sm px-3 pt-5 pb-2 pr-10"
-                       id="password" />
-                <label for="password"
-                       class="absolute left-3 transition-all duration-200 pointer-events-none
-                             @(isPasswordFocused ? "text-xs text-primary-600 dark:text-primary-400 top-1" : "text-gray-500 top-3")">
-                    Şifre
-                </label>
-                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                    <button type="button" @onclick="TogglePasswordVisibility" class="focus:outline-none text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">
-                        <i class="@(showPassword ? "fas fa-eye-slash" : "fas fa-eye")"></i>
-                    </button>
-                </div>
+            <input type="@(showPassword ? "text" : "password")"
+                   id="password"
+                   class="block px-2.5 pb-2.5 pt-4 w-full text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer pr-10"
+                   @bind="password"
+                   placeholder=" " />
+            <label for="password"
+                   class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">
+                Şifre
+            </label>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <button type="button" @onclick="TogglePasswordVisibility" class="focus:outline-none text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">
+                    <i class="@(showPassword ? "fas fa-eye-slash" : "fas fa-eye")"></i>
+                </button>
             </div>
         </div>
         <div class="flex items-center">
@@ -75,24 +64,11 @@
     </div>
 </div>
 
-<style>
-    /* Input field animations */
-    .input-container {
-        position: relative;
-    }
-
-    .input-field:focus {
-        outline: none;
-    }
-</style>
-
 @code {
     private string username;
     private string password;
     private string errorMessage;
     private bool showPassword = false;
-    private bool isUsernameFocused = false;
-    private bool isPasswordFocused = false;
 
     private void TogglePasswordVisibility()
     {

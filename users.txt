@@ -1,16 +1,3 @@
-{
-  "username": "driver01",
-  "email": "driver01@ecoroute.com",
-  "name": "John",
-  "surname": "Doe",
-  "password": "pass123P*",
-  "role": "Driver"
-}
-{
-  "username": "driver01",
-  "email": "driver01@ecoroute.com",
-  "name": "John",
-  "surname": "Doe",
-  "password": "pass123P*",
-  "role": "Driver"
-}
+superadmin - 
+testdriver - 
+testmanager -
