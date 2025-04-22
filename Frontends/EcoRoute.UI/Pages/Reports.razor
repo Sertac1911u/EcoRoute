@@ -1,8 +1,138 @@
 ﻿@page "/reports"
 @using Microsoft.AspNetCore.Authorization
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@inject IToastService toastService
 @attribute [Authorize(Roles = "SuperAdmin, Manager")]
 
-<div>
-    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Ana Dashboard</h2>
-    Burası reports kısmı
+<div class="p-6">
+    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Raporlar</h2>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Toplam Rota</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@TotalRoutes</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Aktif Rota</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@ActiveRoutes</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Tamamlanan Rota</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@CompletedRoutes</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Ortalama Kutucuk Doluluk</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@($"{AverageFillLevel:F1}%")</p>
+        </div>
+    </div>
+
+    <!-- Routes Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Rota Adı</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Sürücü</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Durum</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Mesafe (km)</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Süre (dk)</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                @foreach (var r in routes)
+                {
+                    <tr>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@r.Name</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@r.Driver</td>
+                        <td class="px-4 py-4 whitespace-nowrap">
+                            <span class="@GetStatusBadge(r.Status)">
+                                @r.Status
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 text-right">@r.Distance</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 text-right">@r.EstimatedDuration</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
+
+@code {
+    private List<RouteDto> routes = new();
+    private int TotalRoutes => routes.Count;
+    private int ActiveRoutes => routes.Count(r => r.IsActive);
+    private int CompletedRoutes => routes.Count(r => r.Status == "Tamamlandı");
+    private double AverageFillLevel => routes
+        .SelectMany(r => r.WasteBins)
+        .DefaultIfEmpty(new WasteBinDto { FillLevel = 0 })
+        .Average(b => b.FillLevel);
+
+    protected override void OnInitialized()
+    {
+        // Load demo data or fetch from API
+        routes = GenerateDemoRoutes();
+    }
+
+    private string GetStatusBadge(string status) => status switch
+    {
+        "Planlandı" => "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800",
+        "Devam Ediyor" => "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800",
+        "Tamamlandı" => "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800",
+        "İptal Edildi" => "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800",
+        _ => "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800"
+    };
+
+    // Demo data generators (same as in Routes.razor)
+    private List<RouteDto> GenerateDemoRoutes()
+    {
+        var bins = new List<WasteBinDto>
+        {
+            new WasteBinDto{ Id="b1", Label="Kutu A", FillLevel=20 },
+            new WasteBinDto{ Id="b2", Label="Kutu B", FillLevel=60 },
+            new WasteBinDto{ Id="b3", Label="Kutu C", FillLevel=40 },
+        };
+
+        return new List<RouteDto>
+        {
+            new RouteDto {
+                Id="r1", Name="Rota 1", Driver="Ahmet Yılmaz",
+                Status="Planlandı", Distance=12.3, EstimatedDuration=25,
+                IsActive=true, WasteBins = bins.Take(2).ToList()
+            },
+            new RouteDto {
+                Id="r2", Name="Rota 2", Driver="Mehmet Kaya",
+                Status="Devam Ediyor", Distance=8.7, EstimatedDuration=18,
+                IsActive=true, WasteBins = bins.Skip(1).Take(2).ToList()
+            },
+            new RouteDto {
+                Id="r3", Name="Rota 3", Driver="Ayşe Demir",
+                Status="Tamamlandı", Distance=15.2, EstimatedDuration=30,
+                IsActive=false, WasteBins = bins.ToList()
+            },
+        };
+    }
+
+    // DTOs
+    public class RouteDto
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
+        public string Driver { get; set; }
+        public string Status { get; set; }
+        public double Distance { get; set; }
+        public int EstimatedDuration { get; set; }
+        public bool IsActive { get; set; }
+        public List<WasteBinDto> WasteBins { get; set; } = new();
+    }
+
+    public class WasteBinDto
+    {
+        public string Id { get; set; }
+        public string Label { get; set; }
+        public int FillLevel { get; set; }
+    }
+}

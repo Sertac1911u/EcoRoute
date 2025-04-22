@@ -1,8 +1,117 @@
 ﻿@page "/settings"
 @using Microsoft.AspNetCore.Authorization
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@inject IToastService toastService
 @attribute [Authorize(Roles = "SuperAdmin")]
 
-<div>
-    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Ana Dashboard</h2>
-    Burası ayarlar kısmı
+<div class="p-6">
+    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Ayarlar</h2>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Toplam Ayar</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@AllSettings</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Etkin Ayar</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@EnabledSettings</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Devre Dışı Ayar</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@DisabledSettings</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Son Güncelleme</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@LastUpdated.ToString("dd.MM.yyyy")</p>
+        </div>
+    </div>
+
+    <!-- Settings Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Ayar Anahtarı</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Değer</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Durum</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                @foreach (var s in settings)
+                {
+                    <tr>
+                        <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">@s.Key</td>
+                        <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">@s.Value</td>
+                        <td class="px-4 py-4">
+                            <span class="@GetStatusBadge(s.IsEnabled)">
+                                @(s.IsEnabled ? "Etkin" : "Devre Dışı")
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 text-right space-x-2">
+                            <button class="text-blue-500 hover:text-blue-700" @onclick="() => ToggleSetting(s)">
+                                <i class="fas @(s.IsEnabled ? "fa-toggle-on" : "fa-toggle-off")"></i>
+                            </button>
+                            <button class="text-green-500 hover:text-green-700" @onclick="() => EditSetting(s)">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
+
+@code {
+    private List<SettingDto> settings;
+    private int AllSettings => settings.Count;
+    private int EnabledSettings => settings.Count(s => s.IsEnabled);
+    private int DisabledSettings => settings.Count(s => !s.IsEnabled);
+    private DateTime LastUpdated => settings.Max(s => s.ModifiedAt);
+
+    protected override void OnInitialized()
+    {
+        settings = GenerateDemoSettings();
+    }
+
+    private void ToggleSetting(SettingDto s)
+    {
+        s.IsEnabled = !s.IsEnabled;
+        s.ModifiedAt = DateTime.Now;
+        toastService.ShowSuccess($"Ayar {(s.IsEnabled ? "etkinleştirildi" : "devre dışı bırakıldı")}: {s.Key}");
+    }
+
+    private void EditSetting(SettingDto s)
+    {
+        // open modal or navigate to edit page...
+        toastService.ShowInfo($"Düzenleme açıldı: {s.Key}");
+    }
+
+    private string GetStatusBadge(bool enabled) =>
+        enabled
+            ? "px-2 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800"
+            : "px-2 inline-flex text-xs font-semibold rounded-full bg-red-100 text-red-800";
+
+    private List<SettingDto> GenerateDemoSettings()
+    {
+        return new List<SettingDto>
+        {
+            new() { Key="MaxRouteCount", Value="50", IsEnabled=true, ModifiedAt=DateTime.Now.AddDays(-2)},
+            new() { Key="MaintenanceMode", Value="False", IsEnabled=false, ModifiedAt=DateTime.Now.AddDays(-5)},
+            new() { Key="DefaultPageSize", Value="10", IsEnabled=true, ModifiedAt=DateTime.Now.AddDays(-1)},
+            new() { Key="EnableNotifications", Value="True", IsEnabled=true, ModifiedAt=DateTime.Now.AddHours(-12)},
+        };
+    }
+
+    public class SettingDto
+    {
+        public string Key { get; set; }
+        public string Value { get; set; }
+        public bool IsEnabled { get; set; }
+        public DateTime ModifiedAt { get; set; }
+    }
+}

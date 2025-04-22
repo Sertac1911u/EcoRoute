@@ -1,8 +1,127 @@
 ﻿@page "/supports"
 @using Microsoft.AspNetCore.Authorization
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@inject IToastService toastService
 @attribute [Authorize]
 
-<div>
-    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Ana Dashboard</h2>
-    Burası destek kısmı
+<div class="p-6">
+    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Destek Talepleri</h2>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Toplam Talep</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@AllTickets</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Açık Talep</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@OpenTickets</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Yanıt Bekleyen</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@PendingTickets</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Kapalı Talep</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@ClosedTickets</p>
+        </div>
+    </div>
+
+    <!-- Tickets Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tarih</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Kullanıcı</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Konu</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Durum</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                @foreach (var t in tickets)
+                {
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@t.CreatedAt.ToString("dd.MM.yyyy")</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@t.User</td>
+                        <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">@t.Subject</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-center">
+                            <span class="@GetStatusBadge(t.Status)">
+                                @t.Status
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 text-right text-sm space-x-2">
+                            <button class="text-blue-500 hover:text-blue-700" @onclick="() => ViewTicket(t.Id)">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="text-red-500 hover:text-red-700" @onclick="() => DeleteTicket(t.Id)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
+
+@code {
+    private List<SupportTicketDto> tickets;
+    private int AllTickets => tickets.Count;
+    private int OpenTickets => tickets.Count(t => t.Status == "Açık");
+    private int PendingTickets => tickets.Count(t => t.Status == "Yanıt Bekliyor");
+    private int ClosedTickets => tickets.Count(t => t.Status == "Kapalı");
+
+    protected override void OnInitialized()
+    {
+        tickets = GenerateDemoTickets();
+    }
+
+    private void ViewTicket(string id)
+    {
+        // Navigate or open modal...
+        toastService.ShowInfo($"Talep görüntülendi: {id}");
+    }
+
+    private void DeleteTicket(string id)
+    {
+        var t = tickets.FirstOrDefault(x => x.Id == id);
+        if (t != null)
+        {
+            tickets.Remove(t);
+            toastService.ShowSuccess("Talep silindi.");
+        }
+    }
+
+    private string GetStatusBadge(string status) =>
+        status switch
+        {
+            "Açık" => "px-2 inline-flex text-xs font-semibold rounded-full bg-blue-100 text-blue-800",
+            "Yanıt Bekliyor" => "px-2 inline-flex text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800",
+            "Kapalı" => "px-2 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800",
+            _ => "px-2 inline-flex text-xs font-semibold rounded-full bg-gray-100 text-gray-800"
+        };
+
+    private List<SupportTicketDto> GenerateDemoTickets()
+    {
+        return new List<SupportTicketDto>
+        {
+            new() { Id="t1", User="Ali Veli", Subject="Giriş sorunu", CreatedAt=DateTime.Now.AddDays(-1), Status="Açık" },
+            new() { Id="t2", User="Ayşe Demir", Subject="Rota hatası", CreatedAt=DateTime.Now.AddDays(-3), Status="Yanıt Bekliyor" },
+            new() { Id="t3", User="Mehmet Kaya", Subject="Bildirim gelmiyor", CreatedAt=DateTime.Now.AddDays(-7), Status="Kapalı" },
+            new() { Id="t4", User="Zeynep Önal", Subject="Ayar değişikliği", CreatedAt=DateTime.Now.AddDays(-2), Status="Açık" }
+        };
+    }
+
+    public class SupportTicketDto
+    {
+        public string Id { get; set; }
+        public string User { get; set; }
+        public string Subject { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string Status { get; set; }
+    }
+}

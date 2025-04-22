@@ -1,8 +1,129 @@
 ﻿@page "/notifications"
 @using Microsoft.AspNetCore.Authorization
+@using System
+@using System.Collections.Generic
+@using System.Linq
+@using System.Threading.Tasks
+@inject IToastService toastService
 @attribute [Authorize]
 
-<div>
-    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Ana Dashboard</h2>
-    Burası bildirim kısmı
+<div class="p-6">
+    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Bildirimler</h2>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Toplam Bildirim</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@AllCount</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Okunmamış</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@UnreadCount</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Okunan</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@ReadCount</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Son 7 Gün</h3>
+            <p class="text-3xl font-bold text-gray-900 dark:text-white">@RecentCount</p>
+        </div>
+    </div>
+
+    <!-- Notifications Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tarih</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Tür</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Mesaj</th>
+                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Durum</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                @foreach (var n in notifications)
+                {
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@n.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@n.Type</td>
+                        <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">@n.Message</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-center">
+                            <span class="@GetReadBadge(n.IsRead)">
+                                @(n.IsRead ? "Okundu" : "Okunmadı")
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-right text-sm">
+                            <button class="text-blue-500 hover:text-blue-700 mr-2" @onclick="() => MarkAsRead(n.Id)" disabled="@n.IsRead">
+                                <i class="fas fa-check"></i>
+                            </button>
+                            <button class="text-red-500 hover:text-red-700" @onclick="() => DeleteNotification(n.Id)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
+
+@code {
+    private List<NotificationDto> notifications = new();
+    private int AllCount => notifications.Count;
+    private int UnreadCount => notifications.Count(n => !n.IsRead);
+    private int ReadCount => notifications.Count(n => n.IsRead);
+    private int RecentCount => notifications.Count(n => n.CreatedAt >= DateTime.Now.AddDays(-7));
+
+    protected override void OnInitialized()
+    {
+        notifications = GenerateDemoNotifications();
+    }
+
+    private void MarkAsRead(string id)
+    {
+        var n = notifications.FirstOrDefault(x => x.Id == id);
+        if (n != null && !n.IsRead)
+        {
+            n.IsRead = true;
+            toastService.ShowSuccess("Bildirim okundu.");
+        }
+    }
+
+    private void DeleteNotification(string id)
+    {
+        var n = notifications.FirstOrDefault(x => x.Id == id);
+        if (n != null)
+        {
+            notifications.Remove(n);
+            toastService.ShowSuccess("Bildirim silindi.");
+        }
+    }
+
+    private string GetReadBadge(bool isRead) =>
+        isRead
+            ? "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"
+            : "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800";
+
+    // Demo generator
+    private List<NotificationDto> GenerateDemoNotifications()
+    {
+        return new List<NotificationDto>
+        {
+            new NotificationDto { Id="n1", Type="Rota", Message="Yeni rota eklendi.", CreatedAt=DateTime.Now.AddHours(-2), IsRead=false },
+            new NotificationDto { Id="n2", Type="Uyarı", Message="Kutu doluluk seviyesi yüksek.", CreatedAt=DateTime.Now.AddDays(-1), IsRead=true },
+            new NotificationDto { Id="n3", Type="Bilgi", Message="Sistem bakıma alındı.", CreatedAt=DateTime.Now.AddDays(-5), IsRead=false },
+            new NotificationDto { Id="n4", Type="Rota", Message="Rota tamamlandı.", CreatedAt=DateTime.Now.AddDays(-8), IsRead=true }
+        };
+    }
+
+    public class NotificationDto
+    {
+        public string Id { get; set; }
+        public string Type { get; set; }
+        public string Message { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public bool IsRead { get; set; }
+    }
+}
