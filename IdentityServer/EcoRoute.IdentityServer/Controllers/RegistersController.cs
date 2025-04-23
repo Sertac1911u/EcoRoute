@@ -31,6 +31,7 @@ namespace EcoRoute.IdentityServer.Controllers
                 Email = model.Email,
                 Name = model.Name,
                 Surname = model.Surname,
+                PhoneNumber = model.Number,
                 EmailConfirmed = true
             };
 

@@ -46,6 +46,7 @@ namespace EcoRoute.IdentityServer.Controllers
                     UserName = user.UserName,
                     Name = user.Name,
                     Surname = user.Surname,
+                    PhoneNumber = user.PhoneNumber,
                     Roles = roles.ToList()
                 });
             }
@@ -71,6 +72,7 @@ namespace EcoRoute.IdentityServer.Controllers
                 user.UserName,
                 user.Email,
                 user.Name,
+                user.PhoneNumber,
                 user.Surname
             });
         }
@@ -85,6 +87,7 @@ namespace EcoRoute.IdentityServer.Controllers
             user.Surname = model.Surname;
             user.Email = model.Email;
             user.UserName = model.UserName;
+            user.PhoneNumber = model.PhoneNumber;
 
             var updateResult = await _userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
@@ -119,7 +122,8 @@ namespace EcoRoute.IdentityServer.Controllers
                 UserName = dto.UserName,
                 Email = dto.Email,
                 Name = dto.Name,
-                Surname = dto.Surname
+                Surname = dto.Surname,
+                PhoneNumber = dto.PhoneNumber,
             };
 
             var result = await _userManager.CreateAsync(user, dto.Password);
