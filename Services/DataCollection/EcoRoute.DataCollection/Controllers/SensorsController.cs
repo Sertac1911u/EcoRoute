@@ -1,12 +1,11 @@
 ﻿using EcoRoute.DataCollection.Dtos.SensorDtos;
 using EcoRoute.DataCollection.Services.SensorServices;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EcoRoute.DataCollection.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "DataCollectionFullAccess")] 
     [Route("api/[controller]")]
     [ApiController]
     public class SensorsController : ControllerBase
@@ -21,32 +20,38 @@ namespace EcoRoute.DataCollection.Controllers
         [HttpGet]
         public async Task<IActionResult> SensorList()
         {
-            var values = await _sensorService.GetAllSensorAsync();
-            return Ok(values);
+            var sensors = await _sensorService.GetAllSensorAsync();
+            return Ok(sensors);
         }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetSensorById(Guid id)
         {
-            var values = await _sensorService.GetByIdSensorAsync(id);
-            return Ok(values);
+            var sensor = await _sensorService.GetByIdSensorAsync(id);
+            if (sensor == null)
+                return NotFound();
+            return Ok(sensor);
         }
+
         [HttpPost]
         public async Task<IActionResult> CreateSensor(CreateSensorDto createSensorDto)
         {
             await _sensorService.CreateSensorAsync(createSensorDto);
-            return Ok("Sensor Created");
+            return Ok("Sensor Created Successfully");
         }
-        [HttpDelete]
+
+        [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSensor(Guid id)
         {
             await _sensorService.DeleteSensorAsync(id);
-            return Ok("Sensor Deleted");
+            return Ok("Sensor Deleted Successfully");
         }
+
         [HttpPut]
         public async Task<IActionResult> UpdateSensor(UpdateSensorDto updateSensorDto)
         {
             await _sensorService.UpdateSensorAsync(updateSensorDto);
-            return Ok("Sensor Updated");
+            return Ok("Sensor Updated Successfully");
         }
     }
 }

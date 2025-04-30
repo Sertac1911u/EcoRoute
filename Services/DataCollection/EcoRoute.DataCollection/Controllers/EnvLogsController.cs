@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EcoRoute.DataCollection.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "DataCollectionFullAccess")] // 🔥 Policy uygulandı
     [Route("api/[controller]")]
     [ApiController]
     public class EnvLogsController : ControllerBase

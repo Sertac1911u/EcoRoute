@@ -1,6 +1,11 @@
 ﻿@page "/bins"
+@using EcoRoute.DtoLayer.WasteBinDtos
+@using EcoRoute.UI.Services.WasteBinServices
 @using Microsoft.AspNetCore.Authorization
+@inject WasteBinService WasteBinService
+@inject SensorService SensorService
 @inject IToastService toastService
+@inject IJSRuntime JS
 @attribute [Authorize(Roles = "SuperAdmin, Manager")]
 
 <div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden mb-6">
@@ -36,8 +41,21 @@
                         </th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => SortTable("Label")'>
                             <div class="flex items-center">
-                                Label
+                                Etiket
                                 @if (sortField == "Label")
+                                {
+                                    <i class="fas @(sortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-sort ml-1 text-gray-400"></i>
+                                }
+                            </div>
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => SortTable("Address")'>
+                            <div class="flex items-center">
+                                Adres
+                                @if (sortField == "Address")
                                 {
                                     <i class="fas @(sortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
                                 }
@@ -103,60 +121,93 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                    @if (wasteBins != null)
+                    @if (wasteBins == null)
                     {
-                        @for (int i = 0; i < wasteBins.Count; i++)
+                        <tr>
+                            <td colspan="8" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                                <div class="flex justify-center items-center">
+                                    <i class="fas fa-circle-notch fa-spin mr-2"></i> Yükleniyor...
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else if (wasteBins.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="8" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                                <div class="flex flex-col justify-center items-center p-6">
+                                    <i class="fas fa-trash-alt text-4xl mb-2 text-gray-400"></i>
+                                    <p>Henüz atık kutusu bulunmamaktadır.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @for (int i = 0; i < sortedBins.Count; i++)
                         {
-                            var bin = wasteBins[i];
+                            var bin = sortedBins[i];
                             var rowIndex = i + 1;
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer @(expandedRowId == bin.Id ? "bg-gray-50 dark:bg-gray-700" : "")"
-                                @onclick="() => ToggleRowExpansion(bin.Id)">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer @(expandedRowId == bin.WasteBinId ? "bg-gray-50 dark:bg-gray-700" : "")"
+                                @onclick="() => ToggleRowExpansion(bin.WasteBinId)">
                                 <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">@rowIndex</td>
-                                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@bin.Label</td>
+                                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-dumpster text-lg mr-3 @GetBinIconColor(bin)"></i>
+                                        <span>@bin.Label</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 truncate max-w-xs">
+                                    <i class="fas fa-map-marker-alt mr-2 text-red-500"></i>
+                                    @bin.Address
+                                </td>
                                 <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@bin.Latitude, @bin.Longitude</td>
-                                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@bin.LastUpdate?.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@bin.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</td>
                                 <td class="px-4 py-4 whitespace-nowrap text-sm">
                                     <span class="@GetDeviceStatusColor(bin.DeviceStatus) px-2 py-1 rounded-full text-xs">
-                                        @bin.DeviceStatus
+                                        @GetDeviceStatusText(bin.DeviceStatus)
                                     </span>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap">
                                     <div class="relative w-full h-5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden bg-stripes">
                                         <div class="@GetFillLevelColor(bin.FillLevel) h-full transition-all duration-500 ease-in-out flex items-center justify-center"
-                                             style="width: @(bin.FillLevel)%">
-                                            <span class="text-xs font-bold text-white">@bin.FillLevel%</span>
+                                             style="width: @(bin.FillLevel ?? 0)%">
+                                            <span class="text-xs font-bold text-white">@(bin.FillLevel ?? 0)%</span>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-4 py-4 whitespace-nowrap text-sm">
-                                    <div class="flex space-x-3">
-                                        <button class="text-blue-500 hover:text-blue-700 text-lg" @onclick="@(() => OpenEditModal(bin))" @onclick:stopPropagation="true">
+                                    <div class="flex space-x-3" @onclick:stopPropagation>
+                                        <button class="text-blue-500 hover:text-blue-700 text-lg tooltip-container" @onclick="@(() => OpenEditModal(bin))">
                                             <i class="fas fa-edit"></i>
+                                            <span class="tooltip">Düzenle</span>
                                         </button>
-                                        <button class="@(bin.IsActive ? "text-red-500 hover:text-red-700" : "text-green-500 hover:text-green-700") text-lg" 
-                                                @onclick="@(() => ShowToggleConfirmation(bin))" @onclick:stopPropagation="true">
-                                            <i class="fas @(bin.IsActive ? "fa-toggle-on" : "fa-toggle-off")"></i>
+                                        <button class="text-red-500 hover:text-red-700 text-lg tooltip-container"
+                                                @onclick="@(() => DeleteBinConfirmation(bin.WasteBinId))">
+                                            <i class="fas fa-trash-alt"></i>
+                                            <span class="tooltip">Sil</span>
                                         </button>
                                     </div>
                                 </td>
                             </tr>
 
-                            @if (expandedRowId == bin.Id)
+                            @if (expandedRowId == bin.WasteBinId)
                             {
-                                <tr class="bg-gray-50 dark:bg-gray-700">
-                                    <td colspan="7" class="px-6 py-6">
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <tr class="bg-gray-50 dark:bg-gray-700 animate-expandRow">
+                                    <td colspan="8" class="px-6 py-6">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                            <!-- Genel Bilgiler -->
                                             <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
                                                 <div class="flex justify-between items-center mb-4">
                                                     <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
                                                         <i class="fas fa-info-circle mr-2 text-blue-500"></i>
                                                         Genel Bilgiler
                                                     </h3>
-                                                    <span class="@(bin.IsActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800") px-2 py-1 rounded-full text-xs">
-                                                        @(bin.IsActive ? "Aktif" : "Pasif")
+                                                    <span class="@(bin.IsFilled == true ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800") px-2 py-1 rounded-full text-xs">
+                                                        @(bin.IsFilled == true ? "Dolu" : "Boş")
                                                     </span>
                                                 </div>
-                                                
+
                                                 <div class="space-y-3">
                                                     <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
                                                         <span class="text-sm text-gray-500 dark:text-gray-400">Oluşturulma Tarihi:</span>
@@ -164,18 +215,20 @@
                                                     </div>
                                                     <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
                                                         <span class="text-sm text-gray-500 dark:text-gray-400">Güncellenme Tarihi:</span>
-                                                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200">@(bin.UpdatedAt?.ToString("dd.MM.yyyy HH:mm") ?? "-")</span>
+                                                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200">@bin.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</span>
                                                     </div>
                                                     <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
                                                         <span class="text-sm text-gray-500 dark:text-gray-400">Doluluk Seviyesi:</span>
-                                                        <span class="text-sm font-medium @GetTextColorByFillLevel(bin.FillLevel)">@bin.FillLevel%</span>
+                                                        <span class="text-sm font-medium @GetTextColorByFillLevel(bin.FillLevel)">@(bin.FillLevel ?? 0)%</span>
                                                     </div>
                                                     <div class="flex justify-between items-center">
-                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini Doluluk:</span>
-                                                        <span class="text-sm font-medium @GetTextColorByFillLevel(bin.EstimatedFillLevel)">@bin.EstimatedFillLevel%</span>
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Durum:</span>
+                                                        <span class="text-sm font-medium @GetDeviceStatusTextColor(bin.DeviceStatus)">
+                                                            @GetDeviceStatusText(bin.DeviceStatus)
+                                                        </span>
                                                     </div>
                                                 </div>
-                                                
+
                                                 <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                                                     <div class="inline-flex items-center text-blue-500 cursor-pointer hover:text-blue-700" @onclick="() => OpenLocationModal(bin)" @onclick:stopPropagation="true">
                                                         <i class="fas fa-map-marker-alt mr-1"></i>
@@ -184,24 +237,83 @@
                                                 </div>
                                             </div>
 
+                                            <!-- Konum Bilgileri -->
                                             <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
                                                 <div class="flex justify-between items-center mb-4">
                                                     <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                                                        <i class="fas fa-microchip mr-2 text-purple-500"></i>
+                                                        <i class="fas fa-map-marked-alt mr-2 text-purple-500"></i>
+                                                        Konum Bilgileri
+                                                    </h3>
+                                                </div>
+
+                                                <div class="space-y-4">
+                                                    <div id="detail-map-@bin.WasteBinId" class="h-40 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"></div>
+
+                                                    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Enlem:</span>
+                                                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200">@bin.Latitude</span>
+                                                    </div>
+                                                    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Boylam:</span>
+                                                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200">@bin.Longitude</span>
+                                                    </div>
+                                                    <div class="flex justify-between items-center">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Adres:</span>
+                                                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200 max-w-[200px] truncate">@bin.Address</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Doluluk Durumu -->
+                                            <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
+                                                <div class="flex justify-between items-center mb-4">
+                                                    <h3 class="!text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                                                        <i class="fas fa-chart-line mr-2 text-amber-500"></i>
+                                                        Doluluk Durumu
+                                                    </h3>
+                                                </div>
+
+                                                <div class="flex flex-col items-center justify-center space-y-3 py-2">
+                                                    <div class="relative w-32 h-32">
+                                                        <svg class="w-full h-full" viewBox="0 0 36 36">
+                                                            <path class="stroke-current text-gray-200 dark:text-gray-700" fill="none" stroke-width="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                                            <path class="@GetStrokeFillColor(bin.FillLevel) stroke-current" fill="none" stroke-width="3.8" stroke-linecap="round"
+                                                                  stroke-dasharray="@((bin.FillLevel ?? 0) * 100 / 100), 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                                            <text x="18" y="20.5" class="fill-current text-lg font-bold text-gray-700 dark:text-gray-200" text-anchor="middle">@(bin.FillLevel ?? 0)%</text>
+                                                        </svg>
+                                                    </div>
+
+                                                    <div class="text-center">
+                                                        <span class="inline-block px-3 py-1 rounded-full @GetFillStatusBadge(bin.FillLevel)">
+                                                            @GetFillStatusText(bin.FillLevel)
+                                                        </span>
+                                                    </div>
+
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                                        Son güncelleme: @bin.UpdatedAt.ToString("dd.MM.yyyy HH:mm")
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Sensörler - Yeni Bölüm -->
+                                            <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
+                                                <div class="flex justify-between items-center mb-4">
+                                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                                                        <i class="fas fa-microchip mr-2 text-green-500"></i>
                                                         Sensörler
                                                     </h3>
                                                     <span class="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-xs">
                                                         @(bin.Sensors?.Count ?? 0) adet
                                                     </span>
                                                 </div>
-                                                
-                                                <div class="space-y-4 max-h-60 overflow-y-auto pr-2">
+
+                                                <div class="space-y-3 max-h-60 overflow-y-auto">
                                                     @if (bin.Sensors != null && bin.Sensors.Any())
                                                     {
                                                         foreach (var sensor in bin.Sensors)
                                                         {
                                                             <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border-l-4 @GetSensorBorderColor(sensor.IsActive)">
-                                                                <div class="flex justify-between items-center mb-2">
+                                                                <div class="flex justify-between items-center mb-1">
                                                                     <span class="font-medium text-gray-800 dark:text-white">@sensor.Type</span>
                                                                     <span class="@(sensor.IsActive ? "text-green-500" : "text-red-500") text-xs">
                                                                         <i class="fas @(sensor.IsActive ? "fa-check-circle" : "fa-times-circle") mr-1"></i>
@@ -222,63 +334,10 @@
                                                     }
                                                 </div>
                                             </div>
-
-                                            <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
-                                                <div class="flex justify-between items-center mb-4">
-                                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                                                        <i class="fas fa-history mr-2 text-amber-500"></i>
-                                                        Son Loglar
-                                                    </h3>
-                                                    <button class="text-blue-500 hover:text-blue-700 text-sm" @onclick:stopPropagation="true">
-                                                        <i class="fas fa-external-link-alt mr-1"></i>
-                                                        Tümünü Gör
-                                                    </button>
-                                                </div>
-                                                
-                                                <div class="space-y-3 max-h-60 overflow-y-auto pr-2">
-                                                    @if (bin.BinLogs != null && bin.BinLogs.Any())
-                                                    {
-                                                        foreach (var log in bin.BinLogs.OrderByDescending(l => l.CreatedAt).Take(3))
-                                                        {
-                                                            <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg flex items-center justify-between">
-                                                                <div>
-                                                                    <div class="text-sm font-medium text-gray-800 dark:text-white">
-                                                                        @log.CreatedAt.ToString("dd.MM.yyyy HH:mm")
-                                                                    </div>
-                                                                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                                        Durum: <span class="@GetDeviceStatusColor(log.DeviceStatus) px-1 py-0.5 rounded text-xs">@log.DeviceStatus</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div>
-                                                                    <div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-600 relative flex items-center justify-center">
-                                                                        <div class="absolute inset-1 rounded-full @GetFillLevelColor(log.FillLevel) opacity-80"></div>
-                                                                        <span class="text-xs font-bold text-white z-10">@log.FillLevel%</span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded text-center">
-                                                            <p class="text-sm text-gray-500 dark:text-gray-400">Log bulunamadı</p>
-                                                        </div>
-                                                    }
-                                                </div>
-                                            </div>
                                         </div>
                                     </td>
                                 </tr>
-                            }
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="7" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
-                                Yükleniyor...
-                            </td>
-                        </tr>
+                            }                        }
                     }
                 </tbody>
             </table>
@@ -288,12 +347,12 @@
         {
             <div class="flex justify-center mt-4">
                 <div class="flex space-x-1">
-                    <button @onclick="() => ChangePage(1)" 
+                    <button @onclick="() => ChangePage(1)"
                             disabled="@(currentPage == 1)"
                             class="@(currentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
                         <i class="fas fa-angle-double-left"></i>
                     </button>
-                    <button @onclick="() => ChangePage(currentPage - 1)" 
+                    <button @onclick="() => ChangePage(currentPage - 1)"
                             disabled="@(currentPage == 1)"
                             class="@(currentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
                         <i class="fas fa-angle-left"></i>
@@ -302,18 +361,18 @@
                     @for (int i = startPage; i <= endPage; i++)
                     {
                         var pageNumber = i;
-                        <button @onclick="() => ChangePage(pageNumber)" 
+                        <button @onclick="() => ChangePage(pageNumber)"
                                 class="@(currentPage == pageNumber ? "bg-primary-500 text-white" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
                             @pageNumber
                         </button>
                     }
 
-                    <button @onclick="() => ChangePage(currentPage + 1)" 
+                    <button @onclick="() => ChangePage(currentPage + 1)"
                             disabled="@(currentPage == totalPages)"
                             class="@(currentPage == totalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
                         <i class="fas fa-angle-right"></i>
                     </button>
-                    <button @onclick="() => ChangePage(totalPages)" 
+                    <button @onclick="() => ChangePage(totalPages)"
                             disabled="@(currentPage == totalPages)"
                             class="@(currentPage == totalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
                         <i class="fas fa-angle-double-right"></i>
@@ -321,113 +380,60 @@
                 </div>
             </div>
         }
+
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
+            Toplam @(wasteBins?.Count ?? 0) atık kutusu
+        </div>
     </div>
 </div>
 
-@if (showCreateModal || showEditModal)
+<!-- Modal Bölümleri -->
+@if (showDeleteConfirmation)
 {
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-screen overflow-y-auto">
-            <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-white">
-                    @(showCreateModal ? "Yeni Atık Kutusu Ekle" : "Atık Kutusu Düzenle")
-                </h3>
-                <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" @onclick="CloseModal">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl p-6">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
+                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Atık Kutusunu Sil</h3>
+                <p class="text-gray-500 dark:text-gray-400">Bu atık kutusunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
             </div>
-            <div class="p-6">
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="label">
-                                    Etiket
-                                </label>
-                                <input type="text" id="label" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" 
-                                       @bind="currentBin.Label" />
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="deviceStatus">
-                                    Cihaz Durumu
-                                </label>
-                                <select id="deviceStatus" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" 
-                                        @bind="currentBin.DeviceStatus">
-                                    <option value="Online">Online</option>
-                                    <option value="Offline">Offline</option>
-                                    <option value="Maintenance">Bakımda</option>
-                                    <option value="Error">Hata</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">
-                                    Enlem
-                                </label>
-                                <input type="number" step="0.000001" id="latitude" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" 
-                                       @bind="currentBin.Latitude" />
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">
-                                    Boylam
-                                </label>
-                                <input type="number" step="0.000001" id="longitude" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" 
-                                       @bind="currentBin.Longitude" />
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="fillLevel">
-                                    Doluluk Seviyesi (%)
-                                </label>
-                                <input type="number" min="0" max="100" id="fillLevel" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" 
-                                       @bind="currentBin.FillLevel" />
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="isActive">
-                                    Durum
-                                </label>
-                                <select id="isActive" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" 
-                                        @bind="currentBin.IsActive">
-                                    <option value="true">Aktif</option>
-                                    <option value="false">Pasif</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 min-h-64">
-                        <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Konum Seçimi</div>
-                        <div class="bg-blue-50 dark:bg-gray-600 p-3 mb-3 rounded text-sm text-blue-700 dark:text-blue-200">
-                            <i class="fas fa-info-circle mr-1"></i> Haritada bir konuma tıklayarak enlem ve boylam değerlerini otomatik doldurabilirsiniz.
-                        </div>
-                        <div class="bg-gray-200 dark:bg-gray-800 h-64 flex items-center justify-center border border-gray-300 dark:border-gray-600 rounded-lg">
-                            <div class="text-center">
-                                <i class="fas fa-map-marked-alt text-4xl text-gray-400 dark:text-gray-500 mb-2"></i>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Burada harita görüntüsü yer alacak</p>
-                                <button class="mt-3 px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600 transition-colors">
-                                    <i class="fas fa-map-pin mr-1"></i> Konumu İşaretle
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700" @onclick="CloseModal">
-                        İptal
-                    </button>
-                    <button class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600" @onclick="SaveBin">
-                        Kaydet
-                    </button>
-                </div>
+            <div class="flex justify-between">
+                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="CancelDelete">
+                    İptal
+                </button>
+                <button class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white transition-colors" @onclick="ConfirmDelete">
+                    Sil
+                </button>
             </div>
         </div>
     </div>
 }
+
+@if (showSaveConfirmation)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl p-6">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 text-blue-500 mb-4">
+                    <i class="fas fa-question-circle text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">@(showEditModal ? "Atık Kutusunu Güncelle" : "Atık Kutusu Ekle")</h3>
+                <p class="text-gray-500 dark:text-gray-400">@(showEditModal ? "Atık kutusu bilgilerini güncellemek istediğinize emin misiniz?" : "Yeni atık kutusu eklemek istediğinize emin misiniz?")</p>
+            </div>
+            <div class="flex justify-between">
+                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="() => showSaveConfirmation = false">
+                    İptal
+                </button>
+                <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors" @onclick="SaveBin">
+                    @(showEditModal ? "Güncelle" : "Ekle")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 
 @if (showLocationModal)
 {
@@ -453,7 +459,7 @@
                     </div>
                     <div class="bg-white dark:bg-gray-800 h-96 rounded-lg border border-gray-300 dark:border-gray-600 relative">
                         <!-- Map container -->
-                        <div id="mapContainer" class="w-full h-full rounded-lg"></div>
+                        <div id="location-map-container" class="w-full h-full rounded-lg"></div>
                     </div>
                 </div>
 
@@ -467,52 +473,358 @@
     </div>
 }
 
-@if (showToggleConfirmation)
+
+@if (showCreateModal || showEditModal)
 {
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 rounded-full bg-yellow-100 flex items-center justify-center mx-auto mb-4">
-                    <i class="fas fa-exclamation-triangle text-3xl text-yellow-500"></i>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-                    Onay Gerekli
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[50]">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+            <!-- Modal Başlık -->
+            <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-white">
+                    @(showCreateModal ? "Yeni Atık Kutusu Ekle" : "Atık Kutusu Düzenle")
                 </h3>
-                <p class="text-gray-600 dark:text-gray-300">
-                    @(confirmBin?.IsActive == true
-                        ? $"'{confirmBin.Label}' etiketli atık kutusunu pasif duruma getirmek istediğinize emin misiniz?"
-                        : $"'{confirmBin?.Label}' etiketli atık kutusunu aktif duruma getirmek istediğinize emin misiniz?")
-                </p>
+                <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" @onclick="CloseModal">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
             </div>
-            <div class="flex justify-center space-x-3">
-                <button class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors" @onclick="CloseToggleConfirmation">
-                    İptal
-                </button>
-                <button class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors" @onclick="ToggleBinStatus">
-                    Onayla
-                </button>
+
+            <!-- Form İçeriği -->
+            <div class="p-5">
+                <div class="space-y-6">
+                    <!-- Temel Bilgiler ve Durumlar Bölümü -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <!-- Sol sütun - Temel bilgiler -->
+                        <div class="space-y-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                            <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 border-b pb-2 border-gray-200 dark:border-gray-700">
+                                Temel Bilgiler
+                            </h4>
+
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="label">
+                                        Etiket
+                                    </label>
+                                    <input type="text" id="label" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                                           @bind="binModel.Label" />
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="address">
+                                        Adres
+                                    </label>
+                                    <input type="text" id="address" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                                           @bind="binModel.Address" />
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="latitude">
+                                            Enlem
+                                        </label>
+                                        <input type="number" step="0.000001" id="latitude" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                                               @bind="binModel.Latitude" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">
+                                            Boylam
+                                        </label>
+                                        <input type="number" step="0.000001" id="longitude" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                                               @bind="binModel.Longitude" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Orta sütun - Cihaz durumu -->
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                            <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 border-b pb-2 mb-4 border-gray-200 dark:border-gray-700">
+                                Cihaz Durumu
+                            </h4>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="relative">
+                                    <input type="radio" id="status-active" name="device-status" value="Active"
+                                           checked="@(binModel.DeviceStatus == "Active")"
+                                           @onchange='@(() => binModel.DeviceStatus = "Active")'
+                                           class="hidden peer" />
+                                    <label for="status-active" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-green-400 peer-checked:border-green-600 peer-checked:text-green-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                        <i class="fas fa-check-circle mr-2 text-green-500"></i>
+                                        <span class="font-medium text-sm">Aktif</span>
+                                    </label>
+                                </div>
+                                <div class="relative">
+                                    <input type="radio" id="status-inactive" name="device-status" value="Inactive"
+                                           checked="@(binModel.DeviceStatus == "Inactive")"
+                                           @onchange='@(() => binModel.DeviceStatus = "Inactive")'
+                                           class="hidden peer" />
+                                    <label for="status-inactive" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-gray-400 peer-checked:border-gray-600 peer-checked:text-gray-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                        <i class="fas fa-ban mr-2 text-gray-500"></i>
+                                        <span class="font-medium text-sm">Pasif</span>
+                                    </label>
+                                </div>
+                                <div class="relative">
+                                    <input type="radio" id="status-maintenance" name="device-status" value="Maintenance"
+                                           checked="@(binModel.DeviceStatus == "Maintenance")"
+                                           @onchange='@(() => binModel.DeviceStatus = "Maintenance")'
+                                           class="hidden peer" />
+                                    <label for="status-maintenance" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-yellow-400 peer-checked:border-yellow-600 peer-checked:text-yellow-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                        <i class="fas fa-wrench mr-2 text-yellow-500"></i>
+                                        <span class="font-medium text-sm">Bakımda</span>
+                                    </label>
+                                </div>
+                                <div class="relative">
+                                    <input type="radio" id="status-faulty" name="device-status" value="Faulty"
+                                           checked="@(binModel.DeviceStatus == "Faulty")"
+                                           @onchange='@(() => binModel.DeviceStatus = "Faulty")'
+                                           class="hidden peer" />
+                                    <label for="status-faulty" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-red-400 peer-checked:border-red-600 peer-checked:text-red-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                        <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>
+                                        <span class="font-medium text-sm">Arızalı</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sağ sütun - Doluluk durumu -->
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                            <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 border-b pb-2 border-gray-200 dark:border-gray-700">
+                                Doluluk Durumu
+                            </h4>
+                            <div class="space-y-4 mt-4">
+                                <!-- Doluluk durumu -->
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="relative">
+                                        <input type="radio" id="filled-true" name="fill-status" value="true"
+                                               checked="@(binModel.IsFilled == true)"
+                                               @onchange='@(() => binModel.IsFilled = true)'
+                                               class="hidden peer" />
+                                        <label for="filled-true" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-red-400 peer-checked:border-red-600 peer-checked:text-red-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                            <i class="fas fa-trash-alt mr-2 text-red-500"></i>
+                                            <span class="font-medium text-sm">Dolu</span>
+                                        </label>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="radio" id="filled-false" name="fill-status" value="false"
+                                               checked="@(binModel.IsFilled == false)"
+                                               @onchange='@(() => binModel.IsFilled = false)'
+                                               class="hidden peer" />
+                                        <label for="filled-false" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-green-400 peer-checked:border-green-600 peer-checked:text-green-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                            <i class="fas fa-trash mr-2 text-green-500"></i>
+                                            <span class="font-medium text-sm">Boş</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Doluluk seviyesi -->
+                                <div class="mt-2">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300">Doluluk Seviyesi (%)</h4>
+                                        <span class="px-2 py-0.5 rounded-full text-xs @GetFillLevelBadge(binModel.FillLevel)">
+                                            @(binModel.FillLevel ?? 0)%
+                                        </span>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="range" min="0" max="100" step="1" id="fillLevel" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                                               @bind="binModel.FillLevel" @oninput="OnFillLevelInput" />
+                                        <div class="w-full flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                            <span>0</span>
+                                            <span>25</span>
+                                            <span>50</span>
+                                            <span>75</span>
+                                            <span>100</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Harita bölümü -->
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3">
+                            <div class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2 sm:mb-0">Konum Seçimi</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 inline-flex items-center">
+                                <i class="fas fa-info-circle mr-1"></i> Haritaya tıklayarak konum seçin
+                            </div>
+                        </div>
+                        <div id="map" class="h-64 w-full rounded-lg border border-gray-300 dark:border-gray-600 shadow-inner"></div>
+                    </div>
+
+                    <!-- Sensör Seçimi -->
+                    <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3">
+                            <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2 sm:mb-0">Sensörler</h4>
+                            <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 rounded-full">
+                                @(selectedSensorIds.Count) sensör seçildi
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 max-h-48 overflow-y-auto p-3 bg-white dark:bg-gray-900 rounded-lg shadow-inner">
+                            @if (availableSensors != null && availableSensors.Any())
+                            {
+                                foreach (var sensor in availableSensors)
+                                {
+                                    <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800">
+                                        <input type="checkbox"
+                                               id="sensor-@sensor.SensorId"
+                                               value="@sensor.SensorId"
+                                               checked="@(selectedSensorIds.Contains(sensor.SensorId))"
+                                               @onchange="@(e => ToggleSensorSelection(sensor.SensorId, (bool)e.Value))"
+                                               class="w-4 h-4 mr-2 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                                        <label for="sensor-@sensor.SensorId" class="flex-1 cursor-pointer">
+                                            <div class="font-medium text-gray-800 dark:text-white text-sm">@sensor.Type</div>
+                                            <div class="flex items-center mt-1">
+                                                <span class="@(sensor.IsActive ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300") px-2 py-0.5 rounded-full text-xs">
+                                                    @(sensor.IsActive ? "Aktif" : "Pasif")
+                                                </span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="col-span-full text-center p-6 text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-sensor-off text-2xl mb-2"></i>
+                                    <p>Kullanılabilir sensör bulunamadı</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Butonlar -->
+                    <div class="flex justify-end space-x-3 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" @onclick="CloseModal">
+                            İptal
+                        </button>
+                        <button class="px-5 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors shadow-sm" @onclick="ShowSaveConfirmation">
+                            @(showEditModal ? "Güncelle" : "Kaydet")
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 }
 
-@code {
-    private List<WasteBin> wasteBins;
-    private List<WasteBin> allWasteBins; // For filtering and sorting
-    private int currentPage = 1;
-    private int pageSize = 10;
-    private int totalPages => allWasteBins == null ? 0 : (int)Math.Ceiling(allWasteBins.Count / (double)pageSize);
-    private int startPage => Math.Max(1, currentPage - 2);
-    private int endPage => Math.Min(totalPages, startPage + 4);
+<style>
+    .tooltip-container {
+        position: relative;
+    }
 
-    private Guid? expandedRowId;
+        .tooltip-container .tooltip {
+            visibility: hidden;
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            text-align: center;
+            border-radius: 4px;
+            padding: 5px 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+
+            .tooltip-container .tooltip::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: rgba(0,0,0,0.8) transparent transparent transparent;
+            }
+
+        .tooltip-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+    .bg-stripes {
+        background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
+        background-size: 1rem 1rem;
+    }
+
+
+    @@keyframes expandRow {
+        from {
+            opacity: 0;
+            max-height: 0;
+            transform: scaleY(0);
+            transform-origin: top;
+        }
+
+        to {
+            opacity: 1;
+            max-height: 500px;
+            transform: scaleY(1);
+            transform-origin: top;
+        }
+    }
+
+    .animate-expandRow {
+        animation: expandRow 0.3s ease-out forwards;
+    }
+
+    Range slider custom styling
+    input[type=range]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #3498db;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: relative;
+        z-index: 2;
+    }
+
+    input[type=range]::-moz-range-thumb {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: #3498db;
+        cursor: pointer;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        position: relative;
+        z-index: 2;
+    }
+</style>
+
+@code {
+    private List<ResultWasteBinDto> wasteBins;
+    private List<ResultWasteBinDto> sortedBins => SortBins();
+    private CreateWasteBinDto binModel = new();
+    private ResultWasteBinDto selectedBin;
+
+
+    private List<ResultSensorDto> availableSensors;
+    private List<Guid> selectedSensorIds = new List<Guid>();
+
+    private Guid editingWasteBinId;
+    private Guid expandedRowId;
+    private Guid binIdToDelete;
+
+    // UI state
     private bool showCreateModal = false;
     private bool showEditModal = false;
     private bool showLocationModal = false;
-    private bool showToggleConfirmation = false;
-    private WasteBin currentBin = new WasteBin();
-    private WasteBin selectedBin;
-    private WasteBin confirmBin;
+    private bool showDeleteConfirmation = false;
+    private bool showSaveConfirmation = false;
+
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages => wasteBins == null ? 0 : (int)Math.Ceiling(wasteBins.Count / (double)pageSize);
+    private int startPage => Math.Max(1, currentPage - 2);
+    private int endPage => Math.Min(totalPages, startPage + 4);
 
     // Sorting
     private string sortField = "Index";
@@ -521,153 +833,127 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
+        await LoadSensors();
     }
 
-    private async Task LoadData()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // Simulating API call with delay
-        await Task.Delay(500);
-
-        // Sample data
-        allWasteBins = new List<WasteBin>
+        try
         {
-            new WasteBin
+            if (firstRender)
             {
-                Id = Guid.NewGuid(),
-                Label = "Atık Kutusu 1",
-                DeviceStatus = "Online",
-                FillLevel = 75,
-                EstimatedFillLevel = 85,
-                Latitude = 41.015137,
-                Longitude = 28.979530,
-                LastUpdate = DateTime.Now.AddHours(-2),
-                CreatedAt = DateTime.Now.AddMonths(-3),
-                UpdatedAt = DateTime.Now.AddDays(-1),
-                IsActive = true,
-                Sensors = new List<Sensor>
-                {
-                    new Sensor { Type = "Doluluk Sensörü", IsActive = true, LastUpdate = DateTime.Now.AddDays(-1) },
-                    new Sensor { Type = "Sıcaklık Sensörü", IsActive = true, LastUpdate = DateTime.Now.AddDays(-1) },
-                    new Sensor { Type = "Koku Sensörü", IsActive = false, LastUpdate = DateTime.Now.AddDays(-5) }
-                },
-                BinLogs = new List<BinLog>
-                {
-                    new BinLog { CreatedAt = DateTime.Now.AddHours(-2), DeviceStatus = "Online", FillLevel = 75 },
-                    new BinLog { CreatedAt = DateTime.Now.AddHours(-12), DeviceStatus = "Online", FillLevel = 65 },
-                    new BinLog { CreatedAt = DateTime.Now.AddDays(-1), DeviceStatus = "Online", FillLevel = 50 }
-                }
-            },
-            new WasteBin
+                await JS.InvokeVoidAsync("initializeLeafletMap", DotNetObjectReference.Create(this));
+            }
+
+            if (showCreateModal || showEditModal)
             {
-                Id = Guid.NewGuid(),
-                Label = "Atık Kutusu 2",
-                DeviceStatus = "Offline",
-                FillLevel = 30,
-                EstimatedFillLevel = 40,
-                Latitude = 41.035137,
-                Longitude = 28.989530,
-                LastUpdate = DateTime.Now.AddDays(-1),
-                CreatedAt = DateTime.Now.AddMonths(-2),
-                UpdatedAt = DateTime.Now.AddDays(-1),
-                IsActive = true,
-                Sensors = new List<Sensor>
-                {
-                    new Sensor { Type = "Doluluk Sensörü", IsActive = true, LastUpdate = DateTime.Now.AddDays(-1) },
-                    new Sensor { Type = "Sıcaklık Sensörü", IsActive = true, LastUpdate = DateTime.Now.AddDays(-1) }
-                },
-                BinLogs = new List<BinLog>
-                {
-                    new BinLog { CreatedAt = DateTime.Now.AddDays(-1), DeviceStatus = "Offline", FillLevel = 30 },
-                    new BinLog { CreatedAt = DateTime.Now.AddDays(-2), DeviceStatus = "Online", FillLevel = 25 },
-                    new BinLog { CreatedAt = DateTime.Now.AddDays(-3), DeviceStatus = "Online", FillLevel = 20 }
-                }
-            },
-            new WasteBin
+                await Task.Delay(300); // DOM hazır olana kadar bekle
+                await JS.InvokeVoidAsync("loadMap", binModel.Latitude, binModel.Longitude);
+            }
+
+            if (showLocationModal && selectedBin != null)
             {
-                Id = Guid.NewGuid(),
-                Label = "Atık Kutusu 3",
-                DeviceStatus = "Maintenance",
-                FillLevel = 95,
-                EstimatedFillLevel = 100,
-                Latitude = 41.025137,
-                Longitude = 28.969530,
-                LastUpdate = DateTime.Now.AddHours(-5),
-                CreatedAt = DateTime.Now.AddMonths(-1),
-                UpdatedAt = DateTime.Now.AddHours(-5),
-                IsActive = false,
-                Sensors = new List<Sensor>
+                await Task.Delay(300); // DOM hazır olana kadar bekle
+                await JS.InvokeVoidAsync("loadLocationViewMap", "location-map-container", selectedBin.Latitude, selectedBin.Longitude);
+            }
+
+            if (expandedRowId != Guid.Empty)
+            {
+                var bin = wasteBins?.FirstOrDefault(b => b.WasteBinId == expandedRowId);
+                if (bin != null)
                 {
-                    new Sensor { Type = "Doluluk Sensörü", IsActive = false, LastUpdate = DateTime.Now.AddDays(-5) }
-                },
-                BinLogs = new List<BinLog>
-                {
-                    new BinLog { CreatedAt = DateTime.Now.AddHours(-5), DeviceStatus = "Maintenance", FillLevel = 95 },
-                    new BinLog { CreatedAt = DateTime.Now.AddDays(-1), DeviceStatus = "Error", FillLevel = 90 },
-                    new BinLog { CreatedAt = DateTime.Now.AddDays(-2), DeviceStatus = "Online", FillLevel = 85 }
+                    await Task.Delay(500); // DOM için ekstra süre bekle
+                    string mapId = $"detail-map-{expandedRowId}";
+                    Console.WriteLine($"Loading detail map with ID: {mapId}");
+                    await JS.InvokeVoidAsync("loadDetailMap", mapId, bin.Latitude, bin.Longitude);
                 }
             }
-        };
-
-        ApplySorting();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error in OnAfterRenderAsync: {ex.Message}");
+        }
+    }
+    private async Task LoadData()
+    {
+        wasteBins = await WasteBinService.GetAllWasteBinsAsync();
         ApplyPaging();
     }
 
     private async Task RefreshData()
     {
-        expandedRowId = null;
+        expandedRowId = Guid.Empty;
         await LoadData();
         toastService.ShowSuccess("Veriler yenilendi");
     }
-
-    private void ApplySorting()
+    private void ToggleSensorSelection(Guid sensorId, bool isSelected)
     {
-        if (allWasteBins == null) return;
+        if (isSelected)
+        {
+            if (!selectedSensorIds.Contains(sensorId))
+                selectedSensorIds.Add(sensorId);
+        }
+        else
+        {
+            selectedSensorIds.Remove(sensorId);
+        }
+    }
+
+    private async Task LoadSensors()
+    {
+        // SensorService veya benzer bir servisi inject etmiş olmanız gerekir
+        // Bu varsayımsal bir servis çağrısıdır, gerçek servisinize uyarlayın
+        availableSensors = await SensorService.GetAllSensorsAsync();
+    }
+
+    private List<ResultWasteBinDto> SortBins()
+    {
+        if (wasteBins == null) return new List<ResultWasteBinDto>();
+
+        IEnumerable<ResultWasteBinDto> query = wasteBins;
 
         switch (sortField)
         {
             case "Index":
-                // No sorting needed for index, it's the default order
-                break;
+                return sortAscending
+                          ? query.Select((item, index) => new { Item = item, Index = index })
+                                .OrderBy(x => x.Index)
+                                .Select(x => x.Item)
+                                .ToList()
+                          : query.Select((item, index) => new { Item = item, Index = index })
+                                .OrderByDescending(x => x.Index)
+                                .Select(x => x.Item)
+                                .ToList(); break;
             case "Label":
-                allWasteBins = sortAscending
-                    ? allWasteBins.OrderBy(b => b.Label).ToList()
-                    : allWasteBins.OrderByDescending(b => b.Label).ToList();
+                query = sortAscending ? query.OrderBy(b => b.Label) : query.OrderByDescending(b => b.Label);
+                break;
+            case "Address":
+                query = sortAscending ? query.OrderBy(b => b.Address) : query.OrderByDescending(b => b.Address);
                 break;
             case "Location":
-                allWasteBins = sortAscending
-                    ? allWasteBins.OrderBy(b => b.Latitude).ThenBy(b => b.Longitude).ToList()
-                    : allWasteBins.OrderByDescending(b => b.Latitude).ThenByDescending(b => b.Longitude).ToList();
+                query = sortAscending
+                ? query.OrderBy(b => b.Latitude).ThenBy(b => b.Longitude)
+                : query.OrderByDescending(b => b.Latitude).ThenByDescending(b => b.Longitude);
                 break;
             case "LastUpdate":
-                allWasteBins = sortAscending
-                    ? allWasteBins.OrderBy(b => b.LastUpdate).ToList()
-                    : allWasteBins.OrderByDescending(b => b.LastUpdate).ToList();
+                query = sortAscending ? query.OrderBy(b => b.UpdatedAt) : query.OrderByDescending(b => b.UpdatedAt);
                 break;
             case "DeviceStatus":
-                allWasteBins = sortAscending
-                    ? allWasteBins.OrderBy(b => b.DeviceStatus).ToList()
-                    : allWasteBins.OrderByDescending(b => b.DeviceStatus).ToList();
+                query = sortAscending ? query.OrderBy(b => b.DeviceStatus) : query.OrderByDescending(b => b.DeviceStatus);
                 break;
             case "FillLevel":
-                allWasteBins = sortAscending
-                    ? allWasteBins.OrderBy(b => b.FillLevel).ToList()
-                    : allWasteBins.OrderByDescending(b => b.FillLevel).ToList();
+                query = sortAscending ? query.OrderBy(b => b.FillLevel ?? 0) : query.OrderByDescending(b => b.FillLevel ?? 0);
                 break;
         }
-    }
 
-    private void ApplyPaging()
-    {
-        if (allWasteBins == null) return;
-
-        wasteBins = allWasteBins
-            .Skip((currentPage - 1) * pageSize)
-            .Take(pageSize)
-            .ToList();
+        return query.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
     }
 
     private void SortTable(string field)
     {
+        // Sıralama öncesi açık detay satırını kapat
+        expandedRowId = Guid.Empty;
+
         if (sortField == field)
         {
             sortAscending = !sortAscending;
@@ -677,22 +963,27 @@
             sortField = field;
             sortAscending = true;
         }
-
-        ApplySorting();
-        ApplyPaging();
     }
 
+    private void ApplyPaging()
+    {
+        // Pagination is now handled directly in SortBins()
+    }
+    private string GetSensorBorderColor(bool isActive)
+    {
+        return isActive ? "border-green-500" : "border-red-500";
+    }
     private void ChangePage(int page)
     {
         currentPage = page;
-        ApplyPaging();
+        expandedRowId = Guid.Empty; // Close any expanded rows when changing page
     }
 
     private void ToggleRowExpansion(Guid id)
     {
         if (expandedRowId == id)
         {
-            expandedRowId = null;
+            expandedRowId = Guid.Empty;
         }
         else
         {
@@ -700,177 +991,258 @@
         }
     }
 
-    private void OpenCreateModal()
+    private void OnFillLevelInput(ChangeEventArgs args)
     {
-        currentBin = new WasteBin
-            {
-                Id = Guid.NewGuid(),
-                DeviceStatus = "Online",
-                FillLevel = 0,
-                EstimatedFillLevel = 0,
-                CreatedAt = DateTime.Now,
-                IsActive = true
-            };
-        showCreateModal = true;
+        if (double.TryParse(args.Value.ToString(), out double value))
+        {
+            binModel.FillLevel = value;
+            // Update IsFilled based on fill level
+            binModel.IsFilled = value >= 90;
+        }
     }
 
-    private void OpenEditModal(WasteBin bin)
+    private void OpenCreateModal()
     {
-        currentBin = new WasteBin
+        binModel = new CreateWasteBinDto
             {
-                Id = bin.Id,
+                DeviceStatus = "Active",
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now,
+                Latitude = 41.0082, // Default for Turkey/Istanbul
+                Longitude = 28.9784,
+                FillLevel = 0,
+                IsFilled = false
+            };
+        showCreateModal = true;
+        showEditModal = false;
+    }
+
+    private void OpenEditModal(ResultWasteBinDto bin)
+    {
+        binModel = new CreateWasteBinDto
+            {
                 Label = bin.Label,
-                DeviceStatus = bin.DeviceStatus,
-                FillLevel = bin.FillLevel,
-                EstimatedFillLevel = bin.EstimatedFillLevel,
+                Address = bin.Address,
                 Latitude = bin.Latitude,
                 Longitude = bin.Longitude,
-                LastUpdate = bin.LastUpdate,
+                IsFilled = bin.IsFilled,
+                FillLevel = bin.FillLevel,
+                DeviceStatus = bin.DeviceStatus,
                 CreatedAt = bin.CreatedAt,
-                UpdatedAt = bin.UpdatedAt,
-                IsActive = bin.IsActive,
-                Sensors = bin.Sensors,
-                BinLogs = bin.BinLogs
+                UpdatedAt = DateTime.Now
             };
+
+        // Bin'e bağlı sensörleri seç
+        selectedSensorIds = bin.Sensors?.Select(s => s.SensorId).ToList() ?? new List<Guid>();
+
+        editingWasteBinId = bin.WasteBinId;
         showEditModal = true;
+        showCreateModal = false;
+    }
+
+
+    private void OpenLocationModal(ResultWasteBinDto bin)
+    {
+        selectedBin = bin;
+        showLocationModal = true;
+    }
+
+    private void CloseLocationModal()
+    {
+        showLocationModal = false;
+        selectedBin = null;
     }
 
     private void CloseModal()
     {
         showCreateModal = false;
         showEditModal = false;
+        binModel = new();
+        selectedSensorIds.Clear();
     }
 
-    private void OpenLocationModal(WasteBin bin)
+    private void DeleteBinConfirmation(Guid id)
     {
-        selectedBin = bin;
-        showLocationModal = true;
-        // In a real application, we would initialize the map here
+        binIdToDelete = id;
+        showDeleteConfirmation = true;
     }
 
-    private void CloseLocationModal()
+    private void CancelDelete()
     {
-        showLocationModal = false;
+        showDeleteConfirmation = false;
+        binIdToDelete = Guid.Empty;
     }
 
-    private void ShowToggleConfirmation(WasteBin bin)
+    private async Task ConfirmDelete()
     {
-        confirmBin = bin;
-        showToggleConfirmation = true;
-    }
-
-    private void CloseToggleConfirmation()
-    {
-        showToggleConfirmation = false;
-    }
-
-    private void ToggleBinStatus()
-    {
-        if (confirmBin != null)
+        var success = await WasteBinService.DeleteWasteBinAsync(binIdToDelete);
+        if (success)
         {
-            var bin = allWasteBins.FirstOrDefault(b => b.Id == confirmBin.Id);
-            if (bin != null)
+            toastService.ShowSuccess("Atık kutusu başarıyla silindi.");
+            await LoadData();
+            if (expandedRowId == binIdToDelete)
             {
-                bin.IsActive = !bin.IsActive;
-                bin.UpdatedAt = DateTime.Now;
-
-                // Update the expanded item if it's the one we're toggling
-                if (wasteBins.Any(b => b.Id == bin.Id))
-                {
-                    var displayBin = wasteBins.First(b => b.Id == bin.Id);
-                    displayBin.IsActive = bin.IsActive;
-                    displayBin.UpdatedAt = bin.UpdatedAt;
-                }
-
-                toastService.ShowSuccess($"Atık kutusu durumu {(bin.IsActive ? "aktif" : "pasif")} olarak güncellendi");
+                expandedRowId = Guid.Empty;
             }
         }
+        else
+        {
+            toastService.ShowError("Silme işlemi sırasında bir hata oluştu.");
+        }
+        showDeleteConfirmation = false;
+    }
 
-        CloseToggleConfirmation();
+    private void ShowSaveConfirmation()
+    {
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(binModel.Label) || string.IsNullOrWhiteSpace(binModel.Address))
+        {
+            toastService.ShowWarning("Lütfen tüm zorunlu alanları doldurun.");
+            return;
+        }
+
+        showSaveConfirmation = true;
     }
 
     private async Task SaveBin()
     {
-        // Validate inputs
-        if (string.IsNullOrWhiteSpace(currentBin.Label))
-        {
-            toastService.ShowError("Etiket alanı boş olamaz");
-            return;
-        }
+        bool success;
 
-        // Simulating API call with delay
-        await Task.Delay(500);
+        // Bin modeline seçilen sensör ID'lerini ata
+        binModel.SensorIds = selectedSensorIds;
 
-        if (showCreateModal)
+        if (showEditModal)
         {
-            // Add new bin
-            currentBin.CreatedAt = DateTime.Now;
-            allWasteBins.Add(currentBin);
-            toastService.ShowSuccess("Yeni atık kutusu başarıyla eklendi");
+            var updateDto = new UpdateWasteBinDto
+                {
+                    WasteBinId = editingWasteBinId,
+                    Label = binModel.Label,
+                    Address = binModel.Address,
+                    Latitude = binModel.Latitude,
+                    Longitude = binModel.Longitude,
+                    IsFilled = binModel.IsFilled,
+                    DeviceStatus = binModel.DeviceStatus,
+                    FillLevel = binModel.FillLevel,
+                    SensorIds = selectedSensorIds, // Sensör ID'lerini gönder
+                    UpdatedAt = DateTime.Now
+                };
+            success = await WasteBinService.UpdateWasteBinAsync(updateDto);
         }
         else
         {
-            // Update existing bin
-            var bin = allWasteBins.FirstOrDefault(b => b.Id == currentBin.Id);
-            if (bin != null)
-            {
-                bin.Label = currentBin.Label;
-                bin.DeviceStatus = currentBin.DeviceStatus;
-                bin.FillLevel = currentBin.FillLevel;
-                bin.Latitude = currentBin.Latitude;
-                bin.Longitude = currentBin.Longitude;
-                bin.IsActive = currentBin.IsActive;
-                bin.UpdatedAt = DateTime.Now;
-
-                // Update the visible item if it's in the current page
-                if (wasteBins.Any(b => b.Id == bin.Id))
-                {
-                    var displayBin = wasteBins.First(b => b.Id == bin.Id);
-                    displayBin.Label = bin.Label;
-                    displayBin.DeviceStatus = bin.DeviceStatus;
-                    displayBin.FillLevel = bin.FillLevel;
-                    displayBin.Latitude = bin.Latitude;
-                    displayBin.Longitude = bin.Longitude;
-                    displayBin.IsActive = bin.IsActive;
-                    displayBin.UpdatedAt = bin.UpdatedAt;
-                }
-
-                toastService.ShowSuccess("Atık kutusu başarıyla güncellendi");
-            }
+            binModel.CreatedAt = DateTime.Now;
+            binModel.UpdatedAt = DateTime.Now;
+            success = await WasteBinService.CreateWasteBinAsync(binModel);
         }
 
-        // Close modal and sort/page data
-        CloseModal();
-        ApplySorting();
-        ApplyPaging();
+        if (success)
+        {
+            toastService.ShowSuccess(showEditModal ? "Atık kutusu başarıyla güncellendi." : "Atık kutusu başarıyla eklendi.");
+            showSaveConfirmation = false;
+            CloseModal();
+            await LoadData();
+        }
+        else
+        {
+            toastService.ShowError("İşlem sırasında bir hata oluştu.");
+            showSaveConfirmation = false;
+        }
     }
-
+    // Helper methods for UI
     private string GetDeviceStatusColor(string status)
     {
         return status switch
         {
-            "Online" => "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
-            "Offline" => "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
-            "Maintenance" => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-            "Error" => "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+            "Active" => "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300",
+            "Inactive" => "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300",
+            "Maintenance" => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300",
+            "Faulty" => "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300",
             _ => "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
         };
     }
 
-    private string GetFillLevelColor(int fillLevel)
+    private string GetDeviceStatusTextColor(string status)
     {
-        return fillLevel switch
+        return status switch
         {
-            >= 90 => "bg-red-500 bg-stripes",
-            >= 70 => "bg-orange-500 bg-stripes",
-            >= 50 => "bg-yellow-500 bg-stripes",
-            >= 30 => "bg-blue-500 bg-stripes",
-            _ => "bg-green-500 bg-stripes"
+            "Active" => "text-green-600 dark:text-green-400",
+            "Inactive" => "text-gray-600 dark:text-gray-400",
+            "Maintenance" => "text-yellow-600 dark:text-yellow-400",
+            "Faulty" => "text-red-600 dark:text-red-400",
+            _ => "text-gray-600 dark:text-gray-400"
         };
     }
 
-    private string GetTextColorByFillLevel(int fillLevel)
+    private string GetDeviceStatusText(string status)
     {
+        return status switch
+        {
+            "Active" => "Aktif",
+            "Inactive" => "Pasif",
+            "Maintenance" => "Bakımda",
+            "Faulty" => "Arızalı",
+            _ => status
+        };
+    }
+
+    private string GetFillLevelColor(double? fillLevel)
+    {
+        if (!fillLevel.HasValue) return "bg-gray-500";
+
+        return fillLevel switch
+        {
+            >= 90 => "bg-red-500",
+            >= 70 => "bg-orange-500",
+            >= 50 => "bg-yellow-500",
+            >= 30 => "bg-blue-500",
+            _ => "bg-green-500"
+        };
+    }
+
+    private string GetFillLevelBadge(double? fillLevel)
+    {
+        if (!fillLevel.HasValue) return "bg-gray-100 text-gray-800";
+
+        return fillLevel switch
+        {
+            >= 90 => "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
+            >= 70 => "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400",
+            >= 50 => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
+            >= 30 => "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
+            _ => "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+        };
+    }
+
+    private string GetFillStatusBadge(double? fillLevel)
+    {
+        if (!fillLevel.HasValue) return "bg-gray-100 text-gray-800";
+
+        return fillLevel switch
+        {
+            >= 90 => "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
+            >= 70 => "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400",
+            >= 50 => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
+            _ => "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+        };
+    }
+
+    private string GetFillStatusText(double? fillLevel)
+    {
+        if (!fillLevel.HasValue) return "Durum Bilinmiyor";
+
+        return fillLevel switch
+        {
+            >= 90 => "Acil Boşaltılmalı",
+            >= 70 => "Yakında Boşaltılmalı",
+            >= 50 => "Orta Doluluk",
+            _ => "Boşaltma Gerekmiyor"
+        };
+    }
+
+    private string GetTextColorByFillLevel(double? fillLevel)
+    {
+        if (!fillLevel.HasValue) return "text-gray-500";
+
         return fillLevel switch
         {
             >= 90 => "text-red-500",
@@ -881,47 +1253,38 @@
         };
     }
 
-    private string GetSensorBorderColor(bool isActive)
+    private string GetBinIconColor(ResultWasteBinDto bin)
     {
-        return isActive ? "border-green-500" : "border-red-500";
+        return bin.DeviceStatus switch
+        {
+            "Active" => "text-green-500",
+            "Inactive" => "text-gray-500",
+            "Maintenance" => "text-yellow-500",
+            "Faulty" => "text-red-500",
+            _ => "text-gray-500"
+        };
     }
 
-    // Model classes
-    public class WasteBin
+    private string GetStrokeFillColor(double? fillLevel)
     {
-        public Guid Id { get; set; }
-        public string Label { get; set; }
-        public string DeviceStatus { get; set; }
-        public int FillLevel { get; set; }
-        public int EstimatedFillLevel { get; set; }
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
-        public DateTime? LastUpdate { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-        public bool IsActive { get; set; }
-        public List<Sensor> Sensors { get; set; } = new List<Sensor>();
-        public List<BinLog> BinLogs { get; set; } = new List<BinLog>();
+        if (!fillLevel.HasValue) return "text-gray-500";
+
+        return fillLevel switch
+        {
+            >= 90 => "text-red-500",
+            >= 70 => "text-orange-500",
+            >= 50 => "text-yellow-500",
+            >= 30 => "text-blue-500",
+            _ => "text-green-500"
+        };
     }
 
-    public class Sensor
+    [JSInvokable]
+    public void UpdateCoordinates(double lat, double lng)
     {
-        public string Type { get; set; }
-        public bool IsActive { get; set; }
-        public DateTime? LastUpdate { get; set; }
-    }
-        
-    public class BinLog
-    {
-        public DateTime CreatedAt { get; set; }
-        public string DeviceStatus { get; set; }
-        public int FillLevel { get; set; }
+        binModel.Latitude = lat;
+        binModel.Longitude = lng;
+        StateHasChanged();
     }
 }
 
-<style>
-    .bg-stripes {
-        background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
-        background-size: 1rem 1rem;
-    }
-</style>

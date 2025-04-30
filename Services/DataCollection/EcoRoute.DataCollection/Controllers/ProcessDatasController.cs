@@ -7,7 +7,7 @@ using System.Formats.Asn1;
 
 namespace EcoRoute.DataCollection.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "DataCollectionFullAccess")] // 🔥 Policy eklendi
     [Route("api/[controller]")]
     [ApiController]
     public class ProcessDatasController : ControllerBase

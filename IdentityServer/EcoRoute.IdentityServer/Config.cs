@@ -71,20 +71,25 @@ namespace EcoRoute.IdentityServer
         public static IEnumerable<Client> Clients => new Client[]
         { 
                 //SuperAdmin
-                new Client
-                {
-                    ClientId="EcoRouteSuperAdminId",
-                    ClientName="EcoRoute Super Admin",
-                    AllowedGrantTypes=GrantTypes.ClientCredentials,
-                    ClientSecrets={new Secret("ecoroutesecret".Sha256())},
-                    AllowedScopes={ "DataCollectionFullPermission", "OcelotFullPermission","DataProcessingFullPermission", "RouteOptimizationFullPermission",
-                    IdentityServerConstants.LocalApi.ScopeName,
-                    IdentityServerConstants.StandardScopes.Email,
-                    IdentityServerConstants.StandardScopes.OpenId,
-                    IdentityServerConstants.StandardScopes.Profile
-                    },
-                    AccessTokenLifetime=300
-                },
+               new Client
+{
+    ClientId = "EcoRouteSuperAdminId",
+    ClientName = "EcoRoute Super Admin",
+    AllowedGrantTypes = GrantTypes.ResourceOwnerPassword, // Cookie ve JWT kullanacaksan bu olmalı
+    ClientSecrets = { new Secret("ecoroutesecret".Sha256()) },
+    AllowedScopes =
+    {
+        "DataCollectionFullPermission",
+        "OcelotFullPermission",
+        IdentityServerConstants.LocalApi.ScopeName,
+        IdentityServerConstants.StandardScopes.Email,
+        IdentityServerConstants.StandardScopes.OpenId,
+        IdentityServerConstants.StandardScopes.Profile
+    },
+    AccessTokenLifetime = 3600,
+    AllowOfflineAccess = true,
+    AlwaysIncludeUserClaimsInIdToken = true
+},
 
                  //manager
                 new Client

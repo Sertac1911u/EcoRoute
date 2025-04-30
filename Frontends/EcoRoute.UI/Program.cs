@@ -6,39 +6,40 @@ using Microsoft.AspNetCore.Components.Authorization;
 using EcoRoute.UI.Auth;
 using EcoRoute.UI.Services;
 using Blazored.Toast;
+using EcoRoute.UI.Services.WasteBinServices;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Token ekleyici handler servisini ekle
 builder.Services.AddScoped<AuthorizedHandler>();
 
-// HttpClient'i handler ile birlikte kaydet (AuthorizedClient ismiyle)
 builder.Services.AddHttpClient("AuthorizedClient", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5001/");
+    client.BaseAddress = new Uri("http://localhost:5000/");
 }).AddHttpMessageHandler<AuthorizedHandler>();
 
-// Default HttpClient olarak AuthorizedClient'ı kullan
 builder.Services.AddScoped(sp =>
 {
     var clientFactory = sp.GetRequiredService<IHttpClientFactory>();
     return clientFactory.CreateClient("AuthorizedClient");
 });
 
-// Uygulama servislerini ekle
+// Servisler
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
-
+builder.Services.AddScoped<WasteBinService>();
+builder.Services.AddScoped<SensorService>();
 builder.Services.AddScoped<CustomAuthStateProvider>();
 
-// Yetkilendirme için local storage + auth state provider
+// LocalStorage ve Authentication
 builder.Services.AddBlazoredLocalStorage();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 
-// Blazor Toast Entegrasyonu
+// Toast Notification
 builder.Services.AddBlazoredToast();
+
 await builder.Build().RunAsync();
+

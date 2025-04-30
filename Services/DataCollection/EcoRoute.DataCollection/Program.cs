@@ -1,53 +1,101 @@
-using EcoRoute.DataCollection.Context;
+﻿using EcoRoute.DataCollection.Context;
 using EcoRoute.DataCollection.Services.BinLogServices;
 using EcoRoute.DataCollection.Services.EnvLogServices;
 using EcoRoute.DataCollection.Services.ProcessDataServices;
 using EcoRoute.DataCollection.Services.SensorServices;
 using EcoRoute.DataCollection.Services.WasteBinServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(opt =>
+// Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = "http://localhost:5001";
+        options.Audience = "ResourceDataCollection";
+        options.RequireHttpsMetadata = false;
+        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        {
+            ValidateAudience = false,
+            ValidateIssuer = true,
+            ValidIssuer = "http://localhost",
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes("dsopkjfewosspjwe12+fqpjrfqepqjasd123x.@ewrkj3241kld"))
+        };
+    });
+
+// Authorization
+builder.Services.AddAuthorization(options =>
 {
-    opt.Authority = builder.Configuration["IdentityServerUrl"];
-    opt.Audience = "ResourceDataCollection";
-    opt.RequireHttpsMetadata = false;
+    options.AddPolicy("DataCollectionFullAccess", policy =>
+    {
+        policy.RequireClaim("scope", "DataCollectionFullPermission");
+        policy.RequireRole("SuperAdmin", "Manager");
+    });
+
+    options.AddPolicy("DataCollectionReadAccess", policy =>
+    {
+        policy.RequireClaim("scope", "DataCollectionReadPermission");
+        policy.RequireRole("SuperAdmin", "Manager", "Driver"); 
+    });
+
+    options.AddPolicy("DataProcessingFullAccess", policy =>
+    {
+        policy.RequireClaim("scope", "DataProcessingFullPermission");
+        policy.RequireRole("SuperAdmin", "Manager");
+    });
+
+    options.AddPolicy("RouteOptimizationFullAccess", policy =>
+    {
+        policy.RequireClaim("scope", "RouteOptimizationFullPermission");
+        policy.RequireRole("SuperAdmin", "Manager");
+    });
 });
 
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazorUI", policy =>
+    {
+        policy.WithOrigins("http://localhost:5054")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// Diğer servisler
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddDbContext<DataCollectionContext>();
+builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 builder.Services.AddScoped<IBinLogService, BinLogService>();
 builder.Services.AddScoped<IEnvLogService, EnvLogServices>();
 builder.Services.AddScoped<IProcessDataService, ProcessDataService>();
 builder.Services.AddScoped<ISensorService, SensorService>();
 builder.Services.AddScoped<IWasteBinService, WasteBinService>();
 
-builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
-
-builder.Services.AddDbContext<DataCollectionContext>();
-//    (opt =>
-//opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+app.UseCors("AllowBlazorUI");
 
+// 🌟 HTTPS REDIRECTION SİLİNDİ!
+
+app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();

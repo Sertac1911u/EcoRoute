@@ -12,6 +12,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="_content/Blazored.Toast/blazored-toast.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+
+
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -135,8 +142,6 @@
                 transform: translateY(-5px);
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             }
-
-
     </style>
 </head>
 
@@ -159,7 +164,7 @@
 
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="js/script.js"></script>
-
+   <script src="js/leafletMapHelper.js"></script>
 </body>
 
 </html>

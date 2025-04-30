@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 namespace EcoRoute.DataCollection.Controllers
 {
-    [Authorize]
+    [Authorize(Policy = "DataCollectionFullAccess")] // 🔥 Policy uygulandı
     [Route("api/[controller]")]
     [ApiController]
     public class BinLogsController : ControllerBase

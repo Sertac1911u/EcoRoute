@@ -10,13 +10,38 @@
         }
       ],
       "UpstreamPathTemplate": "/services/datacollection/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "UpstreamScheme": "http",
+      "UpstreamHttpMethod": [ "OPTIONS", "GET" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "OcelotAuthenticationScheme",
-        "AllowedScopes": [
-          "DataCollectionFullPermission"
-        ]
+        "AllowedScopes": [ "DataCollectionReadPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "DataCollectionReadPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5002
+        }
+      ],
+      "UpstreamPathTemplate": "/services/datacollection/{everything}",
+      "UpstreamHttpMethod": [ "POST", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "DataCollectionFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "DataCollectionFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
       }
     },
     {
@@ -32,9 +57,13 @@
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "OcelotAuthenticationScheme",
-        "UpstreamScheme": "http",
-        "AllowedScopes": [
-          "DataProcessingFullPermission"        ]
+        "AllowedScopes": [ "DataProcessingFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "DataProcessingFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
       }
     },
     {
@@ -50,12 +79,30 @@
       "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "OcelotAuthenticationScheme",
-        "UpstreamScheme": "http",
-        "AllowedScopes": [
-          "RouteOptimizationFullPermission"
-        ]
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
       }
+    },
+
+    // 👉 Burası Eklendi: Login, Register gibi Authentication işlemleri için
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5001
+        }
+      ],
+      "UpstreamPathTemplate": "/api/{everything}",
+      "UpstreamHttpMethod": [ "POST", "OPTIONS" ]
     }
+
   ],
   "GlobalConfiguration": {
     "BaseUrl": "http://localhost:5000"
