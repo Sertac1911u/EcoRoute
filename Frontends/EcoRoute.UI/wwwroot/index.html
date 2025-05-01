@@ -9,16 +9,22 @@
     <link rel="stylesheet" href="css/app.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <link href="EcoRoute.UI.styles.css" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/blazored-toast@4.1.0/Blazored.Toast.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="_content/Blazored.Toast/blazored-toast.css" rel="stylesheet" />
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+
+
+    
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAii03UZlM6EzIm7Idrk0knXOIEjDWjDj4&libraries=places&callback=initGoogleMapsCallback" async defer></script>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-
-
-
+    <script>
+        window.initGoogleMapsCallback = function () {
+            console.log("Google Maps API loaded successfully");
+        };
+    </script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -142,6 +148,44 @@
                 transform: translateY(-5px);
                 box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
             }
+
+        .blazored-toast-container {
+            position: fixed;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .blazored-toast {
+            display: flex;
+            position: relative;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            min-width: 250px;
+            max-width: 450px;
+        }
+
+        .blazored-toast-info {
+            background-color: var(--color-info);
+            color: white;
+        }
+
+        .blazored-toast-success {
+            background-color: var(--color-success);
+            color: white;
+        }
+
+        .blazored-toast-warning {
+            background-color: var(--color-warning);
+            color: white;
+        }
+
+        .blazored-toast-error {
+            background-color: var(--color-danger);
+            color: white;
+        }
     </style>
 </head>
 
@@ -155,7 +199,6 @@
         </div>
     </div>
 
-
     <div id="blazor-error-ui" class="fixed bottom-0 inset-x-0 bg-red-600 text-white text-sm p-3 z-50 hidden">
         <span>⚠️ Uygulama hatayla karşılaştı.</span>
         <a href="" class="underline ml-4">Yeniden Yükle</a>
@@ -164,7 +207,30 @@
 
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="js/script.js"></script>
-   <script src="js/leafletMapHelper.js"></script>
+
+    <!-- Script yükleme sırasını değiştirdik -->
+    <script src="js/googlemaps.js"></script>
+    <!--<script src="js/waste-bin-markers.js"></script>-->
+
+    <!-- Uygulama durumunu iyileştirmek için script -->
+    <script>
+        // Sayfa yüklendiğinde veya sayfa yeniden yüklendiğinde harita durumunu sıfırla
+        window.addEventListener('load', function () {
+            console.log("Page loaded, resetting map state");
+            if (window.googleMapsInterop && window.googleMapsInterop.resetMapState) {
+                window.googleMapsInterop.resetMapState();
+            }
+        });
+
+        // Sayfa yenilendiğinde veya kapatıldığında son durumu temizle
+        window.addEventListener('beforeunload', function () {
+            console.log("Page unloading, cleaning up maps");
+            if (window.googleMapsInterop && window.googleMapsInterop.resetMapState) {
+                window.googleMapsInterop.resetMapState();
+            }
+        });
+    </script>
 </body>
 
 </html>
+

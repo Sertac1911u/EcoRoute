@@ -2,12 +2,14 @@
 @using EcoRoute.DtoLayer.WasteBinDtos
 @using EcoRoute.UI.Services.WasteBinServices
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.JSInterop
 @inject WasteBinService WasteBinService
 @inject SensorService SensorService
 @inject IToastService toastService
 @inject IJSRuntime JS
 @attribute [Authorize(Roles = "SuperAdmin, Manager")]
 
+<!-- Main Kısmı -->
 <div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden mb-6">
     <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
         <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Atık Kutusu Yönetimi</h2>
@@ -387,7 +389,7 @@
     </div>
 </div>
 
-<!-- Modal Bölümleri -->
+<!-- Delete Confirm Modal -->
 @if (showDeleteConfirmation)
 {
     <div class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center">
@@ -411,6 +413,9 @@
     </div>
 }
 
+
+
+<!-- Save Confirm Modal-->
 @if (showSaveConfirmation)
 {
     <div class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center">
@@ -435,6 +440,8 @@
 }
 
 
+
+<!-- Location Modal-->
 @if (showLocationModal)
 {
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -474,6 +481,8 @@
 }
 
 
+
+<!-- Edit/Crate Model-->
 @if (showCreateModal || showEditModal)
 {
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[50]">
@@ -522,14 +531,14 @@
                                             Enlem
                                         </label>
                                         <input type="number" step="0.000001" id="latitude" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                                               @bind="binModel.Latitude" />
+                                               @bind="binModel.Latitude" @oninput="OnCoordinatesChanged" />
                                     </div>
                                     <div>
                                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">
                                             Boylam
                                         </label>
                                         <input type="number" step="0.000001" id="longitude" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                                               @bind="binModel.Longitude" />
+                                               @bind="binModel.Longitude" @oninput="OnCoordinatesChanged" />
                                     </div>
                                 </div>
                             </div>
@@ -646,7 +655,7 @@
                                 <i class="fas fa-info-circle mr-1"></i> Haritaya tıklayarak konum seçin
                             </div>
                         </div>
-                        <div id="map" class="h-64 w-full rounded-lg border border-gray-300 dark:border-gray-600 shadow-inner"></div>
+                        <div id="google-map" class="h-64 w-full rounded-lg border border-gray-300 dark:border-gray-600 shadow-inner"></div>
                     </div>
 
                     <!-- Sensör Seçimi -->
@@ -704,6 +713,7 @@
         </div>
     </div>
 }
+
 
 <style>
     .tooltip-container {
@@ -804,7 +814,6 @@
     private CreateWasteBinDto binModel = new();
     private ResultWasteBinDto selectedBin;
 
-
     private List<ResultSensorDto> availableSensors;
     private List<Guid> selectedSensorIds = new List<Guid>();
 
@@ -829,7 +838,10 @@
     // Sorting
     private string sortField = "Index";
     private bool sortAscending = true;
-
+    // Modal/harita durumunu izlemek için yeni bayraklar
+    private bool _mapModalInitialized = false;
+    private bool _locationMapInitialized = false;
+    private Guid _lastExpandedRowId = Guid.Empty;
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
@@ -842,36 +854,121 @@
         {
             if (firstRender)
             {
-                await JS.InvokeVoidAsync("initializeLeafletMap", DotNetObjectReference.Create(this));
+                await JS.InvokeVoidAsync("initializeGoogleMaps", DotNetObjectReference.Create(this));
+                await Task.Delay(1000);
+                await ShowAllBinsOnMap();
             }
 
-            if (showCreateModal || showEditModal)
+            // Handle location modal
+            if (showLocationModal && !_locationMapInitialized)
             {
-                await Task.Delay(300); // DOM hazır olana kadar bekle
-                await JS.InvokeVoidAsync("loadMap", binModel.Latitude, binModel.Longitude);
+                await InitializeLocationMap();
             }
 
-            if (showLocationModal && selectedBin != null)
+            // Handle expanded rows
+            if (expandedRowId != Guid.Empty && expandedRowId != _lastExpandedRowId)
             {
-                await Task.Delay(300); // DOM hazır olana kadar bekle
-                await JS.InvokeVoidAsync("loadLocationViewMap", "location-map-container", selectedBin.Latitude, selectedBin.Longitude);
-            }
-
-            if (expandedRowId != Guid.Empty)
-            {
-                var bin = wasteBins?.FirstOrDefault(b => b.WasteBinId == expandedRowId);
-                if (bin != null)
-                {
-                    await Task.Delay(500); // DOM için ekstra süre bekle
-                    string mapId = $"detail-map-{expandedRowId}";
-                    Console.WriteLine($"Loading detail map with ID: {mapId}");
-                    await JS.InvokeVoidAsync("loadDetailMap", mapId, bin.Latitude, bin.Longitude);
-                }
+                await InitializeDetailMap(expandedRowId);
+                _lastExpandedRowId = expandedRowId;
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error in OnAfterRenderAsync: {ex.Message}");
+            toastService.ShowError($"Render hatası: {ex.Message}");
+        }
+    }
+    private async Task InitializeDetailMap(Guid binId)
+    {
+        var bin = wasteBins?.FirstOrDefault(b => b.WasteBinId == binId);
+        if (bin != null)
+        {
+            await Task.Delay(300); // Allow time for row expansion animation
+            string mapId = $"detail-map-{binId}";
+            try
+            {
+                await JS.InvokeVoidAsync("googleMapsInterop.loadDetailMap",
+                    mapId, bin.Latitude, bin.Longitude);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error loading detail map: {ex.Message}");
+            }
+        }
+    }
+    // Form değerlerindeki koordinat değişikliklerini dinle
+    protected async Task OnCoordinatesChanged()
+    {
+        // Double değer null olamayacağı için doğrudan kontrol ediyoruz
+        if (binModel.Latitude != 0 && binModel.Longitude != 0)
+        {
+            await JS.InvokeVoidAsync("googleMapsInterop.updateMarkerPosition",
+                binModel.Latitude, binModel.Longitude);
+        }
+    }
+    private async Task UpdateMaps()
+    {
+        // Ekleme veya düzenleme modalı açıldığında
+        if (showCreateModal || showEditModal)
+        {
+            await Task.Delay(300); // DOM hazır olana kadar bekle
+            await JS.InvokeVoidAsync("googleMapsInterop.initializeMap");
+
+            // Eğer düzenleme modundaysa ve koordinatlar varsa, işaretleyiciyi güncelle
+            if (binModel.Latitude != 0 && binModel.Longitude != 0)
+            {
+                await JS.InvokeVoidAsync("googleMapsInterop.updateMarkerPosition",
+                    binModel.Latitude, binModel.Longitude);
+            }
+
+            // Düzenlenen ID hariç diğer kutuları göster (düzenleme yapılıyorsa)
+            if (wasteBins != null && wasteBins.Any())
+            {
+                var filteredBins = showEditModal
+                    ? wasteBins.Where(b => b.WasteBinId != editingWasteBinId).ToList()
+                    : wasteBins;
+
+                if (filteredBins.Any())
+                {
+                    // JSON'a dönüştür
+                    var binsJson = System.Text.Json.JsonSerializer.Serialize(filteredBins);
+
+                    // Atık kutularını göster
+                    await JS.InvokeVoidAsync("googleMapsInterop.showNearbyBins", binsJson);
+                }
+            }
+        }
+
+        // Konum görüntüleme modalı açıldığında
+        if (showLocationModal && selectedBin != null)
+        {
+            await Task.Delay(300); // DOM hazır olana kadar bekle
+            await JS.InvokeVoidAsync("googleMapsInterop.loadLocationMap",
+                "location-map-container", selectedBin.Latitude, selectedBin.Longitude);
+
+            // Seçili olan kutu dışındaki diğer kutuları da göster
+            if (wasteBins != null && wasteBins.Any())
+            {
+                var otherBins = wasteBins.Where(b => b.WasteBinId != selectedBin.WasteBinId).ToList();
+                if (otherBins.Any())
+                {
+                    var binsJson = System.Text.Json.JsonSerializer.Serialize(otherBins);
+                    await JS.InvokeVoidAsync("googleMapsInterop.showNearbyBinsOnLocationMap", binsJson);
+                }
+            }
+        }
+
+        // Detay haritasını yükle (genişletilmiş satır için)
+        if (expandedRowId != Guid.Empty)
+        {
+            var bin = wasteBins?.FirstOrDefault(b => b.WasteBinId == expandedRowId);
+            if (bin != null)
+            {
+                await Task.Delay(500); // DOM için ekstra süre bekle
+                string mapId = $"detail-map-{expandedRowId}";
+                await JS.InvokeVoidAsync("googleMapsInterop.loadDetailMap",
+                    mapId, bin.Latitude, bin.Longitude);
+            }
         }
     }
     private async Task LoadData()
@@ -884,8 +981,10 @@
     {
         expandedRowId = Guid.Empty;
         await LoadData();
+        await ShowAllBinsOnMap();
         toastService.ShowSuccess("Veriler yenilendi");
     }
+
     private void ToggleSensorSelection(Guid sensorId, bool isSelected)
     {
         if (isSelected)
@@ -901,8 +1000,6 @@
 
     private async Task LoadSensors()
     {
-        // SensorService veya benzer bir servisi inject etmiş olmanız gerekir
-        // Bu varsayımsal bir servis çağrısıdır, gerçek servisinize uyarlayın
         availableSensors = await SensorService.GetAllSensorsAsync();
     }
 
@@ -923,7 +1020,7 @@
                           : query.Select((item, index) => new { Item = item, Index = index })
                                 .OrderByDescending(x => x.Index)
                                 .Select(x => x.Item)
-                                .ToList(); break;
+                                .ToList();
             case "Label":
                 query = sortAscending ? query.OrderBy(b => b.Label) : query.OrderByDescending(b => b.Label);
                 break;
@@ -969,10 +1066,12 @@
     {
         // Pagination is now handled directly in SortBins()
     }
+
     private string GetSensorBorderColor(bool isActive)
     {
         return isActive ? "border-green-500" : "border-red-500";
     }
+
     private void ChangePage(int page)
     {
         currentPage = page;
@@ -989,6 +1088,7 @@
         {
             expandedRowId = id;
         }
+        _lastExpandedRowId = Guid.Empty; // Bayrağı sıfırlayarak yeniden yüklemeye zorla
     }
 
     private void OnFillLevelInput(ChangeEventArgs args)
@@ -1001,24 +1101,84 @@
         }
     }
 
-    private void OpenCreateModal()
+    private async Task OpenCreateModal()
     {
+        try
+        {
+            await JS.InvokeVoidAsync("googleMapsInterop.resetMapState");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error resetting map: {ex.Message}");
+        }
+
         binModel = new CreateWasteBinDto
             {
                 DeviceStatus = "Active",
-                CreatedAt = DateTime.Now,
-                UpdatedAt = DateTime.Now,
-                Latitude = 41.0082, // Default for Turkey/Istanbul
+                Latitude = 41.0082,
                 Longitude = 28.9784,
                 FillLevel = 0,
                 IsFilled = false
             };
+
+        selectedSensorIds.Clear();
         showCreateModal = true;
         showEditModal = false;
-    }
+        _mapModalInitialized = false;
 
+        StateHasChanged();
+        await Task.Delay(50);
+        await InitializeEditCreateMap();
+    }
+    private async Task InitializeEditCreateMap()
+    {
+        if ((showCreateModal || showEditModal) && !_mapModalInitialized)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("googleMapsInterop.initializeMap");
+
+                // Set initial marker position
+                if (binModel.Latitude != 0 && binModel.Longitude != 0)
+                {
+                    await JS.InvokeVoidAsync("googleMapsInterop.updateMarkerPosition",
+                        binModel.Latitude, binModel.Longitude);
+                }
+
+                // Show other bins
+                if (wasteBins?.Any() == true)
+                {
+                    var filteredBins = showEditModal
+                        ? wasteBins.Where(b => b.WasteBinId != editingWasteBinId).ToList()
+                        : wasteBins;
+
+                    if (filteredBins.Any())
+                    {
+                        var binsJson = System.Text.Json.JsonSerializer.Serialize(filteredBins);
+                        await JS.InvokeVoidAsync("googleMapsInterop.showNearbyBins", binsJson);
+                    }
+                }
+
+                _mapModalInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error initializing edit/create map: {ex.Message}");
+            }
+        }
+    }
     private void OpenEditModal(ResultWasteBinDto bin)
     {
+        // Harita durumunu sıfırlayın - bu, önceki harita sorunlarını önleyecektir
+        try
+        {
+            JS.InvokeVoidAsync("googleMapsInterop.resetMapState");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error resetting map state before opening edit modal: {ex.Message}");
+        }
+
         binModel = new CreateWasteBinDto
             {
                 Label = bin.Label,
@@ -1040,27 +1200,76 @@
         showCreateModal = false;
     }
 
-
-    private void OpenLocationModal(ResultWasteBinDto bin)
+    private async Task OpenLocationModal(ResultWasteBinDto bin)
     {
         selectedBin = bin;
         showLocationModal = true;
+        _locationMapInitialized = false; // Reset flag
+
+        // Ensure DOM is updated
+        StateHasChanged();
+
+        // Small delay to allow DOM to render
+        await Task.Delay(50);
+
+        // Now initialize map
+        await InitializeLocationMap();
     }
 
+    private async Task InitializeLocationMap()
+    {
+        if (showLocationModal && selectedBin != null && !_locationMapInitialized)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("googleMapsInterop.loadLocationMap",
+                    "location-map-container", selectedBin.Latitude, selectedBin.Longitude);
+
+                // Show other bins if available
+                if (wasteBins?.Any() == true)
+                {
+                    var otherBins = wasteBins.Where(b => b.WasteBinId != selectedBin.WasteBinId).ToList();
+                    if (otherBins.Any())
+                    {
+                        var binsJson = System.Text.Json.JsonSerializer.Serialize(otherBins);
+                        await JS.InvokeVoidAsync("googleMapsInterop.showNearbyBinsOnLocationMap", binsJson);
+                    }
+                }
+
+                _locationMapInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error initializing location map: {ex.Message}");
+                toastService.ShowError($"Harita yüklenirken hata: {ex.Message}");
+            }
+        }
+    }
     private void CloseLocationModal()
     {
         showLocationModal = false;
+        _locationMapInitialized = false; // Bayrağı sıfırla
         selectedBin = null;
     }
-
-    private void CloseModal()
+    private async Task CloseModal()
     {
         showCreateModal = false;
         showEditModal = false;
+        _mapModalInitialized = false;
+
+        try
+        {
+            await JS.InvokeVoidAsync("googleMapsInterop.resetMapState");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error resetting map: {ex.Message}");
+        }
+
         binModel = new();
         selectedSensorIds.Clear();
+        StateHasChanged();
     }
-
     private void DeleteBinConfirmation(Guid id)
     {
         binIdToDelete = id;
@@ -1127,6 +1336,7 @@
                     UpdatedAt = DateTime.Now
                 };
             success = await WasteBinService.UpdateWasteBinAsync(updateDto);
+
         }
         else
         {
@@ -1139,7 +1349,25 @@
         {
             toastService.ShowSuccess(showEditModal ? "Atık kutusu başarıyla güncellendi." : "Atık kutusu başarıyla eklendi.");
             showSaveConfirmation = false;
-            CloseModal();
+
+            // Harita durumunu sıfırla ve formu kapat
+            try
+            {
+                await JS.InvokeVoidAsync("googleMapsInterop.resetMapState");
+                await Task.Delay(100); // Kısa bir gecikme ekle
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error resetting map state after save: {ex.Message}");
+            }
+
+            // Formu kapat
+            showCreateModal = false;
+            showEditModal = false;
+            binModel = new();
+            selectedSensorIds.Clear();
+
+            // Verileri yenile
             await LoadData();
         }
         else
@@ -1264,6 +1492,68 @@
             _ => "text-gray-500"
         };
     }
+    private async Task ShowAllBinsOnMap()
+    {
+        try
+        {
+            // Önce tüm atık kutularını al
+            if (wasteBins == null || !wasteBins.Any())
+            {
+                wasteBins = await WasteBinService.GetAllWasteBinsAsync();
+            }
+
+            if (wasteBins != null && wasteBins.Any())
+            {
+                // JSON'a dönüştür
+                var binsJson = System.Text.Json.JsonSerializer.Serialize(wasteBins);
+
+                // JavaScript fonksiyonunu çağır
+                Console.WriteLine($"Gösterilecek {wasteBins.Count} atık kutusu var");
+                await JS.InvokeVoidAsync("googleMapsInterop.showAllBins", binsJson);
+                toastService.ShowInfo($"{wasteBins.Count} atık kutusu haritada gösteriliyor");
+            }
+            else
+            {
+                toastService.ShowWarning("Gösterilecek atık kutusu bulunamadı");
+            }
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError($"Atık kutuları haritada gösterilirken hata oluştu: {ex.Message}");
+            Console.Error.WriteLine($"Error showing bins on map: {ex}");
+        }
+    }
+    [JSInvokable]
+    public void OnMapInitialized()
+    {
+        Console.WriteLine("Map initialized from JS");
+        // Bu metot, harita başlatıldığında JavaScript'ten çağrılır
+    }
+
+    [JSInvokable]
+    public async Task OpenBinDetail(string binId)
+    {
+        // Open bin details when clicked on map
+        if (Guid.TryParse(binId, out Guid wasteBinId))
+        {
+            expandedRowId = wasteBinId;
+            StateHasChanged();
+
+            await Task.Delay(500);
+            var bin = wasteBins?.FirstOrDefault(b => b.WasteBinId == wasteBinId);
+            if (bin != null)
+            {
+                string mapId = $"detail-map-{wasteBinId}";
+                await JS.InvokeVoidAsync("googleMapsInterop.loadDetailMap",
+                    mapId, bin.Latitude, bin.Longitude);
+            }
+        }
+    }
+    // Haritada belirli bir atık kutusuna odaklan
+    private async Task FocusOnBin(Guid binId)
+    {
+        await JS.InvokeVoidAsync("googleMapsInterop.focusOnBin", binId.ToString());
+    }
 
     private string GetStrokeFillColor(double? fillLevel)
     {
@@ -1282,9 +1572,28 @@
     [JSInvokable]
     public void UpdateCoordinates(double lat, double lng)
     {
+        // Update bin coordinates in the form
         binModel.Latitude = lat;
         binModel.Longitude = lng;
         StateHasChanged();
     }
-}
 
+
+    // Geocoding API kullanılırsa, adres bilgisini güncellemek için kullanılabilir
+    [JSInvokable]
+    public void UpdateAddress(string address)
+    {
+        // Update bin address in the form
+        binModel.Address = address;
+        StateHasChanged();
+    }
+
+
+    // Detay haritalarının yüklenmesi tamamlandığında çağrılabilir
+    [JSInvokable]
+    public void OnMapLoaded(string mapId)
+    {
+        // Harita yükleme tamamlandığında yapılması gereken işlemler
+        Console.WriteLine($"Map loaded: {mapId}");
+    }
+}

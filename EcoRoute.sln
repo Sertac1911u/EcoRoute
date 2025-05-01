@@ -41,6 +41,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.Gateway", "ApiGate
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.DtoLayer", "Frontends\EcoRoute.DtoLayer\EcoRoute.DtoLayer.csproj", "{1E4ED7DE-AD10-40C6-BCE5-6BA2FF8BE0EF}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Supports", "Supports", "{1A793B0C-A69E-496E-AB5A-CCC1218B0A29}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.Supports", "Services\Supports\EcoRoute.Supports\EcoRoute.Supports.csproj", "{0BDC7ABD-DE19-45C2-A251-BDC2130A6CFC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +79,10 @@ Global
 		{1E4ED7DE-AD10-40C6-BCE5-6BA2FF8BE0EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E4ED7DE-AD10-40C6-BCE5-6BA2FF8BE0EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E4ED7DE-AD10-40C6-BCE5-6BA2FF8BE0EF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0BDC7ABD-DE19-45C2-A251-BDC2130A6CFC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0BDC7ABD-DE19-45C2-A251-BDC2130A6CFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0BDC7ABD-DE19-45C2-A251-BDC2130A6CFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0BDC7ABD-DE19-45C2-A251-BDC2130A6CFC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -92,6 +100,8 @@ Global
 		{A6F2CCCB-9E14-4361-93B7-70BF37937752} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{533DF99A-4987-400D-BCEB-C67401381151} = {69891231-1DBA-472A-BD78-DE2013F48210}
 		{1E4ED7DE-AD10-40C6-BCE5-6BA2FF8BE0EF} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{1A793B0C-A69E-496E-AB5A-CCC1218B0A29} = {6A5A8676-22CE-49D4-9724-C30070F2483C}
+		{0BDC7ABD-DE19-45C2-A251-BDC2130A6CFC} = {1A793B0C-A69E-496E-AB5A-CCC1218B0A29}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E3BEE716-F6D6-42BF-95AF-701725F611A1}

@@ -6,133 +6,742 @@
 @inject IToastService toastService
 @attribute [Authorize(Roles = "SuperAdmin, Manager")]
 
-<div class="p-6">
-    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Raporlar</h2>
+<div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden">
+    <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Rota Raporları</h2>
+        <div class="flex space-x-2">
+            <div class="relative">
+                <input type="text" placeholder="Rota Ara..." class="w-64 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+            </div>
+            <button class="flex items-center bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 transition duration-300" @onclick="ExportReports">
+                <i class="fas fa-download mr-2"></i> Dışa Aktar
+            </button>
+            <button class="flex items-center bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-300" @onclick="RefreshReports">
+                <i class="fas fa-sync-alt mr-2"></i> Yenile
+            </button>
+        </div>
+    </div>
 
-    <!-- Summary Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
-            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Toplam Rota</h3>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white">@TotalRoutes</p>
+    <!-- Dashboard Cards -->
+    <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-500 dark:text-blue-300 mr-4">
+                    <i class="fas fa-route text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Toplam Rota</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white">@totalRoutes</p>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-green-500 mr-1"><i class="fas fa-arrow-up"></i> %8</span>
+                <span class="text-gray-500 dark:text-gray-400">Geçen aydan</span>
+            </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
-            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Aktif Rota</h3>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white">@ActiveRoutes</p>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 dark:bg-green-900 text-green-500 dark:text-green-300 mr-4">
+                    <i class="fas fa-check-circle text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Tamamlanan Rota</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white">@completedRoutes</p>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-green-500 mr-1"><i class="fas fa-arrow-up"></i> %12</span>
+                <span class="text-gray-500 dark:text-gray-400">Geçen aydan</span>
+            </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
-            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Tamamlanan Rota</h3>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white">@CompletedRoutes</p>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-500 dark:text-yellow-300 mr-4">
+                    <i class="fas fa-play-circle text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Aktif Rota</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white">@activeRoutes</p>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-yellow-500 mr-1"><i class="fas fa-minus"></i> %0</span>
+                <span class="text-gray-500 dark:text-gray-400">Geçen aydan</span>
+            </div>
         </div>
-        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow">
-            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase">Ortalama Kutucuk Doluluk</h3>
-            <p class="text-3xl font-bold text-gray-900 dark:text-white">@($"{AverageFillLevel:F1}%")</p>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-500 dark:text-purple-300 mr-4">
+                    <i class="fas fa-users text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm">Ort. Doluluk Oranı</p>
+                    <p class="text-2xl font-bold text-gray-800 dark:text-white">%@averageOccupancy</p>
+                </div>
+            </div>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="text-green-500 mr-1"><i class="fas fa-arrow-up"></i> %5</span>
+                <span class="text-gray-500 dark:text-gray-400">Geçen aydan</span>
+            </div>
         </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="px-6 pb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Rota Tamamlanma Oranları</h3>
+            <div class="h-80" id="completionRateChart">
+                <!-- Chart will be rendered here -->
+                <img src="/img/sample-chart-completion.png" alt="Örnek tamamlanma grafiği" class="w-full h-full object-contain" />
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Aylık Rota İstatistikleri</h3>
+            <div class="h-80" id="monthlyStatsChart">
+                <!-- Chart will be rendered here -->
+                <img src="/img/sample-chart-monthly.png" alt="Örnek aylık istatistik grafiği" class="w-full h-full object-contain" />
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="px-6 pb-6 flex flex-wrap gap-4">
+        <div class="flex items-center space-x-2">
+            <label for="status-filter" class="text-sm font-medium text-gray-700 dark:text-gray-300">Durum:</label>
+            <select id="status-filter" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" @bind="statusFilter">
+                <option value="all">Tümü</option>
+                <option value="completed">Tamamlandı</option>
+                <option value="active">Devam Ediyor</option>
+                <option value="planned">Planlandı</option>
+                <option value="failed">Başarısız</option>
+                <option value="cancelled">İptal Edildi</option>
+            </select>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <label for="driver-filter" class="text-sm font-medium text-gray-700 dark:text-gray-300">Sürücü:</label>
+            <select id="driver-filter" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" @bind="driverFilter">
+                <option value="all">Tümü</option>
+                @foreach (var driver in drivers)
+                {
+                    <option value="@driver.Id">@driver.Name</option>
+                }
+            </select>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <label for="date-range" class="text-sm font-medium text-gray-700 dark:text-gray-300">Tarih Aralığı:</label>
+            <select id="date-range" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" @bind="dateRangeFilter">
+                <option value="today">Bugün</option>
+                <option value="yesterday">Dün</option>
+                <option value="week">Bu Hafta</option>
+                <option value="month">Bu Ay</option>
+                <option value="custom">Özel Aralık</option>
+            </select>
+        </div>
+
+        @if (dateRangeFilter == "custom")
+        {
+            <div class="flex items-center space-x-2">
+                <label for="start-date" class="text-sm font-medium text-gray-700 dark:text-gray-300">Başlangıç:</label>
+                <input type="date" id="start-date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" @bind="startDate">
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="end-date" class="text-sm font-medium text-gray-700 dark:text-gray-300">Bitiş:</label>
+                <input type="date" id="end-date" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" @bind="endDate">
+            </div>
+        }
+
+        <button class="flex items-center bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white px-4 py-2.5 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-300" @onclick="ApplyFilters">
+            <i class="fas fa-filter mr-2"></i> Filtrele
+        </button>
     </div>
 
     <!-- Routes Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead class="bg-gray-100 dark:bg-gray-700">
-                <tr>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Rota Adı</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Sürücü</th>
-                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Durum</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Mesafe (km)</th>
-                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Süre (dk)</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                @foreach (var r in routes)
-                {
-                    <tr>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@r.Name</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@r.Driver</td>
-                        <td class="px-4 py-4 whitespace-nowrap">
-                            <span class="@GetStatusBadge(r.Status)">
-                                @r.Status
-                            </span>
-                        </td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 text-right">@r.Distance</td>
-                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 text-right">@r.EstimatedDuration</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+    <div class="px-6 pb-6">
+        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Rota ID
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Durum
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Sürücü
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Mesafe
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Süre
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Doluluk
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                Başlangıç Tarihi
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                İşlemler
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach (var route in filteredRoutes)
+                        {
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors @(expandedRows.Contains(route.Id) ? "bg-blue-50 dark:bg-blue-900/10" : "")">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900 dark:text-white">#@route.Id</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="@GetStatusClass(route.Status) px-2 py-1 text-xs rounded-full">
+                                        @GetStatusText(route.Status)
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-8 w-8">
+                                            <img class="h-8 w-8 rounded-full" src="@GetDriverAvatar(route.DriverId)" alt="@GetDriverName(route.DriverId)">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                @GetDriverName(route.DriverId)
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-700 dark:text-gray-300">@route.Distance km</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-700 dark:text-gray-300">@route.Duration dk</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mr-2">
+                                            <div class="bg-primary-500 h-2.5 rounded-full" style="width: @(route.OccupancyRate)%"></div>
+                                        </div>
+                                        <span class="text-sm text-gray-700 dark:text-gray-300">@route.OccupancyRate%</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-700 dark:text-gray-300">@route.StartDate.ToString("dd.MM.yyyy HH:mm")</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button @onclick="() => ToggleExpandRow(route.Id)" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3">
+                                        <i class="fas @(expandedRows.Contains(route.Id) ? "fa-chevron-up" : "fa-chevron-down")"></i>
+                                    </button>
+                                    <a href="/route/@route.Id" class="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300">
+                                        Detay
+                                    </a>
+                                </td>
+                            </tr>
+                            @if (expandedRows.Contains(route.Id))
+                            {
+                                <tr class="bg-gray-50 dark:bg-gray-800">
+                                    <td colspan="8" class="px-6 py-4 animate-fadeIn">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            <div>
+                                                <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Rota Bilgileri</h4>
+                                                <div class="space-y-2">
+                                                    <div class="flex justify-between">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Başlangıç Noktası:</span>
+                                                        <span class="text-sm text-gray-800 dark:text-gray-200">@route.StartLocation</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Bitiş Noktası:</span>
+                                                        <span class="text-sm text-gray-800 dark:text-gray-200">@route.EndLocation</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Araç Plakası:</span>
+                                                        <span class="text-sm text-gray-800 dark:text-gray-200">@route.VehiclePlate</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Performans Göstergeleri</h4>
+                                                <div class="space-y-2">
+                                                    <div class="flex justify-between">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Yakıt Tüketimi:</span>
+                                                        <span class="text-sm text-gray-800 dark:text-gray-200">@route.FuelConsumption L</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Maliyet:</span>
+                                                        <span class="text-sm text-gray-800 dark:text-gray-200">@route.Cost TL</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">CO2 Emisyonu:</span>
+                                                        <span class="text-sm text-gray-800 dark:text-gray-200">@route.CO2Emission kg</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Zaman Bilgileri</h4>
+                                                <div class="space-y-2">
+                                                    <div class="flex justify-between">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Planlanan Başlangıç:</span>
+                                                        <span class="text-sm text-gray-800 dark:text-gray-200">@route.PlannedStartDate.ToString("dd.MM.yyyy HH:mm")</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Gerçek Başlangıç:</span>
+                                                        <span class="text-sm text-gray-800 dark:text-gray-200">@(route.ActualStartDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-sm text-gray-500 dark:text-gray-400">Gerçek Bitiş:</span>
+                                                        <span class="text-sm text-gray-800 dark:text-gray-200">@(route.ActualEndDate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if (route.Notes != null && route.Notes.Length > 0)
+                                        {
+                                            <div class="mt-4">
+                                                <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Notlar</h4>
+                                                <div class="bg-white dark:bg-gray-900 p-3 rounded-md border border-gray-200 dark:border-gray-700 text-sm text-gray-700 dark:text-gray-300">
+                                                    @route.Notes
+                                                </div>
+                                            </div>
+                                        }
+                                        <div class="mt-4 flex justify-end space-x-2">
+                                            <a href="/route/detail/@route.Id" class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                                <i class="fas fa-external-link-alt mr-2"></i> Detaylı Rapor
+                                            </a>
+                                            <button @onclick="() => ExportRouteReport(route.Id)" class="inline-flex items-center px-3 py-2 border border-gray-300 dark:border-gray-600 text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                                <i class="fas fa-file-pdf mr-2"></i> PDF İndir
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination -->
+            <nav class="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6" aria-label="Pagination">
+                <div class="hidden sm:block">
+                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                        Toplam <span class="font-medium">@filteredRoutes.Count</span> rota gösteriliyor
+                    </p>
+                </div>
+                <div class="flex-1 flex justify-between sm:justify-end">
+                    <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                        Önceki
+                    </button>
+                    <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                        Sonraki
+                    </button>
+                </div>
+            </nav>
+        </div>
     </div>
 </div>
 
+<style>
+    .animate-fadeIn {
+        animation: fadeIn 0.3s ease-out;
+    }
+    
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
 @code {
-    private List<RouteDto> routes = new();
-    private int TotalRoutes => routes.Count;
-    private int ActiveRoutes => routes.Count(r => r.IsActive);
-    private int CompletedRoutes => routes.Count(r => r.Status == "Tamamlandı");
-    private double AverageFillLevel => routes
-        .SelectMany(r => r.WasteBins)
-        .DefaultIfEmpty(new WasteBinDto { FillLevel = 0 })
-        .Average(b => b.FillLevel);
-
-    protected override void OnInitialized()
+    // Dashboard statistics
+    private int totalRoutes = 256;
+    private int completedRoutes = 187;
+    private int activeRoutes = 48;
+    private int averageOccupancy = 72;
+    
+    // Filters
+    private string statusFilter = "all";
+    private string driverFilter = "all";
+    private string dateRangeFilter = "month";
+    private DateTime startDate = DateTime.Now.AddDays(-30);
+    private DateTime endDate = DateTime.Now;
+    
+    private List<RouteInfo> routes = new List<RouteInfo>();
+    private List<DriverInfo> drivers = new List<DriverInfo>();
+    private List<RouteInfo> filteredRoutes => GetFilteredRoutes();
+    private HashSet<int> expandedRows = new HashSet<int>();
+    
+    protected override async Task OnInitializedAsync()
     {
-        // Load demo data or fetch from API
-        routes = GenerateDemoRoutes();
+        await LoadDummyData();
     }
-
-    private string GetStatusBadge(string status) => status switch
+    
+    private Task LoadDummyData()
     {
-        "Planlandı" => "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800",
-        "Devam Ediyor" => "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800",
-        "Tamamlandı" => "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800",
-        "İptal Edildi" => "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800",
-        _ => "px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800"
-    };
-
-    // Demo data generators (same as in Routes.razor)
-    private List<RouteDto> GenerateDemoRoutes()
-    {
-        var bins = new List<WasteBinDto>
+        // Load dummy drivers
+        drivers = new List<DriverInfo>
         {
-            new WasteBinDto{ Id="b1", Label="Kutu A", FillLevel=20 },
-            new WasteBinDto{ Id="b2", Label="Kutu B", FillLevel=60 },
-            new WasteBinDto{ Id="b3", Label="Kutu C", FillLevel=40 },
+            new DriverInfo { Id = 1, Name = "Ahmet Yılmaz", AvatarUrl = "https://picsum.photos/id/1015/200" },
+            new DriverInfo { Id = 2, Name = "Mehmet Kaya", AvatarUrl = "https://picsum.photos/id/1025/200" },
+            new DriverInfo { Id = 3, Name = "Ayşe Demir", AvatarUrl = "https://picsum.photos/id/1035/200" },
+            new DriverInfo { Id = 4, Name = "Zeynep Şahin", AvatarUrl = "https://picsum.photos/id/1045/200" },
+            new DriverInfo { Id = 5, Name = "Ali Çelik", AvatarUrl = "https://picsum.photos/id/1055/200" }
+        };
+        
+        // Load dummy routes
+        routes = new List<RouteInfo>
+        {
+            new RouteInfo {
+                Id = 101,
+                Status = RouteStatus.Completed,
+                DriverId = 1,
+                Distance = 42.5,
+                Duration = 65,
+                OccupancyRate = 85,
+                StartDate = DateTime.Now.AddDays(-3),
+                StartLocation = "İstanbul, Kadıköy",
+                EndLocation = "İstanbul, Beşiktaş",
+                VehiclePlate = "34 ABC 123",
+                FuelConsumption = 3.8,
+                Cost = 280.50,
+                CO2Emission = 8.25,
+                PlannedStartDate = DateTime.Now.AddDays(-3).AddMinutes(-10),
+                ActualStartDate = DateTime.Now.AddDays(-3),
+                ActualEndDate = DateTime.Now.AddDays(-3).AddMinutes(65),
+                Notes = "Rota sorunsuz tamamlandı. Trafik beklenenden azdı."
+            },
+            new RouteInfo {
+             Id = 102,
+                Status = RouteStatus.Active,
+                DriverId = 2,
+                Distance = 35.8,
+                Duration = 55,
+                OccupancyRate = 62,
+                StartDate = DateTime.Now.AddHours(-2),
+                StartLocation = "İstanbul, Ümraniye",
+                EndLocation = "İstanbul, Maltepe",
+                VehiclePlate = "34 DEF 456",
+                FuelConsumption = 3.2,
+                Cost = 210.75,
+                CO2Emission = 6.75,
+                PlannedStartDate = DateTime.Now.AddHours(-2).AddMinutes(-5),
+                ActualStartDate = DateTime.Now.AddHours(-2),
+                ActualEndDate = null,
+                Notes = "Rota devam ediyor. E-5 üzerinde trafik yoğunluğu var."
+            },
+            new RouteInfo {
+                Id = 103,
+                Status = RouteStatus.Planned,
+                DriverId = 3,
+                Distance = 58.2,
+                Duration = 90,
+                OccupancyRate = 75,
+                StartDate = DateTime.Now.AddHours(3),
+                StartLocation = "İstanbul, Şişli",
+                EndLocation = "İstanbul, Beylikdüzü",
+                VehiclePlate = "34 GHI 789",
+                FuelConsumption = 5.1,
+                Cost = 350.25,
+                CO2Emission = 10.45,
+                PlannedStartDate = DateTime.Now.AddHours(3),
+                ActualStartDate = null,
+                ActualEndDate = null,
+                Notes = "Uzun mesafeli rota planlandı. Yoğun saatler için alternatif güzergahlar belirlenecek."
+            },
+            new RouteInfo {
+                Id = 104,
+                Status = RouteStatus.Failed,
+                DriverId = 4,
+                Distance = 28.4,
+                Duration = 40,
+                OccupancyRate = 55,
+                StartDate = DateTime.Now.AddDays(-1),
+                StartLocation = "İstanbul, Pendik",
+                EndLocation = "İstanbul, Kartal",
+                VehiclePlate = "34 JKL 012",
+                FuelConsumption = 2.6,
+                Cost = 175.80,
+                CO2Emission = 5.20,
+                PlannedStartDate = DateTime.Now.AddDays(-1).AddMinutes(-15),
+                ActualStartDate = DateTime.Now.AddDays(-1),
+                ActualEndDate = DateTime.Now.AddDays(-1).AddMinutes(25),
+                Notes = "Araç teknik arıza nedeniyle rota tamamlanamadı. Yolcular alternatif araçlarla taşındı."
+            },
+            new RouteInfo {
+                Id = 105,
+                Status = RouteStatus.Completed,
+                DriverId = 5,
+                Distance = 45.7,
+                Duration = 70,
+                OccupancyRate = 90,
+                StartDate = DateTime.Now.AddDays(-2),
+                StartLocation = "İstanbul, Bakırköy",
+                EndLocation = "İstanbul, Sarıyer",
+                VehiclePlate = "34 MNO 345",
+                FuelConsumption = 4.2,
+                Cost = 310.40,
+                CO2Emission = 9.15,
+                PlannedStartDate = DateTime.Now.AddDays(-2).AddMinutes(-8),
+                ActualStartDate = DateTime.Now.AddDays(-2),
+                ActualEndDate = DateTime.Now.AddDays(-2).AddMinutes(70),
+                Notes = "Rota planlandığı gibi tamamlandı. Tam doluluk oranına yakın bir performans gösterildi."
+            },
+            new RouteInfo {
+                Id = 106,
+                Status = RouteStatus.Cancelled,
+                DriverId = 1,
+                Distance = 32.6,
+                Duration = 50,
+                OccupancyRate = 0,
+                StartDate = DateTime.Now.AddDays(-1).AddHours(5),
+                StartLocation = "İstanbul, Esenler",
+                EndLocation = "İstanbul, Başakşehir",
+                VehiclePlate = "34 PQR 678",
+                FuelConsumption = 0,
+                Cost = 0,
+                CO2Emission = 0,
+                PlannedStartDate = DateTime.Now.AddDays(-1).AddHours(5),
+                ActualStartDate = null,
+                ActualEndDate = null,
+                Notes = "Olumsuz hava koşulları nedeniyle rota iptal edildi. Yolcular bilgilendirildi."
+            },
+            new RouteInfo {
+                Id = 107,
+                Status = RouteStatus.Completed,
+                DriverId = 2,
+                Distance = 38.9,
+                Duration = 60,
+                OccupancyRate = 78,
+                StartDate = DateTime.Now.AddDays(-4),
+                StartLocation = "İstanbul, Kadıköy",
+                EndLocation = "İstanbul, Ataşehir",
+                VehiclePlate = "34 DEF 456",
+                FuelConsumption = 3.5,
+                Cost = 245.60,
+                CO2Emission = 7.80,
+                PlannedStartDate = DateTime.Now.AddDays(-4).AddMinutes(-12),
+                ActualStartDate = DateTime.Now.AddDays(-4),
+                ActualEndDate = DateTime.Now.AddDays(-4).AddMinutes(60),
+                Notes = "Rota sorunsuz tamamlandı."
+            },
+            new RouteInfo {
+                Id = 108,
+                Status = RouteStatus.Active,
+                DriverId = 3,
+                Distance = 52.1,
+                Duration = 85,
+                OccupancyRate = 65,
+                StartDate = DateTime.Now.AddHours(-4),
+                StartLocation = "İstanbul, Beylikdüzü",
+                EndLocation = "İstanbul, Şişli",
+                VehiclePlate = "34 GHI 789",
+                FuelConsumption = 4.7,
+                Cost = 320.30,
+                CO2Emission = 9.50,
+                PlannedStartDate = DateTime.Now.AddHours(-4).AddMinutes(-7),
+                ActualStartDate = DateTime.Now.AddHours(-4),
+                ActualEndDate = null,
+                Notes = "Rota planlandığı şekilde devam ediyor. Trafik yoğunluğu normal seviyede."
+            },
+            new RouteInfo {
+                Id = 109,
+                Status = RouteStatus.Planned,
+                DriverId = 4,
+                Distance = 30.5,
+                Duration = 45,
+                OccupancyRate = 70,
+                StartDate = DateTime.Now.AddHours(5),
+                StartLocation = "İstanbul, Kartal",
+                EndLocation = "İstanbul, Kadıköy",
+                VehiclePlate = "34 JKL 012",
+                FuelConsumption = 2.8,
+                Cost = 185.20,
+                CO2Emission = 5.60,
+                PlannedStartDate = DateTime.Now.AddHours(5),
+                ActualStartDate = null,
+                ActualEndDate = null,
+                Notes = "Akşam saatleri için planlanan rota. Yüksek talep bekleniyor."
+            },
+            new RouteInfo {
+                Id = 110,
+                Status = RouteStatus.Completed,
+                DriverId = 5,
+                Distance = 40.3,
+                Duration = 65,
+                OccupancyRate = 82,
+                StartDate = DateTime.Now.AddDays(-3),
+                StartLocation = "İstanbul, Sarıyer",
+                EndLocation = "İstanbul, Bakırköy",
+                VehiclePlate = "34 MNO 345",
+                FuelConsumption = 3.7,
+                Cost = 270.50,
+                CO2Emission = 8.10,
+                PlannedStartDate = DateTime.Now.AddDays(-3).AddMinutes(-10),
+                ActualStartDate = DateTime.Now.AddDays(-3),
+                ActualEndDate = DateTime.Now.AddDays(-3).AddMinutes(65),
+                Notes = "Rota başarıyla tamamlandı. Yüksek doluluk oranı elde edildi."
+            }
         };
 
-        return new List<RouteDto>
+        return Task.CompletedTask;
+    }
+
+    private List<RouteInfo> GetFilteredRoutes()
+    {
+        if (routes == null)
+            return new List<RouteInfo>();
+
+        IEnumerable<RouteInfo> filtered = routes;
+
+        // Apply status filter
+        if (statusFilter != "all")
         {
-            new RouteDto {
-                Id="r1", Name="Rota 1", Driver="Ahmet Yılmaz",
-                Status="Planlandı", Distance=12.3, EstimatedDuration=25,
-                IsActive=true, WasteBins = bins.Take(2).ToList()
-            },
-            new RouteDto {
-                Id="r2", Name="Rota 2", Driver="Mehmet Kaya",
-                Status="Devam Ediyor", Distance=8.7, EstimatedDuration=18,
-                IsActive=true, WasteBins = bins.Skip(1).Take(2).ToList()
-            },
-            new RouteDto {
-                Id="r3", Name="Rota 3", Driver="Ayşe Demir",
-                Status="Tamamlandı", Distance=15.2, EstimatedDuration=30,
-                IsActive=false, WasteBins = bins.ToList()
-            },
+            RouteStatus status = Enum.Parse<RouteStatus>(statusFilter, true);
+            filtered = filtered.Where(r => r.Status == status);
+        }
+
+        // Apply driver filter
+        if (driverFilter != "all")
+        {
+            int driverId = int.Parse(driverFilter);
+            filtered = filtered.Where(r => r.DriverId == driverId);
+        }
+
+        // Apply date filter
+        switch (dateRangeFilter)
+        {
+            case "today":
+                filtered = filtered.Where(r => r.StartDate.Date == DateTime.Now.Date);
+                break;
+            case "yesterday":
+                filtered = filtered.Where(r => r.StartDate.Date == DateTime.Now.Date.AddDays(-1));
+                break;
+            case "week":
+                DateTime startOfWeek = DateTime.Now.Date.AddDays(-(int)DateTime.Now.DayOfWeek);
+                filtered = filtered.Where(r => r.StartDate.Date >= startOfWeek);
+                break;
+            case "month":
+                DateTime startOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+                filtered = filtered.Where(r => r.StartDate.Date >= startOfMonth);
+                break;
+            case "custom":
+                filtered = filtered.Where(r => r.StartDate.Date >= startDate.Date && r.StartDate.Date <= endDate.Date);
+                break;
+        }
+
+        return filtered.ToList();
+    }
+
+    private void ToggleExpandRow(int routeId)
+    {
+        if (expandedRows.Contains(routeId))
+            expandedRows.Remove(routeId);
+        else
+            expandedRows.Add(routeId);
+    }
+
+    private void ApplyFilters()
+    {
+        // This would trigger UI refresh with the applied filters
+        StateHasChanged();
+    }
+
+    private void RefreshReports()
+    {
+        toastService.ShowInfo("Raporlar yenileniyor...");
+        // In a real app, this would refresh the data from the server
+    }
+
+    private void ExportReports()
+    {
+        toastService.ShowSuccess("Raporlar dışa aktarılıyor...");
+        // In a real app, this would export all reports to Excel/PDF
+    }
+
+    private void ExportRouteReport(int routeId)
+    {
+        toastService.ShowSuccess($"Rota #{routeId} raporu PDF olarak indiriliyor...");
+        // In a real app, this would generate and download a PDF report
+    }
+
+    private string GetStatusClass(RouteStatus status)
+    {
+        return status switch
+        {
+            RouteStatus.Completed => "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+            RouteStatus.Active => "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+            RouteStatus.Planned => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+            RouteStatus.Failed => "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+            RouteStatus.Cancelled => "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
+            _ => "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
         };
     }
 
-    // DTOs
-    public class RouteDto
+    private string GetStatusText(RouteStatus status)
     {
-        public string Id { get; set; }
-        public string Name { get; set; }
-        public string Driver { get; set; }
-        public string Status { get; set; }
+        return status switch
+        {
+            RouteStatus.Completed => "Tamamlandı",
+            RouteStatus.Active => "Devam Ediyor",
+            RouteStatus.Planned => "Planlandı",
+            RouteStatus.Failed => "Başarısız",
+            RouteStatus.Cancelled => "İptal Edildi",
+            _ => "Bilinmiyor"
+        };
+    }
+
+    private string GetDriverAvatar(int driverId)
+    {
+        var driver = drivers.FirstOrDefault(d => d.Id == driverId);
+        return driver?.AvatarUrl ?? "https://picsum.photos/200";
+    }
+
+    private string GetDriverName(int driverId)
+    {
+        var driver = drivers.FirstOrDefault(d => d.Id == driverId);
+        return driver?.Name ?? "Bilinmeyen Sürücü";
+    }
+
+    // Model classes
+    public class RouteInfo
+    {
+        public int Id { get; set; }
+        public RouteStatus Status { get; set; }
+        public int DriverId { get; set; }
         public double Distance { get; set; }
-        public int EstimatedDuration { get; set; }
-        public bool IsActive { get; set; }
-        public List<WasteBinDto> WasteBins { get; set; } = new();
+        public int Duration { get; set; }
+        public int OccupancyRate { get; set; }
+        public DateTime StartDate { get; set; }
+        public string StartLocation { get; set; }
+        public string EndLocation { get; set; }
+        public string VehiclePlate { get; set; }
+        public double FuelConsumption { get; set; }
+        public double Cost { get; set; }
+        public double CO2Emission { get; set; }
+        public DateTime PlannedStartDate { get; set; }
+        public DateTime? ActualStartDate { get; set; }
+        public DateTime? ActualEndDate { get; set; }
+        public string Notes { get; set; }
     }
 
-    public class WasteBinDto
+    public class DriverInfo
     {
-        public string Id { get; set; }
-        public string Label { get; set; }
-        public int FillLevel { get; set; }
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string AvatarUrl { get; set; }
+    }
+
+    public enum RouteStatus
+    {
+        Completed,
+        Active,
+        Planned,
+        Failed,
+        Cancelled
     }
 }
