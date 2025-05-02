@@ -1,7 +1,8 @@
+Api gateway 5000
 services
-	Supports 5004
-	RouteOptimization 5003
-	DataProcessing 5002
-	DataCollection 5000
+	Supports 5005
+	RouteOptimization 5006
+	DataProcessing 5003
+	DataCollection 5002
 	IdentityServer 5001
 	UI 5004

@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Brock Allen & Dominick Baier. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See LICENSE in the project root for license information.
 
-
 using IdentityServer4;
 using IdentityServer4.Models;
 using Microsoft.AspNetCore.Identity;
@@ -30,7 +29,7 @@ namespace EcoRoute.IdentityServer
                         "DataProcessingReadPermission",
                     }
                 },
-                 new ApiResource("ResourceRouteOptimization")
+                new ApiResource("ResourceRouteOptimization")
                 {
                     Scopes =
                     {
@@ -38,15 +37,22 @@ namespace EcoRoute.IdentityServer
                         "RouteOptimizationReadPermission",
                     }
                 },
-                  new ApiResource("ResourceOcelot")
+                new ApiResource("ResourceSupports")
+                {
+                    Scopes =
+                    {
+                        "SupportsFullPermission",
+                        "SupportsReadPermission",
+                    }
+                },
+                new ApiResource("ResourceOcelot")
                 {
                     Scopes =
                     {
                         "OcelotFullPermission"
                     }
                 },
-                 new ApiResource(IdentityServerConstants.LocalApi.ScopeName)
-
+                new ApiResource(IdentityServerConstants.LocalApi.ScopeName)
         };
 
         public static IEnumerable<IdentityResource> IdentityResources => new IdentityResource[]
@@ -64,6 +70,8 @@ namespace EcoRoute.IdentityServer
                 new ApiScope("DataProcessingReadPermission","Read authority for dp operations"),
                 new ApiScope("RouteOptimizationFullPermission","Full authority for ro operations"),
                 new ApiScope("RouteOptimizationReadPermission","Read authority for ro operations"),
+                new ApiScope("SupportsFullPermission","Full authority for support operations"),
+                new ApiScope("SupportsReadPermission","Read authority for support operations"),
                 new ApiScope("OcelotFullPermission","Full for oc operations"),
                 new ApiScope(IdentityServerConstants.LocalApi.ScopeName)
         };
@@ -71,34 +79,43 @@ namespace EcoRoute.IdentityServer
         public static IEnumerable<Client> Clients => new Client[]
         { 
                 //SuperAdmin
-               new Client
-{
-    ClientId = "EcoRouteSuperAdminId",
-    ClientName = "EcoRoute Super Admin",
-    AllowedGrantTypes = GrantTypes.ResourceOwnerPassword, // Cookie ve JWT kullanacaksan bu olmalı
-    ClientSecrets = { new Secret("ecoroutesecret".Sha256()) },
-    AllowedScopes =
-    {
-        "DataCollectionFullPermission",
-        "OcelotFullPermission",
-        IdentityServerConstants.LocalApi.ScopeName,
-        IdentityServerConstants.StandardScopes.Email,
-        IdentityServerConstants.StandardScopes.OpenId,
-        IdentityServerConstants.StandardScopes.Profile
-    },
-    AccessTokenLifetime = 3600,
-    AllowOfflineAccess = true,
-    AlwaysIncludeUserClaimsInIdToken = true
-},
+                new Client
+                {
+                    ClientId = "EcoRouteSuperAdminId",
+                    ClientName = "EcoRoute Super Admin",
+                    AllowedGrantTypes = GrantTypes.ResourceOwnerPassword, // Cookie ve JWT kullanacaksan bu olmalı
+                    ClientSecrets = { new Secret("ecoroutesecret".Sha256()) },
+                    AllowedScopes =
+                    {
+                        "DataCollectionFullPermission",
+                        "DataProcessingFullPermission",
+                        "RouteOptimizationFullPermission",
+                        "SupportsFullPermission",
+                        "SupportsReadPermission",
+                        "OcelotFullPermission",
+                        IdentityServerConstants.LocalApi.ScopeName,
+                        IdentityServerConstants.StandardScopes.Email,
+                        IdentityServerConstants.StandardScopes.OpenId,
+                        IdentityServerConstants.StandardScopes.Profile
+                    },
+                    AccessTokenLifetime = 3600,
+                    AllowOfflineAccess = true,
+                    AlwaysIncludeUserClaimsInIdToken = true
+                },
 
-                 //manager
+                //manager
                 new Client
                 {
                     ClientId="EcoRouteAdminId",
                     ClientName="EcoRoute Admin",
                     AllowedGrantTypes=GrantTypes.ClientCredentials,
                     ClientSecrets={new Secret("ecoroutesecret".Sha256())},
-                    AllowedScopes={ "DataCollectionFullPermission", "DataProcessingFullPermission", "RouteOptimizationFullPermission" }
+                    AllowedScopes={
+                        "DataCollectionFullPermission",
+                        "DataProcessingFullPermission",
+                        "RouteOptimizationFullPermission",
+                        "SupportsFullPermission"
+                    }
                 },
 
                 //Driver
@@ -108,7 +125,12 @@ namespace EcoRoute.IdentityServer
                     ClientName="EcoRoute Driver",
                     AllowedGrantTypes=GrantTypes.ClientCredentials,
                     ClientSecrets={new Secret("ecoroutesecret".Sha256())},
-                    AllowedScopes={ "DataCollectionReadPermission", "DataProcessingReadPermission", "RouteOptimizationReadPermission" }
+                    AllowedScopes={
+                        "DataCollectionReadPermission",
+                        "DataProcessingReadPermission",
+                        "RouteOptimizationReadPermission",
+                        "SupportsReadPermission"
+                    }
                 }
         };
     }

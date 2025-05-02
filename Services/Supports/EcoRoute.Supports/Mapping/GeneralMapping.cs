@@ -9,12 +9,13 @@ namespace EcoRoute.Supports.Mapping
     {
         public GeneralMapping() 
         {
-            CreateMap<SupportTicket, CreateSupportTicketDto>().ReverseMap();
-            CreateMap<SupportTicket, ResultSupportTicketDto>().ReverseMap();
-            CreateMap<SupportTicket, GetByIdSupportTicketDto>().ReverseMap();
+            CreateMap<CreateSupportTicketDto, SupportTicket>();
+            CreateMap<SupportTicket, ResultSupportTicketDto>();
+            CreateMap<SupportTicket, GetByIdSupportTicketDto>();
 
-
-            CreateMap<TicketResponse, ResultTicketResponseDto>().ReverseMap();
+            // TicketResponse mappings
+            CreateMap<CreateTicketResponseDto, TicketResponse>();
+            CreateMap<TicketResponse, ResultTicketResponseDto>();
         }
     }
 }

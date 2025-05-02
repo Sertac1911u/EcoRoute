@@ -7,6 +7,7 @@ using EcoRoute.UI.Auth;
 using EcoRoute.UI.Services;
 using Blazored.Toast;
 using EcoRoute.UI.Services.WasteBinServices;
+using EcoRoute.UI.Services.SupportsServices;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
@@ -31,6 +32,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<WasteBinService>();
 builder.Services.AddScoped<SensorService>();
+builder.Services.AddScoped<SupportTicketService>();
 builder.Services.AddScoped<CustomAuthStateProvider>();
 
 // LocalStorage ve Authentication

@@ -3,15 +3,24 @@
 @using System
 @using System.Collections.Generic
 @using System.Linq
+@using EcoRoute.DtoLayer.SupportDtos
+@using EcoRoute.UI.Services.SupportsServices
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IToastService toastService
+@inject SupportTicketService supportTicketService
 @attribute [Authorize]
 
 <div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden">
     <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
         <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Destek Talepleri</h2>
-        <button class="flex items-center bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 transition duration-300" @onclick="OpenCreateTicketModal">
-            <i class="fas fa-plus mr-2"></i> Yeni Destek Talebi Oluştur
-        </button>
+        @if (!isLoading && !IsAdmin && !IsManager)
+        {
+            <button class="flex items-center bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 transition duration-300" @onclick="OpenCreateTicketModal">
+                <i class="fas fa-plus mr-2"></i> Yeni Destek Talebi Oluştur
+            </button>
+        }
     </div>
 
     <div class="overflow-x-auto shadow-md rounded-lg">
@@ -47,7 +56,7 @@
                 </tr>
             </thead>
             <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                @if (supportTickets == null)
+                @if (isLoading)
                 {
                     <tr class="grid grid-cols-12 gap-2">
                         <td colspan="6" class="col-span-12 text-center p-6 text-gray-500 dark:text-gray-400">
@@ -57,7 +66,7 @@
                         </td>
                     </tr>
                 }
-                else if (supportTickets.Count == 0)
+                else if (supportTickets == null || supportTickets.Count == 0)
                 {
                     <tr class="grid grid-cols-12 gap-2">
                         <td colspan="6" class="col-span-12 text-center p-6 text-gray-500 dark:text-gray-400">
@@ -73,7 +82,7 @@
                     @foreach (var ticket in sortedTickets.Select((t, i) => new { Index = i + 1, Ticket = t }))
                     {
                         <tr class="grid grid-cols-12 gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition duration-200">
-                            <td class="col-span-1 px-6 py-4 flex items-center text-gray-700 dark:text-gray-300">#@ticket.Ticket.Id</td>
+                            <td class="col-span-1 px-6 py-4 flex items-center text-gray-700 dark:text-gray-300">@ticket.Index</td>
                             <td class="col-span-3 px-6 py-4 flex items-center text-gray-700 dark:text-gray-300 font-medium">@ticket.Ticket.Subject</td>
                             <td class="col-span-2 px-6 py-4 flex items-center">
                                 <span class="@GetStatusBadgeClass(ticket.Ticket.Status) px-2 py-1 text-xs rounded-full">@ticket.Ticket.Status</span>
@@ -82,7 +91,7 @@
                                 <span class="@GetPriorityBadgeClass(ticket.Ticket.Priority) px-2 py-1 text-xs rounded-full">@ticket.Ticket.Priority</span>
                             </td>
                             <td class="col-span-2 px-6 py-4 flex items-center text-gray-600 dark:text-gray-400 text-sm">
-                                @ticket.Ticket.CreatedDate.ToString("dd.MM.yyyy HH:mm")
+                                @ticket.Ticket.CreateDate.ToString("dd.MM.yyyy HH:mm")
                             </td>
                             <td class="col-span-2 px-6 py-4 flex justify-center items-center space-x-2">
                                 <button class="p-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg transition-colors duration-200 tooltip-container"
@@ -98,7 +107,7 @@
                                         <span class="tooltip">Yanıtla</span>
                                     </button>
                                 }
-                                @if (ticket.Ticket.Status != "Kapatıldı")
+                                @if (ticket.Ticket.Status != "Kapatıldı" && !IsDriver)
                                 {
                                     <button class="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 rounded-lg transition-colors duration-200 tooltip-container"
                                             @onclick="() => ShowCloseTicketConfirmation(ticket.Ticket.Id)">
@@ -135,7 +144,7 @@
                             <span class="@GetPriorityBadgeClass(selectedTicket.Priority) px-2 py-1 text-xs rounded-full">@selectedTicket.Priority</span>
                         </div>
                     </div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Oluşturulma Tarihi: @selectedTicket.CreatedDate.ToString("dd.MM.yyyy HH:mm")</div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">Oluşturulma Tarihi: @selectedTicket.CreateDate.ToString("dd.MM.yyyy HH:mm")</div>
                 </div>
 
                 <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg mb-6">
@@ -146,19 +155,20 @@
                             </div>
                         </div>
                         <div>
-                            <div class="font-medium text-gray-800 dark:text-white">Siz</div>
-                            <div class="text-sm text-gray-500 dark:text-gray-400">@selectedTicket.CreatedDate.ToString("dd.MM.yyyy HH:mm")</div>
+                            <div class="font-medium text-gray-800 dark:text-white">
+                                @(string.IsNullOrEmpty(selectedTicket.UserName) ? "Siz" : selectedTicket.UserName)
+                            </div>                            <div class="text-sm text-gray-500 dark:text-gray-400">@selectedTicket.CreateDate.ToString("dd.MM.yyyy HH:mm")</div>
                         </div>
                     </div>
                     <div class="pl-12 text-gray-700 dark:text-gray-300">
                         @selectedTicket.Description
                     </div>
-                    @if (!string.IsNullOrEmpty(selectedTicket.Attachment))
+                    @if (!string.IsNullOrEmpty(selectedTicket.AttachmentPath))
                     {
                         <div class="pl-12 mt-2">
                             <div class="inline-block px-3 py-2 bg-gray-200 dark:bg-gray-600 rounded-lg text-sm">
                                 <i class="fas fa-paperclip mr-2"></i>
-                                <a href="#" class="text-primary-600 dark:text-primary-400 hover:underline">@selectedTicket.Attachment</a>
+                                <a href="@GetFileUrl(selectedTicket.AttachmentPath)" target="_blank" download class="text-primary-600 dark:text-primary-400 hover:underline">Eki İndir</a>
                             </div>
                         </div>
                     }
@@ -177,34 +187,34 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <div class="font-medium text-gray-800 dark:text-white">@(response.IsStaff ? "Destek Ekibi" : "Siz")</div>
+                                        <div class="font-medium text-gray-800 dark:text-white">
+                                            @(response.IsStaff ? "Destek Ekibi" : (string.IsNullOrEmpty(response.UserName) ? "Anonim Kullanıcı" : response.UserName))
+                                        </div>
                                         <div class="text-sm text-gray-500 dark:text-gray-400">@response.ResponseDate.ToString("dd.MM.yyyy HH:mm")</div>
                                     </div>
                                 </div>
                                 <div class="pl-12 text-gray-700 dark:text-gray-300">
                                     @response.Message
                                 </div>
-                                @if (!string.IsNullOrEmpty(response.Attachment))
+                                @if (!string.IsNullOrEmpty(response.AttachmentPath))
                                 {
                                     <div class="pl-12 mt-2">
                                         <div class="inline-block px-3 py-2 bg-gray-200 dark:bg-gray-600 rounded-lg text-sm">
                                             <i class="fas fa-paperclip mr-2"></i>
-                                            <a href="#" class="text-primary-600 dark:text-primary-400 hover:underline">@response.Attachment</a>
+                                            <a href="@GetFileUrl(response.AttachmentPath)" target="_blank" download class="text-primary-600 dark:text-primary-400 hover:underline">Eki İndir</a>
                                         </div>
                                     </div>
                                 }
                             </div>
                         }
                     </div>
-                }
-
-                @if (selectedTicket.Status != "Kapatıldı")
+                }                @if (selectedTicket.Status != "Kapatıldı")
                 {
                     <div class="mt-6 flex justify-end space-x-3">
                         <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="CloseModal">
                             Kapat
                         </button>
-                        <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors" @onclick="() => ShowReplyModal(selectedTicket)">
+                        <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors" @onclick="ShowReplyModalFromDetails">
                             <i class="fas fa-reply mr-2"></i>Yanıtla
                         </button>
                     </div>
@@ -273,6 +283,7 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dosya Ekle (İsteğe Bağlı)</label>
                     <div class="flex items-center justify-center w-full">
+                        <InputFile OnChange="HandleFileSelected" id="dropzone-file" class="hidden" />
                         <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500">
                             <div class="flex flex-col items-center justify-center pt-5 pb-6">
                                 <svg aria-hidden="true" class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -280,17 +291,33 @@
                                 </svg>
                                 <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Dosya yüklemek için tıklayın</span> veya sürükleyip bırakın</p>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG veya PDF (MAX. 10MB)</p>
+                                @if (uploadedFile != null)
+                                {
+                                    <p class="mt-2 text-sm text-green-500"><i class="fas fa-check-circle mr-1"></i> @uploadedFile.Name</p>
+                                }
                             </div>
-                            <input id="dropzone-file" type="file" class="hidden" />
                         </label>
                     </div>
                 </div>
             </div>
 
             <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
-                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="CloseCreateTicketModal">İptal</button>
-                <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors" @onclick="CreateSupportTicket">
-                    <i class="fas fa-paper-plane mr-2"></i>Gönder
+                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" 
+                        @onclick="CloseCreateTicketModal"
+                        disabled="@isSubmittingTicket">İptal</button>
+                <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors" 
+                        @onclick="CreateSupportTicket"
+                        disabled="@isSubmittingTicket">
+                    @if (isSubmittingTicket)
+                    {
+                        <i class="fas fa-circle-notch fa-spin mr-2"></i>
+                        <span>Gönderiliyor...</span>
+                    }
+                    else
+                    {
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        <span>Gönder</span>
+                    }
                 </button>
             </div>
         </div>
@@ -327,23 +354,40 @@
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dosya Ekle (İsteğe Bağlı)</label>
                     <div class="flex items-center justify-center w-full">
+                        <InputFile OnChange="HandleReplyFileSelected" id="reply-file" class="hidden" />
                         <label for="reply-file" class="flex flex-col items-center justify-center w-full h-28 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500">
                             <div class="flex flex-col items-center justify-center pt-5 pb-6">
                                 <svg aria-hidden="true" class="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                                 </svg>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG veya PDF (MAX. 10MB)</p>
+                                @if (replyFile != null)
+                                {
+                                    <p class="mt-2 text-sm text-green-500"><i class="fas fa-check-circle mr-1"></i> @replyFile.Name</p>
+                                }
                             </div>
-                            <input id="reply-file" type="file" class="hidden" />
                         </label>
                     </div>
                 </div>
             </div>
 
             <div class="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
-                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="CloseReplyModal">İptal</button>
-                <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors" @onclick="SendReply">
-                    <i class="fas fa-paper-plane mr-2"></i>Gönder
+                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" 
+                        @onclick="CloseReplyModal"
+                        disabled="@isSubmittingReply">İptal</button>
+                <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors" 
+                        @onclick="SendReply"
+                        disabled="@isSubmittingReply">
+                    @if (isSubmittingReply)
+                    {
+                        <i class="fas fa-circle-notch fa-spin mr-2"></i>
+                        <span>Gönderiliyor...</span>
+                    }
+                    else
+                    {
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        <span>Gönder</span>
+                    }
                 </button>
             </div>
         </div>
@@ -363,11 +407,23 @@
                 <p class="text-gray-500 dark:text-gray-400">Bu destek talebini kapatmak istediğinize emin misiniz? Kapatılan taleplere yanıt veremezsiniz.</p>
             </div>
             <div class="flex justify-between">
-                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="CancelCloseTicket">
+                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors"
+                        @onclick="CancelCloseTicket"
+                        disabled="@isClosingTicket">
                     İptal
                 </button>
-                <button class="px-4 py-2 bg-danger hover:bg-red-700 rounded-lg text-white transition-colors" @onclick="CloseTicket">
-                    Kapat
+                <button class="px-4 py-2 bg-danger hover:bg-red-700 rounded-lg text-white transition-colors"
+                        @onclick="CloseTicket"
+                        disabled="@isClosingTicket">
+                    @if (isClosingTicket)
+                    {
+                        <i class="fas fa-circle-notch fa-spin mr-2"></i>
+                        <span>İşleniyor...</span>
+                    }
+                    else
+                    {
+                        <span>Kapat</span>
+                    }
                 </button>
             </div>
         </div>
@@ -380,39 +436,39 @@
         position: relative;
     }
 
-    .tooltip-container .tooltip {
-        visibility: hidden;
-        background-color: rgba(0,0,0,0.8);
-        color: white;
-        text-align: center;
-        border-radius: 4px;
-        padding: 5px 10px;
-        position: absolute;
-        z-index: 1;
-        bottom: 125%;
-        left: 50%;
-        transform: translateX(-50%);
-        opacity: 0;
-        transition: opacity 0.3s;
-        white-space: nowrap;
-        font-size: 12px;
-    }
+        .tooltip-container .tooltip {
+            visibility: hidden;
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            text-align: center;
+            border-radius: 4px;
+            padding: 5px 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+            font-size: 12px;
+        }
 
-    .tooltip-container .tooltip::after {
-        content: "";
-        position: absolute;
-        top: 100%;
-        left: 50%;
-        margin-left: -5px;
-        border-width: 5px;
-        border-style: solid;
-        border-color: rgba(0,0,0,0.8) transparent transparent transparent;
-    }
+            .tooltip-container .tooltip::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: rgba(0,0,0,0.8) transparent transparent transparent;
+            }
 
-    .tooltip-container:hover .tooltip {
-        visibility: visible;
-        opacity: 1;
-    }
+        .tooltip-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
 
     /* Table header hover effect */
     th[class*="cursor-pointer"]:hover {
@@ -421,18 +477,15 @@
 
     /* Animation for adding/editing/deleting */
     @@keyframes fadeIn {
-        from
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
 
-    {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .modal-animation {
@@ -441,15 +494,28 @@
 </style>
 
 @code {
-    private List<SupportTicket> supportTickets;
-    private List<SupportTicket> sortedTickets => SortTickets();
-    private SupportTicket selectedTicket;
-    private SupportTicket replyingTicket;
+    private List<ResultSupportTicketDto> supportTickets;
+    private List<ResultSupportTicketDto> sortedTickets => SortTickets();
+    private GetByIdSupportTicketDto selectedTicket;
+    private ResultSupportTicketDto replyingTicket;
     private CreateSupportTicketDto newTicket = new();
     private string replyMessage = "";
     private bool isCreateTicketModalOpen = false;
     private bool showCloseTicketConfirmation = false;
-    private int ticketIdToClose;
+    private Guid ticketIdToClose;
+    private IBrowserFile uploadedFile;
+    private IBrowserFile replyFile;
+
+    // Loading and submission states
+    private bool isLoading = true;
+    private bool isSubmittingTicket = false;
+    private bool isSubmittingReply = false;
+    private bool isClosingTicket = false;
+    private bool isLoadingTicketDetails = false;
+
+    private bool IsAdmin = false;
+    private bool IsManager = false;
+    private bool IsDriver = false;
 
     // Sorting properties
     private string sortColumn = "Id";
@@ -457,151 +523,41 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadDummySupportTickets();
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        IsAdmin = user.IsInRole("Admin") || user.IsInRole("SuperAdmin");
+        IsManager = user.IsInRole("Manager");
+        IsDriver = user.IsInRole("Driver");
+
+        await LoadSupportTickets();
+
+
     }
 
-    private Task LoadDummySupportTickets()
+    private async Task LoadSupportTickets()
     {
-        // Create dummy data
-        supportTickets = new List<SupportTicket>
+        try
         {
-            new SupportTicket
-            {
-                Id = 1001,
-                Subject = "Uygulama açılışında hata alıyorum",
-                Description = "Merhaba, uygulamayı başlatırken 'Bağlantı hatası' şeklinde bir hata alıyorum. İnternet bağlantım olmasına rağmen uygulamaya giriş yapamıyorum. Lütfen yardımcı olabilir misiniz?",
-                Status = "Açık",
-                Priority = "Yüksek",
-                Category = "Teknik Sorun",
-                CreatedDate = DateTime.Now.AddDays(-2),
-                Responses = new List<TicketResponse>
-                {
-                    new TicketResponse
-                    {
-                        Id = 101,
-                        Message = "Merhaba, sorunla ilgili incelememiz devam ediyor. Hangi tarayıcıyı kullanıyorsunuz ve hatanın ekran görüntüsünü alabildiniz mi?",
-                        ResponseDate = DateTime.Now.AddDays(-1),
-                        IsStaff = true
-                    },
-                    new TicketResponse
-                    {
-                        Id = 102,
-                        Message = "Chrome tarayıcısını kullanıyorum. Ekran görüntüsünü ekte bulabilirsiniz.",
-                        ResponseDate = DateTime.Now.AddDays(-1).AddHours(2),
-                        IsStaff = false,
-                        Attachment = "hata_ekran_goruntusu.png"
-                    }
-                }
-            },
-            new SupportTicket
-            {
-                Id = 1002,
-                Subject = "Fatura bilgilerimi güncellemek istiyorum",
-                Description = "Şirketimizin fatura bilgilerini güncellemem gerekiyor. Nasıl yapabilirim?",
-                Status = "Çözüldü",
-                Priority = "Orta",
-                Category = "Hesap Bilgileri",
-                CreatedDate = DateTime.Now.AddDays(-5),
-                Responses = new List<TicketResponse>
-                {
-                    new TicketResponse
-                    {
-                        Id = 201,
-                        Message = "Merhaba, fatura bilgilerinizi güncellemek için hesap ayarları sayfasında bulunan 'Fatura Bilgileri' sekmesini kullanabilirsiniz. Detaylı adımları aşağıda bulabilirsiniz...",
-                        ResponseDate = DateTime.Now.AddDays(-5).AddHours(3),
-                        IsStaff = true
-                    },
-                    new TicketResponse
-                    {
-                        Id = 202,
-                        Message = "Teşekkür ederim, bilgileri başarıyla güncelledim.",
-                        ResponseDate = DateTime.Now.AddDays(-4),
-                        IsStaff = false
-                    },
-                    new TicketResponse
-                    {
-                        Id = 203,
-                        Message = "Rica ederiz. Başka bir sorunuz olursa bize bildirmekten çekinmeyin.",
-                        ResponseDate = DateTime.Now.AddDays(-4).AddHours(1),
-                        IsStaff = true
-                    }
-                }
-            },
-            new SupportTicket
-            {
-                Id = 1003,
-                Subject = "Ödeme yaparken hata aldım ama para hesabımdan çekildi",
-                Description = "Bugün sistemde ödeme yapmaya çalıştım ancak işlem sırasında bir hata oluştu. Buna rağmen banka hesabımdan para çekildi. Ödeme durumunu kontrol edebilir misiniz?",
-                Status = "İşlemde",
-                Priority = "Acil",
-                Category = "Ödeme",
-                CreatedDate = DateTime.Now.AddHours(-12),
-                Responses = new List<TicketResponse>
-                {
-                    new TicketResponse
-                    {
-                        Id = 301,
-                        Message = "Merhaba, ödeme işleminiz için özür dileriz. İşlem numarası veya sipariş numarasını paylaşabilir misiniz? Bu şekilde sorunu daha hızlı çözebiliriz.",
-                        ResponseDate = DateTime.Now.AddHours(-10),
-                        IsStaff = true
-                    },
-                    new TicketResponse
-                    {
-                        Id = 302,
-                        Message = "Sipariş numaram TR123456789. Banka dekontunu da ekte gönderiyorum.",
-                        ResponseDate = DateTime.Now.AddHours(-8),
-                        IsStaff = false,
-                        Attachment = "dekont.pdf"
-                    }
-                }
-            },
-            new SupportTicket
-            {
-                Id = 1004,
-                Subject = "Yeni özellik önerisi",
-                Description = "Uygulamanıza toplu işlem yapabilme özelliği eklemeniz çok faydalı olacaktır. Şu anda her işlemi tek tek yapmak zorunda kalıyoruz ve bu da çok zaman alıyor.",
-                Status = "Açık",
-                Priority = "Düşük",
-                Category = "Öneri",
-                CreatedDate = DateTime.Now.AddDays(-7),
-                Responses = new List<TicketResponse>()
-            },
-            new SupportTicket
-            {
-                Id = 1005,
-                Subject = "Şifre sıfırlama linki gelmiyor",
-                Description = "Şifremi unuttum ve sıfırlama talebinde bulundum ancak e-posta adresime herhangi bir link gelmedi. Spam klasörünü de kontrol ettim.",
-                Status = "Kapatıldı",
-                Priority = "Orta",
-                Category = "Hesap Bilgileri",
-                CreatedDate = DateTime.Now.AddDays(-10),
-                Responses = new List<TicketResponse>
-                {
-                    new TicketResponse
-                    {
-                        Id = 401,
-                        Message = "Merhaba, şifre sıfırlama talebinizi yeniden gönderdik. Lütfen e-posta kutunuzu ve spam klasörünüzü kontrol ediniz.",
-                        ResponseDate = DateTime.Now.AddDays(-9),
-                        IsStaff = true
-                    },
-                    new TicketResponse
-                    {
-                        Id = 402,
-                        Message = "Teşekkürler, e-posta geldi ve şifremi başarıyla sıfırladım.",
-                        ResponseDate = DateTime.Now.AddDays(-9).AddHours(2),
-                        IsStaff = false
-                    }
-                }
-            }
-        };
-
-        return Task.CompletedTask;
+            isLoading = true;
+            supportTickets = await supportTicketService.GetAllSupportTicketsAsync();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError($"Destek talepleri yüklenirken hata oluştu: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged(); 
+        }
     }
 
-    private List<SupportTicket> SortTickets()
+    private List<ResultSupportTicketDto> SortTickets()
     {
         if (supportTickets == null)
-            return new List<SupportTicket>();
+            return new List<ResultSupportTicketDto>();
 
         switch (sortColumn)
         {
@@ -623,8 +579,8 @@
                     : supportTickets.OrderByDescending(t => GetPriorityWeight(t.Priority)).ToList();
             case "CreatedDate":
                 return ascending
-                    ? supportTickets.OrderBy(t => t.CreatedDate).ToList()
-                    : supportTickets.OrderByDescending(t => t.CreatedDate).ToList();
+                    ? supportTickets.OrderBy(t => t.CreateDate).ToList()
+                    : supportTickets.OrderByDescending(t => t.CreateDate).ToList();
             default:
                 return supportTickets;
         }
@@ -703,10 +659,36 @@
             _ => "inline-flex text-xs bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
         };
     }
-
-    private void ShowTicketDetails(SupportTicket ticket)
+private string GetFileUrl(string path)
+{
+    if (string.IsNullOrEmpty(path))
+        return "#"; // Boş ise # döndür
+        
+    // Eğer zaten http ile başlıyorsa, olduğu gibi döndür
+    if (path.StartsWith("http://") || path.StartsWith("https://"))
+        return path;
+        
+    // Yol doğrudan başlamalı: /Uploads/... şeklinde
+    if (!path.StartsWith("/"))
+        path = "/" + path;
+        
+    return $"http://localhost:5000{path}";
+}
+    private async Task ShowTicketDetails(ResultSupportTicketDto ticket)
     {
-        selectedTicket = ticket;
+        try
+        {
+            isLoadingTicketDetails = true;
+            selectedTicket = await supportTicketService.GetSupportTicketByIdAsync(ticket.Id);
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError($"Destek talebi detayları yüklenirken hata oluştu: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingTicketDetails = false;
+        }
     }
 
     private void CloseModal()
@@ -721,6 +703,7 @@
                 Priority = "Orta",
                 Category = "Teknik Sorun"
             };
+        uploadedFile = null;
         isCreateTicketModalOpen = true;
     }
 
@@ -728,9 +711,10 @@
     {
         isCreateTicketModalOpen = false;
         newTicket = new CreateSupportTicketDto();
+        uploadedFile = null;
     }
 
-    private void CreateSupportTicket()
+    private async Task CreateSupportTicket()
     {
         // Validation
         if (string.IsNullOrEmpty(newTicket.Subject) || string.IsNullOrEmpty(newTicket.Description))
@@ -739,37 +723,88 @@
             return;
         }
 
-        // Create and add the ticket (in a real application, this would be a service call)
-        var ticket = new SupportTicket
-            {
-                Id = supportTickets.Max(t => t.Id) + 1,
-                Subject = newTicket.Subject,
-                Description = newTicket.Description,
-                Status = "Açık",
-                Priority = newTicket.Priority,
-                Category = newTicket.Category,
-                CreatedDate = DateTime.Now,
-                Responses = new List<TicketResponse>()
-            };
+        if (isSubmittingTicket) return;
 
-        supportTickets.Add(ticket);
-        toastService.ShowSuccess("Destek talebiniz başarıyla oluşturuldu.");
-        isCreateTicketModalOpen = false;
+        isSubmittingTicket = true;
+        try
+        {
+            var content = new MultipartFormDataContent();
+            content.Add(new StringContent(newTicket.Subject), "Subject");
+            content.Add(new StringContent(newTicket.Description ?? ""), "Description");
+            content.Add(new StringContent(newTicket.Priority), "Priority");
+            content.Add(new StringContent(newTicket.Category ?? ""), "Category");
+
+            // Handle file if present
+            if (uploadedFile != null)
+            {
+                // Check file size before uploading
+                if (uploadedFile.Size > 10485760) // 10MB
+                {
+                    toastService.ShowWarning("Dosya boyutu 10MB'dan büyük olamaz.");
+                    return;
+                }
+
+                var fileContent = new StreamContent(uploadedFile.OpenReadStream(maxAllowedSize: 10485760)); // 10MB max
+                content.Add(fileContent, "Attachment", uploadedFile.Name);
+            }
+
+            var ticketId = await supportTicketService.CreateSupportTicketAsync(content);
+
+            toastService.ShowSuccess("Destek talebiniz başarıyla oluşturuldu.");
+            isCreateTicketModalOpen = false;
+            await LoadSupportTickets(); // Reload tickets
+        }
+        catch (HttpRequestException ex)
+        {
+            toastService.ShowError($"İstek hatası: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError($"Destek talebi oluşturulurken bir hata oluştu: {ex.Message}");
+        }
+        finally
+        {
+            isSubmittingTicket = false;
+        }
     }
 
-    private void ShowReplyModal(SupportTicket ticket)
+    private void ShowReplyModalFromDetails()
+    {
+        if (selectedTicket == null) return;
+
+        // Create a ResultSupportTicketDto from the selectedTicket
+        var ticket = new ResultSupportTicketDto
+            {
+                Id = selectedTicket.Id,
+                Subject = selectedTicket.Subject,
+                Description = selectedTicket.Description,
+                Status = selectedTicket.Status,
+                Priority = selectedTicket.Priority,
+                Category = selectedTicket.Category,
+                CreateDate = selectedTicket.CreateDate,
+                AttachmentPath = selectedTicket.AttachmentPath,
+                Responses = selectedTicket.Responses
+            };
+
+        // Call the existing method with the converted ticket
+        ShowReplyModal(ticket);
+    }
+
+    private void ShowReplyModal(ResultSupportTicketDto ticket)
     {
         replyingTicket = ticket;
         replyMessage = "";
+        replyFile = null;
     }
 
     private void CloseReplyModal()
     {
         replyingTicket = null;
         replyMessage = "";
+        replyFile = null;
     }
 
-    private void SendReply()
+    private async Task SendReply()
     {
         if (string.IsNullOrEmpty(replyMessage))
         {
@@ -777,38 +812,58 @@
             return;
         }
 
-        // Add the reply
-        var ticket = supportTickets.FirstOrDefault(t => t.Id == replyingTicket.Id);
-        if (ticket != null)
-        {
-            ticket.Responses.Add(new TicketResponse
-                {
-                    Id = ticket.Responses.Count > 0 ? ticket.Responses.Max(r => r.Id) + 1 : 1,
-                    Message = replyMessage,
-                    ResponseDate = DateTime.Now,
-                    IsStaff = false
-                });
+        if (isSubmittingReply) return;
 
-            // Update ticket status to "İşlemde" if it was "Açık"
-            if (ticket.Status == "Açık")
+        isSubmittingReply = true;
+        try
+        {
+            var content = new MultipartFormDataContent();
+            content.Add(new StringContent(replyingTicket.Id.ToString()), "SupportTicketId");
+            content.Add(new StringContent(replyMessage), "Message");
+            content.Add(new StringContent("false"), "IsStaff");
+
+            // Handle file if present
+            if (replyFile != null)
             {
-                ticket.Status = "İşlemde";
+                // Check file size before uploading
+                if (replyFile.Size > 10485760) // 10MB
+                {
+                    toastService.ShowWarning("Dosya boyutu 10MB'dan büyük olamaz.");
+                    return;
+                }
+
+                var fileContent = new StreamContent(replyFile.OpenReadStream(maxAllowedSize: 10485760)); // 10MB max
+                content.Add(fileContent, "Attachment", replyFile.Name);
             }
+
+            var success = await supportTicketService.AddResponseAsync(content);
 
             toastService.ShowSuccess("Yanıtınız başarıyla gönderildi.");
+            replyingTicket = null;
+            replyMessage = "";
+            await LoadSupportTickets(); // Reload tickets
 
             // If this ticket was also the selected ticket, update the selected ticket reference
-            if (selectedTicket != null && selectedTicket.Id == ticket.Id)
+            if (selectedTicket != null && selectedTicket.Id == replyingTicket.Id)
             {
-                selectedTicket = ticket;
+                selectedTicket = await supportTicketService.GetSupportTicketByIdAsync(selectedTicket.Id);
             }
         }
-
-        replyingTicket = null;
-        replyMessage = "";
+        catch (HttpRequestException ex)
+        {
+            toastService.ShowError($"İstek hatası: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError($"Yanıt gönderilirken bir hata oluştu: {ex.Message}");
+        }
+        finally
+        {
+            isSubmittingReply = false;
+        }
     }
 
-    private void ShowCloseTicketConfirmation(int ticketId)
+    private void ShowCloseTicketConfirmation(Guid ticketId)
     {
         ticketIdToClose = ticketId;
         showCloseTicketConfirmation = true;
@@ -819,52 +874,60 @@
         showCloseTicketConfirmation = false;
     }
 
-    private void CloseTicket()
+    private async Task CloseTicket()
     {
-        var ticket = supportTickets.FirstOrDefault(t => t.Id == ticketIdToClose);
-        if (ticket != null)
+        if (isClosingTicket) return;
+
+        isClosingTicket = true;
+        try
         {
-            ticket.Status = "Kapatıldı";
+            var success = await supportTicketService.CloseTicketAsync(ticketIdToClose);
+
             toastService.ShowSuccess("Destek talebi başarıyla kapatıldı.");
+            showCloseTicketConfirmation = false;
+            await LoadSupportTickets(); // Reload tickets
 
             // If this ticket was also the selected ticket, update the selected ticket reference
-            if (selectedTicket != null && selectedTicket.Id == ticket.Id)
+            if (selectedTicket != null && selectedTicket.Id == ticketIdToClose)
             {
-                selectedTicket = ticket;
+                selectedTicket = await supportTicketService.GetSupportTicketByIdAsync(ticketIdToClose);
             }
         }
-
-        showCloseTicketConfirmation = false;
+        catch (HttpRequestException ex)
+        {
+            toastService.ShowError($"İstek hatası: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError($"Destek talebi kapatılırken bir hata oluştu: {ex.Message}");
+        }
+        finally
+        {
+            isClosingTicket = false;
+        }
     }
 
-    // Data model classes
-    public class SupportTicket
+    private void HandleFileSelected(InputFileChangeEventArgs e)
     {
-        public int Id { get; set; }
-        public string Subject { get; set; }
-        public string Description { get; set; }
-        public string Status { get; set; } // Açık, İşlemde, Çözüldü, Kapatıldı
-        public string Priority { get; set; } // Düşük, Orta, Yüksek, Acil
-        public string Category { get; set; } // Teknik, Hesap, Ödeme, Öneri, Diğer
-        public DateTime CreatedDate { get; set; }
-        public string Attachment { get; set; }
-        public List<TicketResponse> Responses { get; set; } = new List<TicketResponse>();
+        uploadedFile = e.File;
+
+        // Validate file size
+        if (uploadedFile.Size > 10485760) // 10MB
+        {
+            toastService.ShowWarning("Dosya boyutu 10MB'dan büyük olamaz. Lütfen daha küçük bir dosya seçin.");
+            uploadedFile = null;
+        }
     }
 
-    public class TicketResponse
+    private void HandleReplyFileSelected(InputFileChangeEventArgs e)
     {
-        public int Id { get; set; }
-        public string Message { get; set; }
-        public DateTime ResponseDate { get; set; }
-        public bool IsStaff { get; set; }
-        public string Attachment { get; set; }
-    }
+        replyFile = e.File;
 
-    public class CreateSupportTicketDto
-    {
-        public string Subject { get; set; }
-        public string Description { get; set; }
-        public string Priority { get; set; } = "Orta";
-        public string Category { get; set; } = "Teknik Sorun";
+        // Validate file size
+        if (replyFile.Size > 10485760) // 10MB
+        {
+            toastService.ShowWarning("Dosya boyutu 10MB'dan büyük olamaz. Lütfen daha küçük bir dosya seçin.");
+            replyFile = null;
+        }
     }
 }

@@ -4,11 +4,18 @@
     {
         public Guid Id { get; set; }
         public string Message { get; set; } = null!;
-        public DateTime ResponseDate { get; set; } = DateTime.UtcNow;
-        public bool IsStaff { get; set; } = false;
+        public DateTime ResponseDate { get; set; } = DateTime.Now;
+        public bool IsStaff { get; set; }
         public string? AttachmentPath { get; set; }
 
+        // Kullanıcı bilgileri
+        public string? UserId { get; set; }
+        public string? UserName { get; set; }
+
+        // Foreign key
         public Guid SupportTicketId { get; set; }
-        public SupportTicket SupportTicket { get; set; } = null!;
+
+        // Navigation property
+        public virtual SupportTicket SupportTicket { get; set; } = null!;
     }
 }

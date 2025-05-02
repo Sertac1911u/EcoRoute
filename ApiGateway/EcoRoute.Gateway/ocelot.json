@@ -50,28 +50,6 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5003
-        }
-      ],
-      "UpstreamPathTemplate": "/dataprocessing/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
-        "AllowedScopes": [ "DataProcessingFullPermission" ]
-      },
-      "RouteClaimsRequirement": {
-        "scope": "DataProcessingFullPermission"
-      },
-      "DownstreamHeaderTransform": {
-        "Authorization": "Bearer {Token}"
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/api/{everything}",
-      "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
           "Port": 5004
         }
       ],
@@ -88,8 +66,28 @@
         "Authorization": "Bearer {Token}"
       }
     },
-
-    // 👉 Burası Eklendi: Login, Register gibi Authentication işlemleri için
+    {
+      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5005
+        }
+      ],
+      "UpstreamPathTemplate": "/services/supports/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "OPTIONS" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "SupportsFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "SupportsFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      }
+    },
     {
       "DownstreamPathTemplate": "/api/{everything}",
       "DownstreamScheme": "http",
@@ -101,8 +99,20 @@
       ],
       "UpstreamPathTemplate": "/api/{everything}",
       "UpstreamHttpMethod": [ "POST", "OPTIONS" ]
+    },
+    {
+      "DownstreamPathTemplate": "/Uploads/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5005
+        }
+      ],
+      "UpstreamPathTemplate": "/Uploads/{everything}",
+      "UpstreamHttpMethod": [ "GET" ],
+      "Priority": 1
     }
-
   ],
   "GlobalConfiguration": {
     "BaseUrl": "http://localhost:5000"

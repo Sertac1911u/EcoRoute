@@ -24,7 +24,6 @@ namespace EcoRoute.IdentityServer.Tools
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
-
                 switch (role)
                 {
                     case "SuperAdmin":
@@ -32,29 +31,32 @@ namespace EcoRoute.IdentityServer.Tools
                         claims.Add(new Claim("scope", "DataProcessingFullPermission"));
                         claims.Add(new Claim("scope", "DataCollectionReadPermission"));
                         claims.Add(new Claim("scope", "RouteOptimizationFullPermission"));
+                        claims.Add(new Claim("scope", "SupportsFullPermission")); // Added
+                        claims.Add(new Claim("scope", "SupportsReadPermission")); // Added
                         claims.Add(new Claim("scope", "OcelotFullPermission"));
                         break;
-
                     case "Manager":
                         claims.Add(new Claim("scope", "DataCollectionFullPermission"));
                         claims.Add(new Claim("scope", "DataCollectionReadPermission"));
                         claims.Add(new Claim("scope", "DataProcessingFullPermission"));
                         claims.Add(new Claim("scope", "RouteOptimizationFullPermission"));
+                        claims.Add(new Claim("scope", "SupportsFullPermission")); // Added
+                        claims.Add(new Claim("scope", "SupportsReadPermission")); // Added
                         break;
-
                     case "Driver":
+                    case "Customer": // Include Customer role for Support access
                         claims.Add(new Claim("scope", "DataCollectionReadPermission"));
                         claims.Add(new Claim("scope", "DataProcessingReadPermission"));
                         claims.Add(new Claim("scope", "RouteOptimizationReadPermission"));
+                        claims.Add(new Claim("scope", "SupportsReadPermission")); // Added,
+                        claims.Add(new Claim("scope", "SupportsFullPermission")); // Added
                         break;
                 }
             }
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtTokenDefaults.Key));
             var signingCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
             var expirationDate = DateTime.UtcNow.AddDays(JwtTokenDefaults.Expire);
-
             var token = new JwtSecurityToken(
                 issuer: JwtTokenDefaults.ValidIssuer,
                 audience: JwtTokenDefaults.ValidAudience,
@@ -66,7 +68,6 @@ namespace EcoRoute.IdentityServer.Tools
 
             var tokenHandler = new JwtSecurityTokenHandler();
             var tokenString = tokenHandler.WriteToken(token);
-
             return new TokenResponseViewModel(tokenString, expirationDate);
         }
     }

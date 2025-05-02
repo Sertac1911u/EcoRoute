@@ -91,7 +91,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseCors("AllowBlazorUI");
 
-// 🌟 HTTPS REDIRECTION SİLİNDİ!
 
 app.UseRouting();
 app.UseAuthentication();
