@@ -1,49 +1,81 @@
 ﻿@page "/notifications"
 @using Microsoft.AspNetCore.Authorization
-@using System
-@using System.Collections.Generic
-@using System.Linq
-@using System.Threading.Tasks
-@inject IToastService toastService
+@using EcoRoute.DtoLayer.NotificationDtos
+@using EcoRoute.UI.Services.NotificationServices
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NotificationService notificationService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [Authorize]
 
 <div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden">
     <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
-        <div class="flex items-center">
-            <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Bildirimler</h2>
-            <div class="ml-3 bg-primary-100 text-primary-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-primary-900 dark:text-primary-300">
-                @unreadCount adet okunmamış
-            </div>
-        </div>
+        <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Bildirimler</h2>
         <div class="flex space-x-2">
-            <button class="px-3 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition duration-300 flex items-center" 
-                    @onclick="MarkAllAsRead">
-                <i class="fas fa-check-double mr-2"></i> Tümünü Okundu İşaretle
-            </button>
-            <button class="px-3 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition duration-300 flex items-center"
-                    @onclick="ShowDeleteAllConfirmation">
-                <i class="fas fa-trash-alt mr-2"></i> Tümünü Sil
-            </button>
+            <div class="relative">
+                <input type="text" placeholder="Bildirimlerinde ara..." class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white"
+                       @bind-value="searchTerm" @bind-value:event="oninput" />
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-gray-400"></i>
+                </div>
+            </div>
+            <div class="relative">
+                <select class="pl-4 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white appearance-none"
+                        @bind="selectedType">
+                    <option value="">Tüm Türler</option>
+                    <option value="Info">Bilgi</option>
+                    <option value="Success">Başarılı</option>
+                    <option value="Warning">Uyarı</option>
+                    <option value="Error">Hata</option>
+                </select>
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <i class="fas fa-chevron-down text-gray-400"></i>
+                </div>
+            </div>
+            <div class="relative">
+                <select class="pl-4 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white appearance-none"
+                        @bind="readStatus">
+                    <option value="">Tümü</option>
+                    <option value="unread">Okunmamış</option>
+                    <option value="read">Okunmuş</option>
+                </select>
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <i class="fas fa-chevron-down text-gray-400"></i>
+                </div>
+            </div>
+            @if (filteredNotifications.Any(n => !n.IsRead))
+            {
+                <button @onclick="MarkAllAsRead" class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors">
+                    <i class="fas fa-check-double mr-2"></i> Tümünü Okundu İşaretle
+                </button>
+            }
         </div>
     </div>
 
-    <div class="overflow-x-auto">
-        @if (notifications == null)
+    <div class="overflow-hidden">
+        @if (isLoading)
         {
-            <div class="flex justify-center items-center h-64">
-                <div class="flex flex-col items-center">
-                    <i class="fas fa-circle-notch fa-spin text-primary-500 text-3xl mb-4"></i>
-                    <p class="text-gray-500 dark:text-gray-400">Bildirimler yükleniyor...</p>
-                </div>
+            <div class="p-8 text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-500"></div>
+                <p class="mt-2 text-gray-500 dark:text-gray-400">Bildirimler yükleniyor...</p>
             </div>
         }
-        else if (notifications.Count == 0)
+        else if (!filteredNotifications.Any())
         {
-            <div class="flex justify-center items-center h-64">
-                <div class="flex flex-col items-center">
-                    <i class="fas fa-bell-slash text-gray-400 text-5xl mb-4"></i>
-                    <p class="text-lg text-gray-500 dark:text-gray-400">Bildiriminiz bulunmamaktadır</p>
+            <div class="p-12 text-center">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 mb-4">
+                    <i class="fas fa-bell-slash text-3xl"></i>
                 </div>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Bildirim Bulunamadı</h3>
+                <p class="mt-2 text-gray-500 dark:text-gray-400">
+                    @if (string.IsNullOrEmpty(searchTerm) && string.IsNullOrEmpty(selectedType) && string.IsNullOrEmpty(readStatus))
+                    {
+                        <span>Henüz hiç bildiriminiz bulunmamaktadır.</span>
+                    }
+                    else
+                    {
+                        <span>Arama kriterlerinize uygun bildirim bulunamadı.</span>
+                    }
+                </p>
             </div>
         }
         else
@@ -51,568 +83,143 @@
             <div class="divide-y divide-gray-200 dark:divide-gray-700">
                 @foreach (var notification in filteredNotifications)
                 {
-                    <div class="@(notification.IsRead ? "bg-white dark:bg-gray-900" : "bg-blue-50 dark:bg-blue-900/10")">
-                        <div class="flex items-center px-6 py-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition duration-200"
-                             @onclick="() => ToggleExpand(notification)">
-                            <div class="flex-shrink-0 mr-4">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center @GetIconBgColor(notification.Type)">
-                                    <i class="@GetIconClass(notification.Type) text-white"></i>
-                                </div>
+                    <div @onclick="() => HandleNotificationClick(notification)" class="@GetNotificationClasses(notification)">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 pt-0.5">
+                                <span class="@GetNotificationIconClasses(notification)">
+                                    <i class="@GetNotificationIcon(notification)"></i>
+                                </span>
                             </div>
-                            <div class="flex-grow min-w-0">
-                                <div class="flex justify-between items-start">
-                                    <h3 class="text-base font-medium text-gray-900 dark:text-white truncate pr-2 @(notification.IsRead ? "" : "font-semibold")">
+                            <div class="ml-3 w-0 flex-1">
+                                <div class="flex justify-between">
+                                    <p class="text-sm font-medium @(notification.IsRead ? "text-gray-600 dark:text-gray-400" : "text-gray-900 dark:text-white")">
                                         @notification.Title
-                                    </h3>
-                                    <div class="flex items-center space-x-2">
-                                        <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                                            @GetTimeAgo(notification.CreatedAt)
-                                        </span>
-                                        @if (!notification.IsRead)
-                                        {
-                                            <span class="h-2 w-2 rounded-full bg-primary-500"></span>
-                                        }
-                                    </div>
+                                    </p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-500">
+                                        @notification.CreatedDate.ToString("dd.MM.yyyy HH:mm")
+                                    </p>
                                 </div>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
-                                    @notification.ShortDescription
+                                <p class="mt-1 text-sm @(notification.IsRead ? "text-gray-500 dark:text-gray-500" : "text-gray-700 dark:text-gray-300")">
+                                    @notification.Message
                                 </p>
                             </div>
-                            <div class="ml-4 flex-shrink-0">
-                                <i class="fas @(expandedNotifications.Contains(notification.Id) ? "fa-chevron-up" : "fa-chevron-down") text-gray-400"></i>
-                            </div>
+                            @if (!notification.IsRead)
+                            {
+                                <div class="ml-4 flex-shrink-0 flex">
+                                    <button @onclick:stopPropagation="true" @onclick="() => MarkAsRead(notification.Id)" class="rounded-md p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </div>
+                            }
                         </div>
-                        
-                        @if (expandedNotifications.Contains(notification.Id))
-                        {
-                            <div class="px-6 pb-4 pt-1 pl-20 animate-fadeIn">
-                                <div class="mb-4 text-gray-700 dark:text-gray-300">
-                                    @notification.FullDescription
-                                </div>
-                                
-                                @if (notification.HasAction)
-                                {
-                                    <a href="@notification.ActionUrl" class="inline-flex items-center px-4 py-2 rounded-md bg-primary-100 text-primary-800 hover:bg-primary-200 dark:bg-primary-900/50 dark:text-primary-300 dark:hover:bg-primary-900 transition duration-200">
-                                        <i class="@GetActionIcon(notification.Type) mr-2"></i>
-                                        @notification.ActionText
-                                    </a>
-                                }
-                                
-                                <div class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between">
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                                        @notification.CreatedAt.ToString("dd MMMM yyyy, HH:mm")
-                                    </div>
-                                    <div class="flex space-x-3">
-                                        <button @onclick="() => ToggleReadStatus(notification)" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                                            <i class="fas @(notification.IsRead ? "fa-envelope" : "fa-envelope-open") mr-1"></i>
-                                            @(notification.IsRead ? "Okunmadı Olarak İşaretle" : "Okundu Olarak İşaretle")
-                                        </button>
-                                        <button @onclick="() => ShowDeleteConfirmation(notification.Id)" class="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition-colors">
-                                            <i class="fas fa-trash-alt mr-1"></i> Sil
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        }
                     </div>
                 }
-            </div>
-            
-            <!-- Pagination -->
-            <div class="flex justify-between items-center px-6 py-3 bg-gray-50 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                    <span>Toplam: @notifications.Count bildirim</span>
-                    <span class="mx-2">|</span>
-                    <select class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-md px-2 py-1 text-sm"
-                            @onchange="OnFilterChange">
-                        <option value="all">Tümü</option>
-                        <option value="unread">Okunmamış</option>
-                        <option value="read">Okunmuş</option>
-                    </select>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button class="px-3 py-1 rounded-md @(currentPage > 1 ? "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" : "bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed") border border-gray-300 dark:border-gray-600 transition duration-200"
-                            @onclick="PreviousPage" disabled="@(currentPage <= 1)">
-                        <i class="fas fa-chevron-left"></i>
-                    </button>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">
-                        Sayfa @currentPage / @totalPages
-                    </span>
-                    <button class="px-3 py-1 rounded-md @(currentPage < totalPages ? "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600" : "bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed") border border-gray-300 dark:border-gray-600 transition duration-200"
-                            @onclick="NextPage" disabled="@(currentPage >= totalPages)">
-                        <i class="fas fa-chevron-right"></i>
-                    </button>
-                </div>
             </div>
         }
     </div>
 </div>
 
-<!-- Delete Confirmation Modal -->
-@if (showDeleteModal)
-{
-    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl p-6">
-            <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
-                    <i class="fas fa-exclamation-triangle text-2xl"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Bildirimi Sil</h3>
-                <p class="text-gray-500 dark:text-gray-400">Bu bildirimi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
-            </div>
-            <div class="flex justify-between">
-                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="CancelDelete">
-                    İptal
-                </button>
-                <button class="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg text-white transition-colors" @onclick="DeleteNotification">
-                    Sil
-                </button>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- Delete All Confirmation Modal -->
-@if (showDeleteAllModal)
-{
-    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl p-6">
-            <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
-                    <i class="fas fa-exclamation-triangle text-2xl"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Tüm Bildirimleri Sil</h3>
-                <p class="text-gray-500 dark:text-gray-400">Tüm bildirimleri silmek istediğinize emin misiniz? Bu işlem geri alınamaz ve @notifications.Count bildirim silinecektir.</p>
-            </div>
-            <div class="flex justify-between">
-                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="CancelDeleteAll">
-                    İptal
-                </button>
-                <button class="px-4 py-2 bg-red-500 hover:bg-red-600 rounded-lg text-white transition-colors" @onclick="DeleteAllNotifications">
-                    Tümünü Sil
-                </button>
-            </div>
-        </div>
-    </div>
-}
-
-<style>
-    .animate-fadeIn {
-        animation: fadeIn 0.3s ease-out;
-    }
-    
-    @@keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .line-clamp-1 {
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-</style>
-
 @code {
-    private List<Notification> notifications;
-    private List<Notification> filteredNotifications => GetFilteredNotifications();
-    private HashSet<int> expandedNotifications = new HashSet<int>();
-    private bool showDeleteModal = false;
-    private bool showDeleteAllModal = false;
-    private int notificationIdToDelete;
-    private string currentFilter = "all";
-    private int currentPage = 1;
-    private int pageSize = 10;
-    private int totalPages => notifications == null ? 0 : (int)Math.Ceiling(notifications.Count / (double)pageSize); private int unreadCount => notifications?.Count(n => !n.IsRead) ?? 0;
+    private List<ResultNotificationDto> notifications = new List<ResultNotificationDto>();
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private string selectedType = "";
+    private string readStatus = "";
+
+    private List<ResultNotificationDto> filteredNotifications => notifications
+        .Where(n => string.IsNullOrEmpty(searchTerm) ||
+                   n.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                   n.Message.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+        .Where(n => string.IsNullOrEmpty(selectedType) || n.Type == selectedType)
+        .Where(n => string.IsNullOrEmpty(readStatus) ||
+                   (readStatus == "read" && n.IsRead) ||
+                   (readStatus == "unread" && !n.IsRead))
+        .ToList();
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadDummyNotifications();
-    }
-    
-    private Task LoadDummyNotifications()
-    {
-        notifications = new List<Notification>
+        notificationService.OnNotificationsUpdated += OnNotificationsUpdated;
+
+        // SignalR bağlantısını başlat (eğer başlatılmamışsa)
+        if (!notificationService.IsConnected)
         {
-            new Notification
-            {
-                Id = 1,
-                Title = "Yeni Destek Talebi Yanıtı",
-                ShortDescription = "Destek talebinize yanıt verildi: 'Uygulama açılışında hata alıyorum'.",
-                FullDescription = "Merhaba, 'Uygulama açılışında hata alıyorum' konulu destek talebinize yanıt verildi. Destek ekibimiz sorununuzu çözmek için çalışıyor. Detayları görmek için destek talebi sayfasını ziyaret edebilirsiniz.",
-                Type = NotificationType.Support,
-                IsRead = false,
-                CreatedAt = DateTime.Now.AddMinutes(-30),
-                HasAction = true,
-                ActionUrl = "/supports",
-                ActionText = "Destek Talebine Git"
-            },
-            new Notification
-            {
-                Id = 2,
-                Title = "Şifre Değişikliği",
-                ShortDescription = "Hesabınızın şifresi başarıyla değiştirildi.",
-                FullDescription = "Hesabınızın şifresi başarıyla değiştirildi. Bu işlemi siz yapmadıysanız lütfen derhal bizimle iletişime geçin ve güvenlik önlemlerinizi gözden geçirin. Hesap güvenliğiniz için düzenli olarak şifrenizi değiştirmenizi öneririz.",
-                Type = NotificationType.Security,
-                IsRead = true,
-                CreatedAt = DateTime.Now.AddHours(-2),
-                HasAction = false
-            },
-            new Notification
-            {
-                Id = 3,
-                Title = "Sistem Bakımı",
-                ShortDescription = "Planlı bakım: 10 Mayıs 2025, 02:00 - 04:00 arasında sistem erişilemez olacaktır.",
-                FullDescription = "Değerli kullanıcımız, sistemimizde yapılacak planlı bakım çalışması nedeniyle 10 Mayıs 2025 tarihinde saat 02:00 - 04:00 arasında hizmetlerimiz geçici olarak erişilemez olacaktır. Bu süre zarfında sistemimize erişemeyeceksiniz. Anlayışınız için teşekkür ederiz.",
-                Type = NotificationType.System,
-                IsRead = false,
-                CreatedAt = DateTime.Now.AddHours(-5),
-                HasAction = false
-            },
-            new Notification
-            {
-                Id = 4,
-                Title = "Yeni Güncelleme",
-                ShortDescription = "Uygulama 2.3.0 versiyonu yayınlandı. Yeni özellikler ve iyileştirmeler içeriyor.",
-                FullDescription = "Uygulamamızın 2.3.0 versiyonu yayınlandı. Bu güncelleme aşağıdaki yeni özellikleri ve iyileştirmeleri içeriyor:\n\n- Yeni raporlama arayüzü\n- Performans iyileştirmeleri\n- Hata düzeltmeleri\n- Geliştirilmiş kullanıcı arayüzü\n\nGüncellemeleri görmek için sağ üst köşedeki Ayarlar > Hakkında menüsünü ziyaret edebilirsiniz.",
-                Type = NotificationType.Update,
-                IsRead = true,
-                CreatedAt = DateTime.Now.AddDays(-1),
-                HasAction = true,
-                ActionUrl = "/settings",
-                ActionText = "Ayarlara Git"
-            },
-            new Notification
-            {
-                Id = 5,
-                Title = "Ödeme Hatırlatıcısı",
-                ShortDescription = "Önümüzdeki faturanız 3 gün içinde ödenecek.",
-                FullDescription = "Değerli müşterimiz, aboneliğinizin önümüzdeki dönem ödemesi 3 gün içinde otomatik olarak gerçekleştirilecektir. Fatura tutarı: 149,99 TL. Ödeme bilgilerinizi güncellemek isterseniz ödeme ayarları sayfasını ziyaret edebilirsiniz.",
-                Type = NotificationType.Payment,
-                IsRead = false,
-                CreatedAt = DateTime.Now.AddDays(-2),
-                HasAction = true,
-                ActionUrl = "/payment",
-                ActionText = "Ödeme Ayarlarına Git"
-            },
-            new Notification
-            {
-                Id = 6,
-                Title = "Kullanım İstatistikleri",
-                ShortDescription = "Nisan ayı kullanım raporu hazır. Geçen aya göre %15 artış gösterdiniz.",
-                FullDescription = "Nisan 2025 ayı kullanım raporunuz hazır. Geçen aya göre kullanımınızda %15 artış gözlemlendi. En çok kullanılan özellikler: Raporlar, Analitik, Kullanıcı Yönetimi. Detaylı istatistiklere raporlar sayfasından erişebilirsiniz.",
-                Type = NotificationType.Report,
-                IsRead = true,
-                CreatedAt = DateTime.Now.AddDays(-3),
-                HasAction = true,
-                ActionUrl = "/reports",
-                ActionText = "Raporları Görüntüle"
-            },
-            new Notification
-            {
-                Id = 7,
-                Title = "Takvim Hatırlatıcısı",
-                ShortDescription = "Yarınki toplantı: 'Proje Değerlendirmesi' - 10:00",
-                FullDescription = "Yarın saat 10:00'da 'Proje Değerlendirmesi' adlı toplantınız bulunuyor. Toplantı 2. kat toplantı salonunda gerçekleştirilecektir. Katılımcılar: Siz, Ahmet Yılmaz, Ayşe Demir, Mehmet Kaya.",
-                Type = NotificationType.Calendar,
-                IsRead = false,
-                CreatedAt = DateTime.Now.AddDays(-1).AddHours(-8),
-                HasAction = true,
-                ActionUrl = "/calendar",
-                ActionText = "Takvime Git"
-            },
-            new Notification
-            {
-                Id = 8,
-                Title = "Yeni Kullanıcı",
-                ShortDescription = "Yeni bir kullanıcı sisteme eklendi: Ali Kara.",
-                FullDescription = "Yeni bir kullanıcı sisteme eklendi: Ali Kara (ali.kara@example.com). Kullanıcı şu an 'Standart Kullanıcı' rolüne sahip. Kullanıcı bilgilerini düzenlemek veya rol atamak için kullanıcı yönetimi sayfasını ziyaret edebilirsiniz.",
-                Type = NotificationType.User,
-                IsRead = true,
-                CreatedAt = DateTime.Now.AddDays(-4),
-                HasAction = true,
-                ActionUrl = "/users",
-                ActionText = "Kullanıcıları Görüntüle"
-            },
-            new Notification
-            {
-                Id = 9,
-                Title = "Lisans Uyarısı",
-                ShortDescription = "Lisansınız 15 gün içinde sona erecek.",
-                FullDescription = "Değerli müşterimiz, mevcut lisansınız 15 gün içinde sona erecektir. Hizmet kesintisi yaşamamak için lisansınızı yenilemenizi öneririz. Lisans yenileme işlemini lisans yönetimi sayfasından gerçekleştirebilirsiniz.",
-                Type = NotificationType.License,
-                IsRead = false,
-                CreatedAt = DateTime.Now.AddDays(-5),
-                HasAction = true,
-                ActionUrl = "/license",
-                ActionText = "Lisansı Yenile"
-            },
-            new Notification
-            {
-                Id = 10,
-                Title = "Veri Yedekleme Tamamlandı",
-                ShortDescription = "Otomatik veri yedekleme işlemi başarıyla tamamlandı.",
-                FullDescription = "Haftalık otomatik veri yedekleme işlemi başarıyla tamamlandı. Yedeklenen veri boyutu: 1.2 GB. Yedekleme zamanı: 02:15 AM. Yedeklerinizi görüntülemek veya geri yüklemek için yedekleme yönetimi sayfasını ziyaret edebilirsiniz.",
-                Type = NotificationType.Backup,
-                IsRead = true,
-                CreatedAt = DateTime.Now.AddDays(-6),
-                HasAction = true,
-                ActionUrl = "/backups",
-                ActionText = "Yedekleri Görüntüle"
-            },
-            new Notification
-            {
-                Id = 11,
-                Title = "Yeni Mesaj",
-                ShortDescription = "Mehmet Kaya tarafından yeni bir mesaj aldınız.",
-                FullDescription = "Mehmet Kaya tarafından yeni bir mesaj aldınız: 'Merhaba, yarınki toplantı için hazırladığım dökümanları inceleyebilir misiniz? Teşekkürler.' Mesajı yanıtlamak için mesajlar sayfasını ziyaret edebilirsiniz.",
-                Type = NotificationType.Message,
-                IsRead = false,
-                CreatedAt = DateTime.Now.AddDays(-1).AddHours(-12),
-                HasAction = true,
-                ActionUrl = "/messages",
-                ActionText = "Mesajlara Git"
-            },
-            new Notification
-            {
-                Id = 12,
-                Title = "Görev Atandı",
-                ShortDescription = "Size yeni bir görev atandı: 'Aylık rapor hazırlama'.",
-                FullDescription = "Size yeni bir görev atandı: 'Aylık rapor hazırlama'. Görev açıklaması: Nisan ayı satış ve performans raporlarını hazırlayıp yönetim ekibine sunmak. Son teslim tarihi: 5 Mayıs 2025. Öncelik: Yüksek. Görevi görüntülemek ve durumunu güncellemek için görevler sayfasını ziyaret edebilirsiniz.",
-                Type = NotificationType.Task,
-                IsRead = true,
-                CreatedAt = DateTime.Now.AddDays(-7),
-                HasAction = true,
-                ActionUrl = "/tasks",
-                ActionText = "Göreve Git"
-            }
-        };
-        
-        return Task.CompletedTask;
+            await notificationService.InitializeAsync();
+        }
+
+        // Bildirimleri yükle
+        await LoadNotifications();
     }
-    
-    private List<Notification> GetFilteredNotifications()
+
+    private async Task LoadNotifications()
     {
-        if (notifications == null)
-            return new List<Notification>();
-            
-        IEnumerable<Notification> filtered = notifications;
-        
-        // Apply filter
-        if (currentFilter == "read")
-            filtered = filtered.Where(n => n.IsRead);
-        else if (currentFilter == "unread")
-            filtered = filtered.Where(n => !n.IsRead);
-            
-        // Apply pagination
-        filtered = filtered.Skip((currentPage - 1) * pageSize).Take(pageSize);
-        
-        return filtered.ToList();
+        isLoading = true;
+        await notificationService.GetNotificationsAsync();
+        notifications = notificationService.Notifications;
+        isLoading = false;
     }
-    
-    private void ToggleExpand(Notification notification)
+
+    private void OnNotificationsUpdated()
     {
-        if (expandedNotifications.Contains(notification.Id))
-            expandedNotifications.Remove(notification.Id);
-        else
+        InvokeAsync(() =>
         {
-            expandedNotifications.Add(notification.Id);
-            
-            // Auto mark as read when expanded
-            if (!notification.IsRead)
-            {
-                notification.IsRead = true;
-                StateHasChanged();
-            }
+            notifications = notificationService.Notifications;
+            StateHasChanged();
+        });
+    }
+
+    private async Task MarkAsRead(Guid id)
+    {
+        await notificationService.MarkAsReadAsync(id);
+    }
+
+    private async Task MarkAllAsRead()
+    {
+        await notificationService.MarkAllAsReadAsync();
+    }
+
+    private async Task HandleNotificationClick(ResultNotificationDto notification)
+    {
+        if (!notification.IsRead)
+        {
+            await notificationService.MarkAsReadAsync(notification.Id);
         }
     }
-    
-    private void ToggleReadStatus(Notification notification)
+
+    private string GetNotificationClasses(ResultNotificationDto notification)
     {
-        notification.IsRead = !notification.IsRead;
-        toastService.ShowSuccess(notification.IsRead ? 
-            "Bildirim okundu olarak işaretlendi." : 
-            "Bildirim okunmadı olarak işaretlendi.");
+        var baseClasses = "px-6 py-4 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer";
+
+        return notification.IsRead
+            ? baseClasses
+            : $"{baseClasses} bg-blue-50 dark:bg-blue-900/20";
     }
-    
-    private void ShowDeleteConfirmation(int id)
+
+    private string GetNotificationIconClasses(ResultNotificationDto notification)
     {
-        notificationIdToDelete = id;
-        showDeleteModal = true;
-    }
-    
-    private void CancelDelete()
-    {
-        showDeleteModal = false;
-    }
-    
-    private void DeleteNotification()
-    {
-        var notification = notifications.FirstOrDefault(n => n.Id == notificationIdToDelete);
-        if (notification != null)
+        var baseClasses = "flex items-center justify-center h-10 w-10 rounded-full";
+
+        return notification.Type switch
         {
-            notifications.Remove(notification);
-            expandedNotifications.Remove(notification.Id);
-            toastService.ShowSuccess("Bildirim başarıyla silindi.");
-        }
-        
-        showDeleteModal = false;
-    }
-    
-    private void ShowDeleteAllConfirmation()
-    {
-        showDeleteAllModal = true;
-    }
-    
-    private void CancelDeleteAll()
-    {
-        showDeleteAllModal = false;
-    }
-    
-    private void DeleteAllNotifications()
-    {
-        notifications.Clear();
-        expandedNotifications.Clear();
-        toastService.ShowSuccess("Tüm bildirimler başarıyla silindi.");
-        showDeleteAllModal = false;
-    }
-    
-    private void MarkAllAsRead()
-    {
-        foreach (var notification in notifications.Where(n => !n.IsRead))
-        {
-            notification.IsRead = true;
-        }
-        
-        toastService.ShowSuccess("Tüm bildirimler okundu olarak işaretlendi.");
-    }
-    
-    private void OnFilterChange(ChangeEventArgs e)
-    {
-        currentFilter = e.Value.ToString();
-        currentPage = 1; // Reset to first page when filter changes
-    }
-    
-    private void PreviousPage()
-    {
-        if (currentPage > 1)
-            currentPage--;
-    }
-    
-    private void NextPage()
-    {
-        if (currentPage < totalPages)
-            currentPage++;
-    }
-    
-    private string GetIconClass(NotificationType type)
-    {
-        return type switch
-        {
-            NotificationType.Support => "fas fa-headset",
-            NotificationType.Security => "fas fa-shield-alt",
-            NotificationType.System => "fas fa-server",
-            NotificationType.Update => "fas fa-sync",
-            NotificationType.Payment => "fas fa-credit-card",
-            NotificationType.Report => "fas fa-chart-bar",
-            NotificationType.Calendar => "fas fa-calendar-alt",
-            NotificationType.User => "fas fa-user",
-            NotificationType.License => "fas fa-key",
-            NotificationType.Backup => "fas fa-database",
-            NotificationType.Message => "fas fa-envelope",
-            NotificationType.Task => "fas fa-tasks",
-            _ => "fas fa-bell"
-        };
-    }
-    
-    private string GetIconBgColor(NotificationType type)
-    {
-        return type switch
-        {
-            NotificationType.Support => "bg-blue-500",
-            NotificationType.Security => "bg-red-500",
-            NotificationType.System => "bg-gray-500",
-            NotificationType.Update => "bg-green-500",
-            NotificationType.Payment => "bg-purple-500",
-            NotificationType.Report => "bg-indigo-500",
-            NotificationType.Calendar => "bg-yellow-500",
-            NotificationType.User => "bg-pink-500",
-            NotificationType.License => "bg-orange-500",
-            NotificationType.Backup => "bg-teal-500",
-            NotificationType.Message => "bg-cyan-500",
-            NotificationType.Task => "bg-lime-500",
-            _ => "bg-gray-500"
-        };
-    }
-    
-    private string GetActionIcon(NotificationType type)
-    {
-        return type switch
-        {
-            NotificationType.Support => "fas fa-ticket-alt",
-            NotificationType.Security => "fas fa-lock",
-            NotificationType.System => "fas fa-cog",
-            NotificationType.Update => "fas fa-download",
-            NotificationType.Payment => "fas fa-money-bill",
-            NotificationType.Report => "fas fa-file-alt",
-            NotificationType.Calendar => "fas fa-calendar-day",
-            NotificationType.User => "fas fa-users",
-            NotificationType.License => "fas fa-certificate",
-            NotificationType.Backup => "fas fa-cloud-download-alt",
-            NotificationType.Message => "fas fa-reply",
-            NotificationType.Task => "fas fa-clipboard-check",
-            _ => "fas fa-external-link-alt"
+            "Success" => $"{baseClasses} bg-green-100 text-green-500 dark:bg-green-900/30 dark:text-green-400",
+            "Warning" => $"{baseClasses} bg-yellow-100 text-yellow-500 dark:bg-yellow-900/30 dark:text-yellow-400",
+            "Error" => $"{baseClasses} bg-red-100 text-red-500 dark:bg-red-900/30 dark:text-red-400",
+            _ => $"{baseClasses} bg-blue-100 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400" // Info
         };
     }
 
-    private string GetTimeAgo(DateTime dateTime)
+    private string GetNotificationIcon(ResultNotificationDto notification)
     {
-        var timeSpan = DateTime.Now - dateTime;
-
-        if (timeSpan.TotalMinutes < 1)
-            return "Şimdi";
-        if (timeSpan.TotalMinutes < 60)
-            return $"{(int)timeSpan.TotalMinutes} dakika önce";
-        if (timeSpan.TotalHours < 24)
-            return $"{(int)timeSpan.TotalHours} saat önce";
-        if (timeSpan.TotalDays < 7)
-            return $"{(int)timeSpan.TotalDays} gün önce";
-        if (timeSpan.TotalDays < 30)
-            return $"{(int)timeSpan.TotalDays / 7} hafta önce";
-        if (timeSpan.TotalDays < 365)
-            return $"{(int)timeSpan.TotalDays / 30} ay önce";
-
-        return $"{(int)timeSpan.TotalDays / 365} yıl önce";
+        return notification.Type switch
+        {
+            "Success" => "fas fa-check",
+            "Warning" => "fas fa-exclamation-triangle",
+            "Error" => "fas fa-times-circle",
+            _ => "fas fa-info-circle" // Info
+        };
     }
 
-    public class Notification
+    public void Dispose()
     {
-        public int Id { get; set; }
-        public string Title { get; set; }
-        public string ShortDescription { get; set; }
-        public string FullDescription { get; set; }
-        public NotificationType Type { get; set; }
-        public bool IsRead { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public bool HasAction { get; set; }
-        public string ActionUrl { get; set; }
-        public string ActionText { get; set; }
-    }
-
-    public enum NotificationType
-    {
-        Support,
-        Security,
-        System,
-        Update,
-        Payment,
-        Report,
-        Calendar,
-        User,
-        License,
-        Backup,
-        Message,
-        Task
+        notificationService.OnNotificationsUpdated -= OnNotificationsUpdated;
     }
 }

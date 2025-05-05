@@ -4,7 +4,6 @@ using EcoRoute.Supports.Dtos.SupportTicketDto;
 using EcoRoute.Supports.Dtos.TicketResponseDto;
 using EcoRoute.Supports.Entities;
 using Microsoft.EntityFrameworkCore;
-using System;
 
 namespace EcoRoute.Supports.Services
 {
@@ -13,12 +12,14 @@ namespace EcoRoute.Supports.Services
         private readonly SupportsContext _context;
         private readonly IMapper _mapper;
         private readonly IWebHostEnvironment _env;
+        private readonly ISupportNotificationService _notificationService;
 
-        public SupportService(SupportsContext context, IMapper mapper, IWebHostEnvironment env)
+        public SupportService(SupportsContext context, IMapper mapper, IWebHostEnvironment env, ISupportNotificationService notificationService)
         {
             _context = context;
             _mapper = mapper;
             _env = env;
+            _notificationService = notificationService;
         }
 
         public async Task<ResultSupportTicketDto> CreateAsync(CreateSupportTicketDto dto)
@@ -67,8 +68,14 @@ namespace EcoRoute.Supports.Services
                 .Include(x => x.Responses)
                 .FirstOrDefaultAsync(x => x.Id == ticket.Id);
 
-            return _mapper.Map<ResultSupportTicketDto>(createdTicket);
+            var result = _mapper.Map<ResultSupportTicketDto>(createdTicket);
+
+            // Send notification about new ticket
+            await _notificationService.SendTicketCreatedNotificationAsync(result);
+
+            return result;
         }
+
         public async Task<List<ResultSupportTicketDto>> GetAllAsync()
         {
             var tickets = await _context.SupportTickets
@@ -77,6 +84,7 @@ namespace EcoRoute.Supports.Services
 
             return _mapper.Map<List<ResultSupportTicketDto>>(tickets);
         }
+
         public async Task<List<ResultSupportTicketDto>> GetAllAsync(string userId, bool isManagerOrSuperAdmin)
         {
             IQueryable<SupportTicket> query = _context.SupportTickets.Include(x => x.Responses);
@@ -102,7 +110,7 @@ namespace EcoRoute.Supports.Services
         public async Task AddResponseAsync(CreateTicketResponseDto dto)
         {
             var ticket = await _context.SupportTickets
-       .FirstOrDefaultAsync(x => x.Id == dto.SupportTicketId);
+                .FirstOrDefaultAsync(x => x.Id == dto.SupportTicketId);
 
             if (ticket == null)
                 throw new Exception("Ticket not found");
@@ -152,6 +160,28 @@ namespace EcoRoute.Supports.Services
 
             _context.TicketResponses.Add(response);
             await _context.SaveChangesAsync();
+
+            // Send notification about the new response
+            var responseResult = _mapper.Map<ResultTicketResponseDto>(response);
+
+            // If staff responded, notify the ticket creator
+            if (dto.IsStaff)
+            {
+                await _notificationService.SendTicketResponseNotificationAsync(
+                    responseResult,
+                    ticket.Subject,
+                    ticket.Id,
+                    ticket.UserId);
+            }
+            // If user responded, notify staff (send to all)
+            else
+            {
+                await _notificationService.SendTicketResponseNotificationAsync(
+                    responseResult,
+                    ticket.Subject,
+                    ticket.Id,
+                    ""); // Empty userId means notification will be sent to all
+            }
         }
         public async Task<bool> UpdateStatusAsync(Guid id, string status)
         {
@@ -161,6 +191,14 @@ namespace EcoRoute.Supports.Services
 
             ticket.Status = status;
             await _context.SaveChangesAsync();
+
+            // Send notification about status change
+            await _notificationService.SendTicketStatusChangedNotificationAsync(
+                ticket.Subject,
+                ticket.Id,
+                status,
+                ticket.UserId);
+
             return true;
         }
 
@@ -172,6 +210,14 @@ namespace EcoRoute.Supports.Services
 
             ticket.Status = "Kapatıldı";
             await _context.SaveChangesAsync();
+
+            // Send notification about ticket being closed
+            await _notificationService.SendTicketStatusChangedNotificationAsync(
+                ticket.Subject,
+                ticket.Id,
+                "Kapatıldı",
+                ticket.UserId);
+
             return true;
         }
     }

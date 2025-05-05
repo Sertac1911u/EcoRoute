@@ -1,0 +1,35 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "IdentityServer\\EcoRoute.IdentityServer\\EcoRoute.IdentityServer.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Frontends\\EcoRoute.UI\\EcoRoute.UI.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "ApiGateway\\EcoRoute.Gateway\\EcoRoute.Gateway.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Services\\Supports\\EcoRoute.Supports\\EcoRoute.Supports.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Services\\Settings\\EcoRoute.Supports\\EcoRoute.Settings.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Services\\Notification\\EcoRoute.Notifications\\EcoRoute.Notifications.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Services\\DataProcessing\\EcoRoute.DataProcessing\\EcoRoute.DataProcessing.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

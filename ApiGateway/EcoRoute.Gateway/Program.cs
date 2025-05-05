@@ -11,6 +11,17 @@ builder.Configuration
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
     .AddEnvironmentVariables();
 
+// Important: Add CORS policy before other services
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 // Authentication (JWT)
 builder.Services.AddAuthentication("OcelotAuthenticationScheme")
     .AddJwtBearer("OcelotAuthenticationScheme", options =>
@@ -30,6 +41,22 @@ builder.Services.AddAuthentication("OcelotAuthenticationScheme")
             ),
             ClockSkew = TimeSpan.Zero
         };
+
+        // SignalR can send the token via query string when WebSockets are used
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/notificationHub"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 // Ocelot middleware ekle
@@ -37,15 +64,36 @@ builder.Services.AddOcelot(builder.Configuration);
 
 var app = builder.Build();
 
-// Middlewares
+// IMPORTANT: Order of middleware matters!
+
+// Add CORS first
+app.UseCors();
+
+// Basic middlewares
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// (İsteğe bağlı: Root endpoint eklemek istersen Ocelot'tan önce olmalı)
+// Diagnostic endpoint (optional)
 app.MapGet("/", () => "EcoRoute Gateway Running...");
 
-// Ocelot en sonda!
+// Special handling for SignalR preflight requests
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS" && context.Request.Path.StartsWithSegments("/notificationHub"))
+    {
+        context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+        context.Response.Headers.Add("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+        context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+        context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+        context.Response.StatusCode = 204;
+        return;
+    }
+
+    await next();
+});
+
+// Ocelot at the end
 await app.UseOcelot();
 
 app.Run();

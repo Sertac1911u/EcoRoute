@@ -17,7 +17,6 @@ namespace EcoRoute.Supports.Controllers
         public SupportTicketsController(ISupportService supportService)
         {
             _supportService = supportService;
-            _supportService = supportService;
         }
 
         [HttpPost]

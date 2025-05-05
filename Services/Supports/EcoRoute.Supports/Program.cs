@@ -1,4 +1,4 @@
-using EcoRoute.Supports.Context;
+﻿using EcoRoute.Supports.Context;
 using EcoRoute.Supports.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.FileProviders;
@@ -24,6 +24,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes("dsopkjfewosspjwe12+fqpjrfqepqjasd123x.@ewrkj3241kld"))
         };
+
+        // SaveToken ekleyin - bu, token'ları HttpContext'te saklar
+        options.SaveToken = true;
     });
 var options = new WebApplicationOptions
 {
@@ -46,6 +49,9 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
+// HttpContextAccessor'ı ekle
+builder.Services.AddHttpContextAccessor();
+
 // CORS
 builder.Services.AddCors(options =>
 {
@@ -58,12 +64,16 @@ builder.Services.AddCors(options =>
     });
 });
 
+// HttpClient for notification service
+builder.Services.AddHttpClient<ISupportNotificationService, SupportNotificationService>();
+
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<SupportsContext>();
 builder.Services.AddScoped<ISupportService, SupportService>();
+builder.Services.AddScoped<ISupportNotificationService, SupportNotificationService>();
 builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
 var app = builder.Build();
@@ -79,7 +89,6 @@ if (!Directory.Exists(attachmentsFolder))
 {
     Directory.CreateDirectory(attachmentsFolder);
 }
-
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
@@ -100,6 +109,5 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/Uploads"
 });
 app.MapControllers();
-
 
 app.Run();

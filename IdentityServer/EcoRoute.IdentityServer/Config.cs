@@ -45,11 +45,26 @@ namespace EcoRoute.IdentityServer
                         "SupportsReadPermission",
                     }
                 },
+                new ApiResource("ResourceSettings")
+                {
+                    Scopes =
+                    {
+                        "SettingsFullPermission",
+                    }
+                },
                 new ApiResource("ResourceOcelot")
                 {
                     Scopes =
                     {
                         "OcelotFullPermission"
+                    }
+                },
+                new ApiResource("ResourceNotifications")
+                {
+                    Scopes =
+                    {
+                        "NotificationsFullPermission",
+                        "NotificationsReadPermission"
                     }
                 },
                 new ApiResource(IdentityServerConstants.LocalApi.ScopeName)
@@ -72,6 +87,9 @@ namespace EcoRoute.IdentityServer
                 new ApiScope("RouteOptimizationReadPermission","Read authority for ro operations"),
                 new ApiScope("SupportsFullPermission","Full authority for support operations"),
                 new ApiScope("SupportsReadPermission","Read authority for support operations"),
+                new ApiScope("SettingsFullPermission","Full authority for settings operations"),
+                new ApiScope("NotificationsFullPermission", "Full authority for notification operations"),
+                new ApiScope("NotificationsReadPermission", "Read authority for notification operations"),
                 new ApiScope("OcelotFullPermission","Full for oc operations"),
                 new ApiScope(IdentityServerConstants.LocalApi.ScopeName)
         };
@@ -92,7 +110,11 @@ namespace EcoRoute.IdentityServer
                         "RouteOptimizationFullPermission",
                         "SupportsFullPermission",
                         "SupportsReadPermission",
+                        "SettingsFullPermission",
                         "OcelotFullPermission",
+                        "NotificationsFullPermission",
+                        "NotificationsReadPermission",
+
                         IdentityServerConstants.LocalApi.ScopeName,
                         IdentityServerConstants.StandardScopes.Email,
                         IdentityServerConstants.StandardScopes.OpenId,
@@ -114,7 +136,8 @@ namespace EcoRoute.IdentityServer
                         "DataCollectionFullPermission",
                         "DataProcessingFullPermission",
                         "RouteOptimizationFullPermission",
-                        "SupportsFullPermission"
+                        "SupportsFullPermission",
+                        "NotificationsFullPermission",
                     }
                 },
 
@@ -129,7 +152,9 @@ namespace EcoRoute.IdentityServer
                         "DataCollectionReadPermission",
                         "DataProcessingReadPermission",
                         "RouteOptimizationReadPermission",
-                        "SupportsReadPermission"
+                        "SupportsReadPermission",
+                        "NotificationsReadPermission",
+                        "NotificationsReadPermission"
                     }
                 }
         };

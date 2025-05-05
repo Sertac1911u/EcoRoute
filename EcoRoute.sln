@@ -45,6 +45,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Supports", "Supports", "{1A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.Supports", "Services\Supports\EcoRoute.Supports\EcoRoute.Supports.csproj", "{0BDC7ABD-DE19-45C2-A251-BDC2130A6CFC}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Settings", "Settings", "{AC55BB63-8714-4536-9B27-E773759109F9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.Settings", "Services\Settings\EcoRoute.Supports\EcoRoute.Settings.csproj", "{535D6C67-2842-4C34-A0C7-010CADE060A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.Notifications", "Services\Notification\EcoRoute.Notifications\EcoRoute.Notifications.csproj", "{3B92D915-0475-4365-9413-23B7B0AB4986}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +89,14 @@ Global
 		{0BDC7ABD-DE19-45C2-A251-BDC2130A6CFC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0BDC7ABD-DE19-45C2-A251-BDC2130A6CFC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0BDC7ABD-DE19-45C2-A251-BDC2130A6CFC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{535D6C67-2842-4C34-A0C7-010CADE060A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{535D6C67-2842-4C34-A0C7-010CADE060A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{535D6C67-2842-4C34-A0C7-010CADE060A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{535D6C67-2842-4C34-A0C7-010CADE060A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B92D915-0475-4365-9413-23B7B0AB4986}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B92D915-0475-4365-9413-23B7B0AB4986}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B92D915-0475-4365-9413-23B7B0AB4986}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B92D915-0475-4365-9413-23B7B0AB4986}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -102,6 +116,9 @@ Global
 		{1E4ED7DE-AD10-40C6-BCE5-6BA2FF8BE0EF} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{1A793B0C-A69E-496E-AB5A-CCC1218B0A29} = {6A5A8676-22CE-49D4-9724-C30070F2483C}
 		{0BDC7ABD-DE19-45C2-A251-BDC2130A6CFC} = {1A793B0C-A69E-496E-AB5A-CCC1218B0A29}
+		{AC55BB63-8714-4536-9B27-E773759109F9} = {6A5A8676-22CE-49D4-9724-C30070F2483C}
+		{535D6C67-2842-4C34-A0C7-010CADE060A1} = {AC55BB63-8714-4536-9B27-E773759109F9}
+		{3B92D915-0475-4365-9413-23B7B0AB4986} = {0B2B837B-2A26-4723-8582-5E0F866B359D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E3BEE716-F6D6-42BF-95AF-701725F611A1}

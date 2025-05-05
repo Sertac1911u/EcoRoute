@@ -1,10 +1,76 @@
 ﻿@page "/"
 @page "/home"
 @using Microsoft.AspNetCore.Authorization
+@using EcoRoute.UI.Services.SettingsServices
+@using Blazored.LocalStorage
+@using Microsoft.AspNetCore.Components.Authorization
+@inject ILocalStorageService localStorage
+@inject IJSRuntime JS
+@inject SettingsService settingsService
+@inject AuthenticationStateProvider AuthStateProvider
 @attribute [Authorize]
 
 <div class="animate-fadeIn">
     <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Ana Dashboard</h2>
-
-   Burası anasayfa
+    Burası anasayfa
 </div>
+
+@code {
+    private string currentUserId = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        try
+        {
+            // Kullanıcı kimliğini al
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            Console.WriteLine($"Home page - Current user ID: {currentUserId}");
+
+            // Ayarları yükle
+            await LoadUserSettings();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in Home page initialization: {ex.Message}");
+        }
+    }
+
+    private async Task LoadUserSettings()
+    {
+        try
+        {
+            // Ayarları yükle
+            var settingsDto = await settingsService.GetSettingsAsync();
+
+            if (settingsDto != null)
+            {
+                Console.WriteLine("User settings loaded on Home page");
+
+                // Dark mode'u uygula
+                await localStorage.SetItemAsync("darkMode", settingsDto.DarkMode.ToString().ToLower());
+                await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(settingsDto.DarkMode ? "add" : "remove")}('dark')");
+
+                // Avatar URL'ini localstorage'a kaydet
+                if (!string.IsNullOrEmpty(settingsDto.AvatarUrl))
+                {
+                    await localStorage.SetItemAsync("avatarUrl", settingsDto.AvatarUrl);
+                }
+
+                // Kullanıcı ID'sini localstorage'a kaydet
+                await localStorage.SetItemAsync("currentUserId", currentUserId);
+            }
+            else
+            {
+                Console.WriteLine("No user settings found on Home page");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user settings on Home page: {ex.Message}");
+        }
+    }
+}

@@ -7,7 +7,6 @@ namespace EcoRoute.Supports.Services
     {
         Task<ResultSupportTicketDto> CreateAsync(CreateSupportTicketDto dto);
         Task<List<ResultSupportTicketDto>> GetAllAsync();
-
         Task<List<ResultSupportTicketDto>> GetAllAsync(string userId, bool isManagerOrSuperAdmin);
         Task<GetByIdSupportTicketDto?> GetByIdAsync(Guid id);
         Task AddResponseAsync(CreateTicketResponseDto dto);
