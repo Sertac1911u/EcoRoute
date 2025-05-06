@@ -716,6 +716,7 @@
 
 
 <style>
+    /* Existing styles */
     .tooltip-container {
         position: relative;
     }
@@ -759,28 +760,29 @@
         background-size: 1rem 1rem;
     }
 
-
     @@keyframes expandRow {
-        from {
-            opacity: 0;
-            max-height: 0;
-            transform: scaleY(0);
-            transform-origin: top;
-        }
+        from
 
-        to {
-            opacity: 1;
-            max-height: 500px;
-            transform: scaleY(1);
-            transform-origin: top;
-        }
+    {
+        opacity: 0;
+        max-height: 0;
+        transform: scaleY(0);
+        transform-origin: top;
+    }
+
+    to {
+        opacity: 1;
+        max-height: 500px;
+        transform: scaleY(1);
+        transform-origin: top;
+    }
+
     }
 
     .animate-expandRow {
         animation: expandRow 0.3s ease-out forwards;
     }
 
-    Range slider custom styling
     input[type=range]::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
@@ -806,8 +808,84 @@
         position: relative;
         z-index: 2;
     }
-</style>
 
+    /* New enhanced styles */
+    .map-button {
+        transition: all 0.2s ease;
+    }
+
+        .map-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+        }
+
+        .map-button:active {
+            transform: translateY(0);
+        }
+
+    /* Google Maps InfoWindow styling (adds to customStyles in JS) */
+    :global(.gm-style .gm-style-iw-c) {
+        padding: 0 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.15) !important;
+    }
+
+    :global(.gm-style .gm-style-iw-d) {
+        overflow: hidden !important;
+    }
+
+    /* Card hover effects */
+    .detail-card {
+        transition: all 0.3s ease;
+        transform-origin: center;
+    }
+
+        .detail-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            z-index: 10;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+    /* Pulse animation for critical elements */
+    @@keyframes pulse {
+        0%
+
+    {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+
+    100% {
+        opacity: 1;
+    }
+
+    }
+
+    .pulse-animation {
+        animation: pulse 1.5s infinite;
+    }
+
+    /* Enhanced row styling */
+    tr.hover-highlight:hover td {
+        background-color: rgba(48, 137, 214, 0.05) !important;
+        transition: background-color 0.2s ease;
+    }
+
+    /* Enhanced map controls */
+    .custom-map-controls button,
+    .location-controls button {
+        transition: all 0.2s ease;
+    }
+
+        .custom-map-controls button:hover,
+        .location-controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2) !important;
+        }
+</style>
 @code {
     private List<ResultWasteBinDto> wasteBins;
     private List<ResultWasteBinDto> sortedBins => SortBins();
@@ -1166,6 +1244,68 @@
                 Console.Error.WriteLine($"Error initializing edit/create map: {ex.Message}");
             }
         }
+    }
+    // Add this to Bins.razor.cs file
+
+    [JSInvokable]
+    public async Task OpenLocationModalFromMap(string binId)
+    {
+        // Open location modal from map click
+        if (Guid.TryParse(binId, out Guid wasteBinId))
+        {
+            var bin = wasteBins?.FirstOrDefault(b => b.WasteBinId == wasteBinId);
+            if (bin != null)
+            {
+                await OpenLocationModal(bin);
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task ShowNearbyBins(double lat, double lng)
+    {
+        // Implementation to show nearby bins based on coordinates
+        // This could filter bins within a certain radius
+        if (wasteBins != null && wasteBins.Any())
+        {
+            // For example, show bins within 1km radius (simple calculation)
+            var nearbyBins = wasteBins.Where(b =>
+                CalculateDistance(lat, lng, b.Latitude, b.Longitude) <= 1.0).ToList();
+
+            if (nearbyBins.Any())
+            {
+                var binsJson = System.Text.Json.JsonSerializer.Serialize(nearbyBins);
+                await JS.InvokeVoidAsync("googleMapsInterop.showNearbyBinsOnLocationMap", binsJson);
+
+                // Show success message
+                toastService.ShowInfo($"{nearbyBins.Count} yakın atık kutusu bulundu.");
+            }
+            else
+            {
+                toastService.ShowWarning("Yakında atık kutusu bulunamadı.");
+            }
+        }
+    }
+
+    // Helper method to calculate distance between coordinates (Haversine formula)
+    private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
+    {
+        const double EarthRadius = 6371; // Earth radius in kilometers
+
+        var dLat = ToRadians(lat2 - lat1);
+        var dLon = ToRadians(lon2 - lon1);
+
+        var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
+                Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+        var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+        return EarthRadius * c;
+    }
+
+    private double ToRadians(double degrees)
+    {
+        return degrees * Math.PI / 180;
     }
     private void OpenEditModal(ResultWasteBinDto bin)
     {

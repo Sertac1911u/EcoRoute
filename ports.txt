@@ -7,4 +7,4 @@ services
 	IdentityServer 5001
 	UI 5004
 	settings 5007
-	notification 5008 olacak
+	notification 5008 

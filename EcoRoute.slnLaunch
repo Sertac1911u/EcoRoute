@@ -29,6 +29,10 @@
       {
         "Path": "Services\\DataProcessing\\EcoRoute.DataProcessing\\EcoRoute.DataProcessing.csproj",
         "Action": "Start"
+      },
+      {
+        "Path": "Services\\DataCollection\\EcoRoute.DataCollection\\EcoRoute.DataCollection.csproj",
+        "Action": "Start"
       }
     ]
   }

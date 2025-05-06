@@ -57,13 +57,19 @@ namespace EcoRoute.Supports.Controllers
         [HttpPost("reply")]
         public async Task<IActionResult> AddResponse([FromForm] CreateTicketResponseDto dto)
         {
-            // Kullanıcı bilgisini alın
+            // 1) Kullanıcı bilgilerini set et
             dto.UserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             dto.UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Bilinmeyen Kullanıcı";
 
+            // 2) Şimdi mutlaka IsStaff’ı doğru tespit edin
+            dto.IsStaff = User.IsInRole("Manager")
+                        || User.IsInRole("SuperAdmin");
+
+            // 3) Servise geçin
             await _supportService.AddResponseAsync(dto);
             return NoContent();
         }
+
 
         [HttpPut("{id}/status")]
         public async Task<IActionResult> UpdateStatus(Guid id, [FromBody] UpdateStatusDto dto)

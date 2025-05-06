@@ -77,64 +77,88 @@ namespace EcoRoute.Supports.Services
                 _logger.LogError(ex, "Error sending ticket created notification");
             }
         }
-        public async Task SendTicketResponseNotificationAsync(ResultTicketResponseDto responseDto, string ticketSubject, Guid ticketId, string recipientUserId)
+        public async Task SendTicketResponseNotificationAsync(
+        ResultTicketResponseDto responseDto,
+        string ticketSubject,
+        Guid ticketId,
+        string recipientUserId)
         {
             try
             {
-                using var client = new HttpClient();
-                client.BaseAddress = new Uri("http://localhost:5008/");
-                client.DefaultRequestHeaders.Authorization = _httpClient.DefaultRequestHeaders.Authorization;
+                // 1) Header’a token ekle
+                await SetAuthorizationHeader();
 
-                var sender = responseDto.IsStaff ? "Destek Ekibi" : responseDto.UserName ?? "Bir kullanıcı";
-
-                // Eğer personel yanıt veriyorsa, sadece ticket sahibine bildirim gönder
-                if (responseDto.IsStaff)
+                using var client = new HttpClient
                 {
-                    var notification = new
-                    {
-                        Title = "Destek Talebine Yanıt",
-                        Message = $"{sender} \"{ticketSubject}\" konulu destek talebinize yanıt verdi.",
-                        Type = "Info",
-                        UserId = recipientUserId, // Ticket sahibinin ID'si
-                        UserRole = "", // Rol değil, spesifik kullanıcıya gönder
-                        Url = $"/supports/{ticketId}"
-                    };
+                    BaseAddress = new Uri("http://localhost:5008/")
+                };
+                client.DefaultRequestHeaders.Authorization =
+                    _httpClient.DefaultRequestHeaders.Authorization;
 
-                    var response = await client.PostAsJsonAsync("api/Notifications", notification);
+                // 2) Sunucuda gerçek rollerden tespit et
+                var user = _httpContextAccessor.HttpContext?.User;
+                var isSuperAdmin = user?.IsInRole("SuperAdmin") ?? false;
+                var isManager = user?.IsInRole("Manager") ?? false;
 
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        var content = await response.Content.ReadAsStringAsync();
-                        _logger.LogError($"Failed to send ticket response notification: {response.StatusCode}. Details: {content}");
-                    }
+                // 3) Gönderen adı
+                var sender = (isSuperAdmin || isManager)
+                    ? "Destek Ekibi"
+                    : (responseDto.UserName ?? "Bir kullanıcı");
+
+                // 4) Hedefleri belirle
+                string targetUserId = "";
+                string targetRoles = "";
+                if (isSuperAdmin)
+                {
+                    targetUserId = recipientUserId;   // driver’a
+                    targetRoles = "Manager";         // sadece Manager grubuna
                 }
-                // Eğer kullanıcı yanıt veriyorsa, sadece yöneticilere bildirim gönder
+                else if (isManager)
+                {
+                    targetUserId = recipientUserId;   // driver’a
+                    targetRoles = "SuperAdmin";      // sadece SuperAdmin grubuna
+                }
                 else
                 {
-                    var notification = new
-                    {
-                        Title = "Destek Talebine Yanıt",
-                        Message = $"{sender} \"{ticketSubject}\" konulu destek talebine yanıt verdi.",
-                        Type = "Info",
-                        UserId = "", // Spesifik kullanıcı değil
-                        UserRole = "Admin,SuperAdmin,Manager", // Sadece yönetici rollerine
-                        Url = $"/supports/{ticketId}"
-                    };
+                    // Driver yanıtı ise
+                    targetUserId = "";
+                    targetRoles = "SuperAdmin,Manager";
+                }
 
-                    var response = await client.PostAsJsonAsync("api/Notifications", notification);
+                // 5) Payload
+                var notification = new
+                {
+                    Title = "Destek Talebine Yanıt",
+                    Message = $"{sender} \"{ticketSubject}\" konulu destek talebinize yanıt verdi.",
+                    Type = "Info",
+                    Url = $"/supports/{ticketId}",
+                    UserId = targetUserId,
+                    UserRole = targetRoles
+                };
 
-                    if (!response.IsSuccessStatusCode)
-                    {
-                        var content = await response.Content.ReadAsStringAsync();
-                        _logger.LogError($"Failed to send ticket response notification: {response.StatusCode}. Details: {content}");
-                    }
+                // LOG için
+                _logger.LogInformation(
+                    "Reply notification payload: UserId={UserId}, UserRole={UserRole}",
+                    targetUserId, targetRoles);
+
+                // 6) Gönder
+                var resp = await client.PostAsJsonAsync("api/Notifications", notification);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    var body = await resp.Content.ReadAsStringAsync();
+                    _logger.LogError(
+                        "Reply notification failed ({StatusCode}): {Body}",
+                        resp.StatusCode, body);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending ticket response notification");
+                _logger.LogError(ex, "Error in SendTicketResponseNotificationAsync");
             }
         }
+
+
+
         public async Task SendTicketStatusChangedNotificationAsync(string ticketSubject, Guid ticketId, string status, string recipientUserId)
         {
             try
