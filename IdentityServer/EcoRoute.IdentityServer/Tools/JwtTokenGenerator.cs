@@ -42,8 +42,8 @@ namespace EcoRoute.IdentityServer.Tools
                     case "Manager":
                         claims.Add(new Claim("scope", "DataCollectionFullPermission"));
                         claims.Add(new Claim("scope", "DataCollectionReadPermission"));
-                        claims.Add(new Claim("scope", "DataProcessingFullPermission"));
                         claims.Add(new Claim("scope", "RouteOptimizationFullPermission"));
+                        claims.Add(new Claim("scope", "RouteOptimizationFullAccess"));
                         claims.Add(new Claim("scope", "SupportsFullPermission")); 
                         claims.Add(new Claim("scope", "SupportsReadPermission"));
                         claims.Add(new Claim("scope", "SettingsFullPermission"));
@@ -55,7 +55,7 @@ namespace EcoRoute.IdentityServer.Tools
                     case "Customer": // Include Customer role for Support access
                         claims.Add(new Claim("scope", "DataCollectionReadPermission"));
                         claims.Add(new Claim("scope", "DataProcessingReadPermission"));
-                        claims.Add(new Claim("scope", "RouteOptimizationReadPermission"));
+                        claims.Add(new Claim("scope", "RouteOptimizationFullPermission"));
                         claims.Add(new Claim("scope", "SupportsReadPermission")); 
                         claims.Add(new Claim("scope", "SupportsFullPermission"));
                         claims.Add(new Claim("scope", "SettingsFullPermission"));

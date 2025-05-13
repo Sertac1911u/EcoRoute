@@ -34,7 +34,6 @@ namespace EcoRoute.IdentityServer
                     Scopes =
                     {
                         "RouteOptimizationFullPermission",
-                        "RouteOptimizationReadPermission",
                     }
                 },
                 new ApiResource("ResourceSupports")
@@ -84,7 +83,6 @@ namespace EcoRoute.IdentityServer
                 new ApiScope("DataProcessingFullPermission","Full authority for dp operations"),
                 new ApiScope("DataProcessingReadPermission","Read authority for dp operations"),
                 new ApiScope("RouteOptimizationFullPermission","Full authority for ro operations"),
-                new ApiScope("RouteOptimizationReadPermission","Read authority for ro operations"),
                 new ApiScope("SupportsFullPermission","Full authority for support operations"),
                 new ApiScope("SupportsReadPermission","Read authority for support operations"),
                 new ApiScope("SettingsFullPermission","Full authority for settings operations"),
@@ -151,7 +149,7 @@ namespace EcoRoute.IdentityServer
                     AllowedScopes={
                         "DataCollectionReadPermission",
                         "DataProcessingReadPermission",
-                        "RouteOptimizationReadPermission",
+                        "RouteOptimizationFullPermission",
                         "SupportsReadPermission",
                         "NotificationsReadPermission",
                         "NotificationsReadPermission"

@@ -50,5 +50,13 @@ namespace EcoRoute.DataCollection.Services.WasteBinServices
             _context.WasteBins.Update(updateWasteBin);
             await _context.SaveChangesAsync();
         }
+        public async Task<List<ResultWasteBinDto>> GetWasteBinsByIdsAsync(List<Guid> ids)
+        {
+            var wasteBins = await _context.WasteBins
+                                           .Where(w => ids.Contains(w.WasteBinId))
+                                           .ToListAsync();
+            return _mapper.Map<List<ResultWasteBinDto>>(wasteBins);
+        }
+
     }
 }

@@ -57,5 +57,13 @@ namespace EcoRoute.DataCollection.Controllers
             await _wasteBinService.UpdateWasteBinAsync(updateWasteBinDto);
             return Ok("WasteBin Updated");
         }
+        [HttpGet("selected")]
+        //[Authorize(Policy = "DataCollectionReadAccess")]
+        public async Task<IActionResult> GetWasteBinsByIds([FromQuery] List<Guid> id)
+        {
+            var bins = await _wasteBinService.GetWasteBinsByIdsAsync(id);
+            return Ok(bins);
+        }
+
     }
 }

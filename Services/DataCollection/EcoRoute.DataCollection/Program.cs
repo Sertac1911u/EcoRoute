@@ -69,6 +69,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+
 // Diğer servisler
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -80,6 +81,7 @@ builder.Services.AddScoped<IEnvLogService, EnvLogServices>();
 builder.Services.AddScoped<IProcessDataService, ProcessDataService>();
 builder.Services.AddScoped<ISensorService, SensorService>();
 builder.Services.AddScoped<IWasteBinService, WasteBinService>();
+
 
 var app = builder.Build();
 

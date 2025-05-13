@@ -50,7 +50,7 @@
       "DownstreamHostAndPorts": [
         {
           "Host": "localhost",
-          "Port": 5004
+          "Port": 5006
         }
       ],
       "UpstreamPathTemplate": "/routeoptimization/{everything}",
@@ -64,6 +64,25 @@
       },
       "DownstreamHeaderTransform": {
         "Authorization": "Bearer {Token}"
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/vehicle",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/services/routeoptimization/vehicle",
+      "UpstreamHttpMethod": [ "GET", "POST", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
       }
     },
     {

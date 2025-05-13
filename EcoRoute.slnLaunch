@@ -35,7 +35,7 @@
         "Action": "Start"
       },
       {
-        "Path": "Services\\RouteOptimization\\EcoRoute.RouteOptimization\\EcoRoute.RouteOptimization.csproj",
+        "Path": "Services\\RouteOptimization\\EcoRoute.RouteOptimization\\RouteOptimization\\EcoRoute.RouteOptimization.csproj",
         "Action": "Start"
       }
     ]

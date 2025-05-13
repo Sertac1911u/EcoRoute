@@ -6,6 +6,7 @@
 @inject CustomAuthStateProvider AuthStateProvider
 @inject ILocalStorageService localStorage
 @inject NavigationManager NavigationManager
+@inject IToastService Toast
 
 <div class="flex h-screen overflow-hidden">
     <BlazoredToasts Position="ToastPosition.BottomRight"
@@ -26,3 +27,10 @@
     </div>
 
 </div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        ToastBridge.ToastService = Toast;
+    }
+}

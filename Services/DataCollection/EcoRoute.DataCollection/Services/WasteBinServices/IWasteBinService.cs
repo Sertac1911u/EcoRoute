@@ -9,5 +9,7 @@ namespace EcoRoute.DataCollection.Services.WasteBinServices
         Task UpdateWasteBinAsync(UpdateWasteBinDto updateWasteBinDto);
         Task DeleteWasteBinAsync(Guid id);
         Task<GetByIdWasteBinDto> GetByIdWasteBinAsync(Guid id);
+        Task<List<ResultWasteBinDto>> GetWasteBinsByIdsAsync(List<Guid> ids);
+
     }
 }
