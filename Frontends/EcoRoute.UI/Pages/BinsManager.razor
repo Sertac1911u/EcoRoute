@@ -201,8 +201,8 @@
                         {
                             var bin = displayedBins[i];
                             var rowIndex = ((currentPage - 1) * pageSize) + i + 1;
-                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer @(expandedRowId == bin.WasteBinId ? "bg-gray-50 dark:bg-gray-700" : "")"
-                                @onclick="() => ToggleRowExpansion(bin.WasteBinId)">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer @(expandedRowId == bin.Id ? "bg-gray-50 dark:bg-gray-700" : "")"
+                                @onclick="() => ToggleRowExpansion(bin.Id)">
                                 <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">@rowIndex</td>
                                 <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                                     <div class="flex items-center">
@@ -235,12 +235,12 @@
                                             <span class="tooltip">Düzenle</span>
                                         </button>
                                         <button class="text-primary-500 hover:text-primary-700 text-lg tooltip-container"
-                                                @onclick="@(() => FocusOnBin(bin.WasteBinId))">
+                                                @onclick="@(() => FocusOnBin(bin.Id))">
                                             <i class="fas fa-map-marker"></i>
                                             <span class="tooltip">Haritada Göster</span>
                                         </button>
                                         <button class="text-red-500 hover:text-red-700 text-lg tooltip-container"
-                                                @onclick="@(() => DeleteBinConfirmation(bin.WasteBinId))">
+                                                @onclick="@(() => DeleteBinConfirmation(bin.Id))">
                                             <i class="fas fa-trash-alt"></i>
                                             <span class="tooltip">Sil</span>
                                         </button>
@@ -248,7 +248,7 @@
                                 </td>
                             </tr>
 
-                            @if (expandedRowId == bin.WasteBinId)
+                            @if (expandedRowId == bin.Id)
                             {
                                 <tr class="bg-gray-50 dark:bg-gray-700 animate-expandRow">
                                     <td colspan="7" class="px-6 py-6">
@@ -1429,7 +1429,7 @@
                             map: mainMap,
                             title: bin.Label,
                             icon: this.getBinMarkerIcon(bin.DeviceStatus, bin.FillLevel),
-                            binId: bin.WasteBinId
+                            binId: bin.Id
                         });
 
                         // Add marker to markers array
@@ -1459,11 +1459,11 @@
                             this.openBinSidebar(bin);
 
                             // Store selected bin ID
-                            selectedBinId = bin.WasteBinId;
+                            selectedBinId = bin.Id;
 
                             // Notify Blazor of bin selection
                             if (dotNetRef) {
-                                dotNetRef.invokeMethodAsync('OpenBinDetail', bin.WasteBinId);
+                                dotNetRef.invokeMethodAsync('OpenBinDetail', bin.Id);
                             }
                         });
                     }
@@ -1901,10 +1901,10 @@
 
                     <!-- Bottom actions -->
                     <div class="p-4 bg-gray-100 dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 flex justify-between">
-                        <button onclick="googleMapsInterop.editBin('${bin.WasteBinId}')" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded flex items-center">
+                        <button onclick="googleMapsInterop.editBin('${bin.Id}')" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded flex items-center">
                             <i class="fas fa-edit mr-2"></i> Düzenle
                         </button>
-                        <button onclick="googleMapsInterop.focusOnBin('${bin.WasteBinId}')" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded flex items-center">
+                        <button onclick="googleMapsInterop.focusOnBin('${bin.Id}')" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded flex items-center">
                             <i class="fas fa-search-location mr-2"></i> 3D Görünüm
                         </button>
                     </div>
@@ -1935,7 +1935,7 @@
                 const nearbyBins = [];
                 markers.forEach(marker => {
                     // Skip the current bin
-                    if (marker.binId === currentBin.WasteBinId) return;
+                    if (marker.binId === currentBin.Id) return;
 
                     const markerPosition = marker.getPosition();
 
@@ -1982,7 +1982,7 @@
 
                     html += `
                         <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer mb-2"
-                             onclick="googleMapsInterop.focusOnBin('${bin.WasteBinId}')">
+                             onclick="googleMapsInterop.focusOnBin('${bin.Id}')">
                             <div class="flex items-center">
                                 <div class="w-8 h-8 rounded-full flex items-center justify-center text-white mr-3" style="background-color: ${fillColor}">
                                     <i class="fas fa-recycle"></i>
@@ -2012,7 +2012,7 @@
         findBinById: function(binId) {
             if (!window.binsData || !binId) return null;
 
-            return window.binsData.find(bin => bin.WasteBinId === binId) || null;
+            return window.binsData.find(bin => bin.Id === binId) || null;
         },
 
         /**
@@ -2155,7 +2155,7 @@
     private List<ResultSensorDto> availableSensors;
     private List<Guid> selectedSensorIds = new List<Guid>();
 
-    private Guid editingWasteBinId;
+    private Guid editingId;
     private Guid expandedRowId;
     private Guid binIdToDelete;
     private string searchText = "";
@@ -2262,7 +2262,7 @@
                 {
                     var binsJson = System.Text.Json.JsonSerializer.Serialize(
                         showEditModal
-                            ? wasteBins.Where(b => b.WasteBinId != editingWasteBinId).ToList()
+                            ? wasteBins.Where(b => b.Id != editingId).ToList()
                             : wasteBins
                     );
                     await JS.InvokeVoidAsync("googleMapsInterop.showBinsOnPickerMap", binsJson);
@@ -2420,10 +2420,10 @@
     [JSInvokable]
     public async Task OpenBinSidebar(string binId)
     {
-        if (Guid.TryParse(binId, out Guid wasteBinId))
+        if (Guid.TryParse(binId, out Guid Id))
         {
             // İlgili çöp kutusunu bul
-            var bin = wasteBins?.FirstOrDefault(b => b.WasteBinId == wasteBinId);
+            var bin = wasteBins?.FirstOrDefault(b => b.Id == Id);
             if (bin != null)
             {
                 // Bin bilgilerini JS'ye gönder
@@ -2431,7 +2431,7 @@
                 await JS.InvokeVoidAsync("googleMapsInterop.showBinSidebar", bin);
 
                 // Ayrıca detay satırını da aç (opsiyonel)
-                expandedRowId = wasteBinId;
+                expandedRowId = Id;
                 StateHasChanged();
             }
         }
@@ -2441,9 +2441,9 @@
     [JSInvokable]
     public void EditBin(string binId)
     {
-        if (Guid.TryParse(binId, out Guid wasteBinId))
+        if (Guid.TryParse(binId, out Guid Id))
         {
-            var bin = wasteBins?.FirstOrDefault(b => b.WasteBinId == wasteBinId);
+            var bin = wasteBins?.FirstOrDefault(b => b.Id == Id);
             if (bin != null)
             {
                 OpenEditModal(bin);
@@ -2564,7 +2564,7 @@
         // Bağlı sensörleri seç
         selectedSensorIds = bin.Sensors?.Select(s => s.SensorId).ToList() ?? new List<Guid>();
 
-        editingWasteBinId = bin.WasteBinId;
+        editingId = bin.Id;
         showEditModal = true;
         showCreateModal = false;
     }
@@ -2701,7 +2701,7 @@
         {
             var updateDto = new UpdateWasteBinDto
                 {
-                    WasteBinId = editingWasteBinId,
+                    WasteBinId = editingId,
                     Label = binModel.Label,
                     Address = binModel.Address,
                     Latitude = binModel.Latitude,
@@ -2948,18 +2948,18 @@
     [JSInvokable]
     public async Task OpenBinDetail(string binId)
     {
-        if (Guid.TryParse(binId, out Guid wasteBinId))
+        if (Guid.TryParse(binId, out Guid Id))
         {
-            var binInCurrentPage = displayedBins.FirstOrDefault(b => b.WasteBinId == wasteBinId);
+            var binInCurrentPage = displayedBins.FirstOrDefault(b => b.Id == Id);
 
             if (binInCurrentPage != null)
             {
-                expandedRowId = wasteBinId;
+                expandedRowId = Id;
                 StateHasChanged();
             }
             else
             {
-                var bin = wasteBins?.FirstOrDefault(b => b.WasteBinId == wasteBinId);
+                var bin = wasteBins?.FirstOrDefault(b => b.Id == Id);
                 if (bin != null)
                 {
                     searchText = "";
@@ -2972,7 +2972,7 @@
                     {
                         currentPage = (binIndex / pageSize) + 1;
                         await Task.Delay(100);
-                        expandedRowId = wasteBinId;
+                        expandedRowId = Id;
                         StateHasChanged();
                     }
                 }

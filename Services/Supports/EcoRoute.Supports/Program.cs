@@ -79,6 +79,7 @@ builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 var app = builder.Build();
 
 var uploadsFolder = Path.Combine(builder.Environment.ContentRootPath, "Uploads");
+
 if (!Directory.Exists(uploadsFolder))
 {
     Directory.CreateDirectory(uploadsFolder);

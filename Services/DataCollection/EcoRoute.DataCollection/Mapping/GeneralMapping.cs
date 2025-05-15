@@ -32,7 +32,9 @@ namespace EcoRoute.DataCollection.Mapping
             CreateMap<Sensor, UpdateSensorDto>().ReverseMap();
             CreateMap<Sensor, GetByIdSensorDto>().ReverseMap();
 
-            CreateMap<WasteBin, ResultWasteBinDto>().ReverseMap();
+            CreateMap<WasteBin, ResultWasteBinDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.WasteBinId))
+                .ReverseMap();
             CreateMap<WasteBin, CreateWasteBinDto>().ReverseMap();
             CreateMap<WasteBin, UpdateWasteBinDto>().ReverseMap();
             CreateMap<WasteBin, GetByIdWasteBinDto>().ReverseMap();

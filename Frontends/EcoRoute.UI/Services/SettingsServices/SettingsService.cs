@@ -1,5 +1,4 @@
 ﻿using Blazored.LocalStorage;
-using static EcoRoute.UI.Pages.Settings;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using EcoRoute.DtoLayer.SettingDtos;

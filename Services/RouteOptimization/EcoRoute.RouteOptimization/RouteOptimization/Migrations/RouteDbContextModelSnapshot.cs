@@ -70,16 +70,21 @@ namespace EcoRoute.RouteOptimization.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<double>("EstimatedCO2Kg")
+                        .HasColumnType("float");
+
                     b.Property<int>("EstimatedDurationMin")
                         .HasColumnType("int");
+
+                    b.Property<double>("EstimatedFuelL")
+                        .HasColumnType("float");
 
                     b.Property<string>("Notes")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("OptimizationType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("OptimizationType")
+                        .HasColumnType("int");
 
                     b.Property<string>("OverviewPolyline")
                         .HasColumnType("nvarchar(max)");
@@ -87,9 +92,8 @@ namespace EcoRoute.RouteOptimization.Migrations
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
 
                     b.Property<double>("TotalDistanceKm")
                         .HasColumnType("float");

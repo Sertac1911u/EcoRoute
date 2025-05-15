@@ -151,8 +151,26 @@ namespace EcoRoute.Notifications.Services
 
         public async Task<bool> MarkAllAsReadAsync(string userId)
         {
+            // Get user roles
+            var userRoles = new List<string>();
+            if (_httpContextAccessor.HttpContext != null)
+            {
+                var user = _httpContextAccessor.HttpContext.User;
+                userRoles = user.Claims
+                    .Where(c => c.Type == ClaimTypes.Role)
+                    .Select(c => c.Value)
+                    .ToList();
+            }
+
+            // Find all notifications for this user (matching ID or roles)
             var notifications = await _context.Notifications
-                .Where(n => (n.UserId == userId || n.UserId == null) && !n.IsRead)
+                .Where(n =>
+                    // Direct user notifications
+                    (n.UserId == userId && !n.IsRead) ||
+                    // Role-based notifications
+                    (!string.IsNullOrEmpty(n.UserRole) &&
+                     userRoles.Any(role => n.UserRole.Contains(role)) &&
+                     !n.IsRead))
                 .ToListAsync();
 
             if (!notifications.Any())
@@ -167,7 +185,6 @@ namespace EcoRoute.Notifications.Services
             await _context.SaveChangesAsync();
             return true;
         }
-
         public async Task<int> GetUnreadCountAsync(string userId)
         {
             // Kullanıcı rollerini al

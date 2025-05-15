@@ -72,9 +72,7 @@ namespace EcoRoute.Notifications.Controllers
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var success = await _notificationService.MarkAllAsReadAsync(userId);
-            if (!success)
-                return NotFound();
-
+            // success false olsa bile 204 No Content dönün
             return NoContent();
         }
     }

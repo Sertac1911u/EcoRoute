@@ -24,13 +24,28 @@ namespace EcoRoute.DtoLayer.RouteOptimizationDtos
         public string DriverId { get; set; }
         public string VehicleId { get; set; }
         public string WasteType { get; set; }
-        public string OptimizationType { get; set; }
+        public OptimizationType OptimizationType { get; set; }
         public DateTime StartTime { get; set; }
-        public string Status { get; set; }
+        public RouteStatus Status { get; set; }
         public double TotalDistanceKm { get; set; }
         public int EstimatedDurationMin { get; set; }
         public List<RouteStepDto> Steps { get; set; }
         public string? OverviewPolyline { get; set; }
+        public double EstimatedFuelL { get; set; } // Yeni eklenen
+        public double EstimatedCO2Kg { get; set; } // Yeni eklenen
 
+
+    }
+    public enum RouteStatus
+    {
+        Scheduled,
+        Active,
+        Completed
+    }
+
+    public enum OptimizationType
+    {
+        EnKisaMesafe,
+        DolulukOncelikli
     }
 }

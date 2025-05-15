@@ -8,7 +8,7 @@ namespace EcoRoute.DtoLayer.WasteBinDtos
 {
     public class ResultWasteBinDto
     {
-        public Guid WasteBinId { get; set; }
+        public Guid Id { get; set; }
         public string Label { get; set; }
         public string Address { get; set; }
         public double Latitude { get; set; }

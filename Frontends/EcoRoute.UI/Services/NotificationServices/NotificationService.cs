@@ -176,11 +176,11 @@ namespace EcoRoute.UI.Services.NotificationServices
             }
         }
 
-        public async Task GetNotificationsAsync()
+        public async Task GetNotificationsAsync(bool forceRefresh = false)
         {
-            // Cache'den bildirimleri yükle
+            // Only use cache if not forcing refresh
             var cachedNotifications = await _localStorage.GetItemAsync<List<ResultNotificationDto>>("notifications");
-            if (cachedNotifications != null && cachedNotifications.Any() && _hasLoadedInitialNotifications)
+            if (!forceRefresh && cachedNotifications != null && cachedNotifications.Any() && _hasLoadedInitialNotifications)
             {
                 _notifications = cachedNotifications;
                 UnreadCount = _notifications.Count(n => !n.IsRead);
@@ -266,12 +266,8 @@ namespace EcoRoute.UI.Services.NotificationServices
                 var response = await _httpClient.PutAsync("services/notifications/Notifications/read-all", null);
                 if (response.IsSuccessStatusCode)
                 {
-                    foreach (var notification in _notifications)
-                    {
-                        notification.IsRead = true;
-                    }
-                    UnreadCount = 0;
-                    OnNotificationsUpdated?.Invoke();
+                    // Instead of manually updating notifications, force fetch from server
+                    await GetNotificationsAsync(forceRefresh: true);
                 }
             }
             catch (Exception ex)

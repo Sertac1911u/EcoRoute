@@ -24,13 +24,11 @@
 
         try
         {
-            // Kullanıcı kimliğini al
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
             Console.WriteLine($"Home page - Current user ID: {currentUserId}");
 
-            // Ayarları yükle
             await LoadUserSettings();
         }
         catch (Exception ex)
@@ -43,24 +41,20 @@
     {
         try
         {
-            // Ayarları yükle
             var settingsDto = await settingsService.GetSettingsAsync();
 
             if (settingsDto != null)
             {
                 Console.WriteLine("User settings loaded on Home page");
 
-                // Dark mode'u uygula
                 await localStorage.SetItemAsync("darkMode", settingsDto.DarkMode.ToString().ToLower());
                 await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(settingsDto.DarkMode ? "add" : "remove")}('dark')");
 
-                // Avatar URL'ini localstorage'a kaydet
                 if (!string.IsNullOrEmpty(settingsDto.AvatarUrl))
                 {
                     await localStorage.SetItemAsync("avatarUrl", settingsDto.AvatarUrl);
                 }
 
-                // Kullanıcı ID'sini localstorage'a kaydet
                 await localStorage.SetItemAsync("currentUserId", currentUserId);
             }
             else

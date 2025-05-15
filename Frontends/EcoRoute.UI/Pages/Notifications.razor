@@ -1,4 +1,5 @@
 ﻿@page "/notifications"
+@using EcoRoute.UI.Pages.Components.Notifications
 @using Microsoft.AspNetCore.Authorization
 @using EcoRoute.DtoLayer.NotificationDtos
 @using EcoRoute.UI.Services.NotificationServices
@@ -8,47 +9,18 @@
 @attribute [Authorize]
 
 <div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden">
+    <!-- Üst Bar (Arama ve Filtreler) -->
     <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
         <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Bildirimler</h2>
-        <div class="flex space-x-2">
-            <div class="relative">
-                <input type="text" placeholder="Bildirimlerinde ara..." class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white"
-                       @bind-value="searchTerm" @bind-value:event="oninput" />
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <i class="fas fa-search text-gray-400"></i>
-                </div>
-            </div>
-            <div class="relative">
-                <select class="pl-4 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white appearance-none"
-                        @bind="selectedType">
-                    <option value="">Tüm Türler</option>
-                    <option value="Info">Bilgi</option>
-                    <option value="Success">Başarılı</option>
-                    <option value="Warning">Uyarı</option>
-                    <option value="Error">Hata</option>
-                </select>
-                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <i class="fas fa-chevron-down text-gray-400"></i>
-                </div>
-            </div>
-            <div class="relative">
-                <select class="pl-4 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white appearance-none"
-                        @bind="readStatus">
-                    <option value="">Tümü</option>
-                    <option value="unread">Okunmamış</option>
-                    <option value="read">Okunmuş</option>
-                </select>
-                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <i class="fas fa-chevron-down text-gray-400"></i>
-                </div>
-            </div>
-            @if (filteredNotifications.Any(n => !n.IsRead))
-            {
-                <button @onclick="MarkAllAsRead" class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors">
-                    <i class="fas fa-check-double mr-2"></i> Tümünü Okundu İşaretle
-                </button>
-            }
-        </div>
+        <NotificationFilterBar @ref="filterBarRef"
+                               SearchTerm="@searchTerm"
+                               SearchTermChanged="@((string value) => { searchTerm = value; StateHasChanged(); })"
+                               SelectedType="@selectedType"
+                               SelectedTypeChanged="@((string value) => { selectedType = value; StateHasChanged(); })"
+                               ReadStatus="@readStatus"
+                               ReadStatusChanged="@((string value) => { readStatus = value; StateHasChanged(); })"
+                               OnMarkAllAsRead="@MarkAllAsRead"
+                               HasUnreadNotifications="@filteredNotifications.Any(n => !n.IsRead)" />
     </div>
 
     <div class="overflow-hidden">
@@ -61,66 +33,21 @@
         }
         else if (!filteredNotifications.Any())
         {
-            <div class="p-12 text-center">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 mb-4">
-                    <i class="fas fa-bell-slash text-3xl"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Bildirim Bulunamadı</h3>
-                <p class="mt-2 text-gray-500 dark:text-gray-400">
-                    @if (string.IsNullOrEmpty(searchTerm) && string.IsNullOrEmpty(selectedType) && string.IsNullOrEmpty(readStatus))
-                    {
-                        <span>Henüz hiç bildiriminiz bulunmamaktadır.</span>
-                    }
-                    else
-                    {
-                        <span>Arama kriterlerinize uygun bildirim bulunamadı.</span>
-                    }
-                </p>
-            </div>
+            <NotificationEmptyState HasSearchFilter="@HasFilter" />
         }
         else
         {
-            <div class="divide-y divide-gray-200 dark:divide-gray-700">
-                @foreach (var notification in filteredNotifications)
-                {
-                    <div @onclick="() => HandleNotificationClick(notification)" class="@GetNotificationClasses(notification)">
-                        <div class="flex items-start">
-                            <div class="flex-shrink-0 pt-0.5">
-                                <span class="@GetNotificationIconClasses(notification)">
-                                    <i class="@GetNotificationIcon(notification)"></i>
-                                </span>
-                            </div>
-                            <div class="ml-3 w-0 flex-1">
-                                <div class="flex justify-between">
-                                    <p class="text-sm font-medium @(notification.IsRead ? "text-gray-600 dark:text-gray-400" : "text-gray-900 dark:text-white")">
-                                        @notification.Title
-                                    </p>
-                                    <p class="text-xs text-gray-500 dark:text-gray-500">
-                                        @notification.CreatedDate.ToString("dd.MM.yyyy HH:mm")
-                                    </p>
-                                </div>
-                                <p class="mt-1 text-sm @(notification.IsRead ? "text-gray-500 dark:text-gray-500" : "text-gray-700 dark:text-gray-300")">
-                                    @notification.Message
-                                </p>
-                            </div>
-                            @if (!notification.IsRead)
-                            {
-                                <div class="ml-4 flex-shrink-0 flex">
-                                    <button @onclick:stopPropagation="true" @onclick="() => MarkAsRead(notification.Id)" class="rounded-md p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
-            </div>
+            <NotificationList Notifications="filteredNotifications"
+                              OnMarkAsRead="MarkAsRead"
+                              OnClickNotification="HandleNotificationClick" />
         }
     </div>
 </div>
 
 @code {
-    private List<ResultNotificationDto> notifications = new List<ResultNotificationDto>();
+    private List<ResultNotificationDto> notifications = new();
+    private NotificationFilterBar filterBarRef;
+
     private bool isLoading = true;
     private string searchTerm = "";
     private string selectedType = "";
@@ -128,25 +55,28 @@
 
     private List<ResultNotificationDto> filteredNotifications => notifications
         .Where(n => string.IsNullOrEmpty(searchTerm) ||
-                   n.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                   n.Message.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                    n.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    n.Message.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
         .Where(n => string.IsNullOrEmpty(selectedType) || n.Type == selectedType)
         .Where(n => string.IsNullOrEmpty(readStatus) ||
                    (readStatus == "read" && n.IsRead) ||
                    (readStatus == "unread" && !n.IsRead))
         .ToList();
 
+    private bool HasFilter =>
+        !string.IsNullOrEmpty(searchTerm) ||
+        !string.IsNullOrEmpty(selectedType) ||
+        !string.IsNullOrEmpty(readStatus);
+
     protected override async Task OnInitializedAsync()
     {
         notificationService.OnNotificationsUpdated += OnNotificationsUpdated;
 
-        // SignalR bağlantısını başlat (eğer başlatılmamışsa)
         if (!notificationService.IsConnected)
         {
             await notificationService.InitializeAsync();
         }
 
-        // Bildirimleri yükle
         await LoadNotifications();
     }
 
@@ -174,9 +104,30 @@
 
     private async Task MarkAllAsRead()
     {
-        await notificationService.MarkAllAsReadAsync();
-    }
+        Console.WriteLine("MarkAllAsRead metodu çağrıldı");
 
+        try
+        {
+            // NotificationService'yi çağır
+            await notificationService.MarkAllAsReadAsync();
+
+            // Force refresh from API instead of cache
+            isLoading = true;
+
+            // This is a cleaner approach than the manual update
+            await notificationService.GetNotificationsAsync();
+            notifications = notificationService.Notifications;
+
+            isLoading = false;
+            StateHasChanged();
+
+            Console.WriteLine("MarkAllAsRead tamamlandı");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Hata oluştu: {ex.Message}");
+        }
+    }
     private async Task HandleNotificationClick(ResultNotificationDto notification)
     {
         if (!notification.IsRead)
@@ -185,41 +136,9 @@
         }
     }
 
-    private string GetNotificationClasses(ResultNotificationDto notification)
-    {
-        var baseClasses = "px-6 py-4 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer";
-
-        return notification.IsRead
-            ? baseClasses
-            : $"{baseClasses} bg-blue-50 dark:bg-blue-900/20";
-    }
-
-    private string GetNotificationIconClasses(ResultNotificationDto notification)
-    {
-        var baseClasses = "flex items-center justify-center h-10 w-10 rounded-full";
-
-        return notification.Type switch
-        {
-            "Success" => $"{baseClasses} bg-green-100 text-green-500 dark:bg-green-900/30 dark:text-green-400",
-            "Warning" => $"{baseClasses} bg-yellow-100 text-yellow-500 dark:bg-yellow-900/30 dark:text-yellow-400",
-            "Error" => $"{baseClasses} bg-red-100 text-red-500 dark:bg-red-900/30 dark:text-red-400",
-            _ => $"{baseClasses} bg-blue-100 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400" // Info
-        };
-    }
-
-    private string GetNotificationIcon(ResultNotificationDto notification)
-    {
-        return notification.Type switch
-        {
-            "Success" => "fas fa-check",
-            "Warning" => "fas fa-exclamation-triangle",
-            "Error" => "fas fa-times-circle",
-            _ => "fas fa-info-circle" // Info
-        };
-    }
-
     public void Dispose()
     {
         notificationService.OnNotificationsUpdated -= OnNotificationsUpdated;
     }
+
 }

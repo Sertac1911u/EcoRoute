@@ -1,0 +1,86 @@
+﻿@using Microsoft.AspNetCore.Components
+
+<div class="flex flex-wrap gap-2 items-center">
+    <!-- Arama Kutusu -->
+    <div class="relative">
+        <input type="text"
+               placeholder="Bildirimlerinde ara..."
+               class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white"
+               value="@SearchTerm"
+               @oninput="OnSearchChanged" />
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <i class="fas fa-search text-gray-400"></i>
+        </div>
+    </div>
+    <!-- Tür Seçimi -->
+    <div class="relative">
+        <select class="pl-4 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white appearance-none"
+                value="@SelectedType"
+                @onchange="OnTypeChanged">
+            <option value="">Tüm Türler</option>
+            <option value="Info">Bilgi</option>
+            <option value="Success">Başarılı</option>
+            <option value="Warning">Uyarı</option>
+            <option value="Error">Hata</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <i class="fas fa-chevron-down text-gray-400"></i>
+        </div>
+    </div>
+    <!-- Okunma Durumu -->
+    <div class="relative">
+        <select class="pl-4 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white appearance-none"
+                value="@ReadStatus"
+                @onchange="OnReadStatusChanged">
+            <option value="">Tümü</option>
+            <option value="unread">Okunmamış</option>
+            <option value="read">Okunmuş</option>
+        </select>
+        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+            <i class="fas fa-chevron-down text-gray-400"></i>
+        </div>
+    </div>
+    @if (HasUnreadNotifications)
+    {
+        <button @onclick="InvokeMarkAllAsRead" class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors">
+            <i class="fas fa-check-double mr-2"></i> Tümünü Okundu İşaretle
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public string SearchTerm { get; set; }
+    [Parameter] public EventCallback<string> SearchTermChanged { get; set; }
+    [Parameter] public string SelectedType { get; set; }
+    [Parameter] public EventCallback<string> SelectedTypeChanged { get; set; }
+    [Parameter] public string ReadStatus { get; set; }
+    [Parameter] public EventCallback<string> ReadStatusChanged { get; set; }
+    [Parameter] public EventCallback OnMarkAllAsRead { get; set; }
+    [Parameter] public bool HasUnreadNotifications { get; set; }
+
+    private async Task OnSearchChanged(ChangeEventArgs e)
+    {
+        await SearchTermChanged.InvokeAsync(e.Value?.ToString());
+    }
+
+    private async Task OnTypeChanged(ChangeEventArgs e)
+    {
+        await SelectedTypeChanged.InvokeAsync(e.Value?.ToString());
+    }
+
+    private async Task OnReadStatusChanged(ChangeEventArgs e)
+    {
+        await ReadStatusChanged.InvokeAsync(e.Value?.ToString());
+    }
+
+    private async Task InvokeMarkAllAsRead()
+    {
+        Console.WriteLine("Tümünü Okundu İşaretle butonuna tıklandı");  // Debug için log
+        await OnMarkAllAsRead.InvokeAsync();
+    }
+    public void RefreshFilterBar()
+    {
+        StateHasChanged();
+    }
+
+}

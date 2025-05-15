@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace EcoRoute.RouteOptimization.Migrations
 {
     /// <inheritdoc />
-    public partial class intialCreate : Migration
+    public partial class initialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,14 +19,16 @@ namespace EcoRoute.RouteOptimization.Migrations
                     DriverId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     VehicleId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     WasteType = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    OptimizationType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    OptimizationType = table.Column<int>(type: "int", nullable: false),
                     StartTime = table.Column<DateTime>(type: "datetime2", nullable: false),
                     TotalDistanceKm = table.Column<double>(type: "float", nullable: false),
                     EstimatedDurationMin = table.Column<int>(type: "int", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
                     Notes = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     OverviewPolyline = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    EstimatedFuelL = table.Column<double>(type: "float", nullable: false),
+                    EstimatedCO2Kg = table.Column<double>(type: "float", nullable: false)
                 },
                 constraints: table =>
                 {
