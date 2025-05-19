@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Threading.Tasks;
 
 namespace EcoRoute.IdentityServer.Controllers
@@ -30,6 +31,9 @@ namespace EcoRoute.IdentityServer.Controllers
 
             if (result.Succeeded && user != null)
             {
+                user.LastLoginDate = DateTime.UtcNow;
+                await _userManager.UpdateAsync(user);
+
                 var userRoles = await _userManager.GetRolesAsync(user);
 
                 var model = new GetCheckAppUserViewModel

@@ -1,0 +1,181 @@
+﻿@using EcoRoute.DtoLayer.IdentityDtos
+
+@if (IsOpen && User != null)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center overflow-y-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full shadow-xl relative mx-auto my-8 modal-animation">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-semibold text-gray-800 dark:text-white">Kullanıcıyı Güncelle</h3>
+                <button @onclick="OnClose" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="p-5 space-y-4 overflow-y-auto" style="max-height: 70vh">
+                <!-- Personal Information Section -->
+                <div class="mb-4">
+                    <h4 class="text-base font-medium text-gray-700 dark:text-gray-300 mb-3">Kişisel Bilgiler</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="relative w-full">
+                            <input type="text" id="edit-name" class="block px-3 pb-2 pt-3 w-full text-base text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
+                                   @bind="User.Name" placeholder=" " />
+                            <label for="edit-name" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-3 scale-75 top-1 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-3 left-1">Ad</label>
+                        </div>
+
+                        <div class="relative w-full">
+                            <input type="text" id="edit-surname" class="block px-3 pb-2 pt-3 w-full text-base text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
+                                   @bind="User.Surname" placeholder=" " />
+                            <label for="edit-surname" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-3 scale-75 top-1 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-3 left-1">Soyad</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account and Contact Information -->
+                <div class="mb-4">
+                    <h4 class="text-base font-medium text-gray-700 dark:text-gray-300 mb-3">Hesap ve İletişim Bilgileri</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="relative w-full">
+                            <input type="text" id="edit-username" class="block px-3 pb-2 pt-3 w-full text-base text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
+                                   @bind="User.UserName" placeholder=" " />
+                            <label for="edit-username" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-3 scale-75 top-1 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-3 left-1">Kullanıcı Adı</label>
+                        </div>
+
+                        <div class="relative w-full">
+                            <input type="number" id="edit-phone" class="block px-3 pb-2 pt-3 w-full text-base text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
+                                   @bind="User.PhoneNumber" placeholder=" " />
+                            <label for="edit-phone" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-3 scale-75 top-1 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-3 left-1">Telefon</label>
+                        </div>
+
+                        <div class="relative w-full">
+                            <input type="email" id="edit-email" class="block px-3 pb-2 pt-3 w-full text-base text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
+                                   @bind="User.Email" placeholder=" " />
+                            <label for="edit-email" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-3 scale-75 top-1 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-3 left-1">E-posta</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Password Section -->
+                <div class="mb-4">
+                    <h4 class="text-base font-medium text-gray-700 dark:text-gray-300 mb-3">Şifre (Optimal)</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="relative w-full">
+                            <input type="@(_showPassword ? "text" : "password")" id="edit-password" class="block px-3 pb-2 pt-3 w-full text-base text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
+                                   @bind="User.Password" placeholder=" " />
+                            <label for="edit-password" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-3 scale-75 top-1 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-3 left-1">Şifre</label>
+                            <button type="button" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600" @onclick="TogglePasswordVisibility">
+                                <i class="fas @(_showPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                            </button>
+                        </div>
+
+                        <div class="relative w-full">
+                            <input type="@(_showPassword ? "text" : "password")"
+                                   id="edit-confirm-password"
+                                   class="block px-3 pb-2 pt-3 w-full text-base text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
+                                   @bind="ConfirmPassword"
+                                   placeholder=" " />
+                        <label for="edit-confirm-password" class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-3 scale-75 top-1 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-1 peer-focus:scale-75 peer-focus:-translate-y-3 left-1">Şifre Tekrarı</label>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                        <div class="flex flex-col space-y-1">
+                            <span>• Şifre en az 6 karakter olmalıdır</span>
+                            <span>• En az bir harf ve bir rakam içermelidir</span>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(PasswordError))
+                    {
+                        <div class="text-red-500 text-sm mt-2">@PasswordError</div>
+                    }
+                </div>
+
+                <!-- Role Selection -->
+                <div class="mb-4">
+                    <h4 class="text-base font-medium text-gray-700 dark:text-gray-300 mb-3">Kullanıcı Rolü</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="relative">
+                            <input type="radio" id="edit-role-manager" name="role" value="Manager"
+                                   checked="@(User.SelectedRole == "Manager")"
+                                   @onchange='@(() => User.SelectedRole = "Manager")'
+                                   class="hidden peer" />
+                            <label for="edit-role-manager" class="inline-flex items-center justify-between w-full p-4 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-primary-400 peer-checked:border-primary-600 peer-checked:text-primary-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                <div class="flex items-center">
+                                    <i class="fas fa-user-tie mr-3 text-lg text-primary-500"></i>
+                                    <div class="w-full">
+                                        <div class="font-semibold">Manager</div>
+                                        <div class="w-full text-sm">Sistem yönetici rolü</div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        <div class="relative">
+                            <input type="radio" id="edit-role-driver" name="role" value="Driver"
+                                   checked="@(User.SelectedRole == "Driver")"
+                                   @onchange="@(() => User.SelectedRole = "Driver")"
+                                   class="hidden peer" />
+                            <label for="edit-role-driver" class="inline-flex items-center justify-between w-full p-4 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-primary-400 peer-checked:border-primary-600 peer-checked:text-primary-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                <div class="flex items-center">
+                                    <i class="fas fa-truck mr-3 text-lg text-yellow-500"></i>
+                                    <div class="w-full">
+                                        <div class="font-semibold">Driver</div>
+                                        <div class="w-full text-xs">Sürücü rolü</div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-2">
+                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="OnClose">İptal</button>
+                <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors" @onclick="OnSave">
+                    Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public ResultUserDto User { get; set; }
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    [Parameter]
+    public EventCallback OnSave { get; set; }
+
+    [Parameter]
+    public string PasswordError { get; set; }
+
+    private string _confirmPassword = "";
+
+    [Parameter]
+    public string ConfirmPassword
+    {
+        get => _confirmPassword;
+        set
+        {
+            if (_confirmPassword != value)
+            {
+                _confirmPassword = value;
+                ConfirmPasswordChanged.InvokeAsync(value);
+            }
+        }
+    }
+
+    [Parameter]
+    public EventCallback<string> ConfirmPasswordChanged { get; set; }
+
+
+    private bool _showPassword = false;
+
+    private void TogglePasswordVisibility()
+    {
+        _showPassword = !_showPassword;
+    }
+}

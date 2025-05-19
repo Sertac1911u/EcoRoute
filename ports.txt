@@ -8,3 +8,4 @@ services
 	UI 5004
 	settings 5007
 	notification 5008 
+	Reports 5009

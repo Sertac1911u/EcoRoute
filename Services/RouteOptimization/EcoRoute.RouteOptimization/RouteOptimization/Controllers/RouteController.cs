@@ -145,5 +145,13 @@ namespace EcoRoute.RouteOptimization.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpGet("performance")]
+        public async Task<IActionResult> GetRoutePerformanceReport()
+        {
+            var result = await _routeService.GetRoutePerformanceReportAsync();
+            return Ok(result);
+        }
+
     }
 }

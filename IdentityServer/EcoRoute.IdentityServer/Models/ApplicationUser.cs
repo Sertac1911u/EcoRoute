@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using System;
 
 namespace EcoRoute.IdentityServer.Models
 {
@@ -6,5 +7,7 @@ namespace EcoRoute.IdentityServer.Models
     {
         public string Name { get; set; }
         public string Surname { get; set; }
+        public DateTime? LastLoginDate { get; set; }
+
     }
 }

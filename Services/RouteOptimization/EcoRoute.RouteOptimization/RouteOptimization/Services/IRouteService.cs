@@ -16,5 +16,7 @@ namespace EcoRoute.RouteOptimization.Services
         bool VehicleHasActiveRoute(string vehicleId);
         Task<RouteResultDto> ReoptimizeRouteWithTrafficAsync(Guid routeId);
         Task<CO2StatsDto> GetCO2StatsAsync(int days);
+        Task<List<RoutePerformanceReportDto>> GetRoutePerformanceReportAsync();
+
     }
 }

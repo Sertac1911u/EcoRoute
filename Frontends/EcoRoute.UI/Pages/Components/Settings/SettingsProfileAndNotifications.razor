@@ -1,0 +1,58 @@
+﻿@using EcoRoute.DtoLayer.SettingDtos
+@using Microsoft.AspNetCore.Components
+@using static EcoRoute.UI.Pages.Settings
+
+<div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md col-span-1">
+    <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 flex items-center">
+        <i class="fas fa-user-shield mr-2 text-primary-500"></i> Profil ve Bildirimler
+    </h3>
+
+    <!-- Avatar -->
+    <div class="mb-6">
+        <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Profil Avatarı</label>
+        <div class="flex items-center space-x-4">
+            <div class="relative">
+                <img src="@Settings.AvatarUrl" alt="Profil Avatarı" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700" />
+                <button @onclick="TriggerAvatarChange" class="absolute bottom-0 right-0 bg-primary-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center hover:bg-primary-600 transition-colors">
+                    <i class="fas fa-pen text-xs"></i>
+                </button>
+            </div>
+            <div>
+                <p class="text-sm text-gray-700 dark:text-gray-300">Profil resminizi değiştirin</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Önerilen: 200x200 piksel</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bildirimler -->
+    <div>
+        <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Bildirim Tercihleri</label>
+        <div class="space-y-2">
+            <div class="flex items-center">
+                <input id="email-notif" type="checkbox" @bind="Settings.EmailNotifications" class="w-4 h-4 text-primary-600 rounded dark:bg-gray-700 dark:border-gray-600">
+                <label for="email-notif" class="ms-2 text-sm text-gray-700 dark:text-gray-300">E-posta Bildirimleri</label>
+            </div>
+            <div class="flex items-center">
+                <input id="sms-notif" type="checkbox" @bind="Settings.SmsNotifications" class="w-4 h-4 text-primary-600 rounded dark:bg-gray-700 dark:border-gray-600">
+                <label for="sms-notif" class="ms-2 text-sm text-gray-700 dark:text-gray-300">SMS Bildirimleri</label>
+            </div>
+            <div class="flex items-center">
+                <input id="push-notif" type="checkbox" @bind="Settings.PushNotifications" class="w-4 h-4 text-primary-600 rounded dark:bg-gray-700 dark:border-gray-600">
+                <label for="push-notif" class="ms-2 text-sm text-gray-700 dark:text-gray-300">Push Bildirimleri</label>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public SettingsViewModel Settings { get; set; }
+    [Parameter] public EventCallback OnAvatarClick { get; set; }
+
+    private async Task TriggerAvatarChange()
+    {
+        if (OnAvatarClick.HasDelegate)
+        {
+            await OnAvatarClick.InvokeAsync();
+        }
+    }
+}

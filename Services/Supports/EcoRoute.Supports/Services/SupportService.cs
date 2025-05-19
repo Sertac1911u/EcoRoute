@@ -110,15 +110,38 @@ namespace EcoRoute.Supports.Services
         public async Task AddResponseAsync(CreateTicketResponseDto dto)
         {
             var ticket = await _context.SupportTickets
+                .Include(x => x.Responses)
                 .FirstOrDefaultAsync(x => x.Id == dto.SupportTicketId);
 
             if (ticket == null)
                 throw new Exception("Ticket not found");
 
+            var isStaff = dto.IsStaff; // Bunu HttpContext üzerinden de yapabilirsin, yukarıda konuştuk.
+            var isDriver = !isStaff;
+
+            if (isDriver && ticket.Responses.Any())
+            {
+                var responses = ticket.Responses.OrderBy(r => r.ResponseDate).ToList();
+                // Hiç staff mesajı var mı?
+                bool hasStaffResponse = responses.Any(r => r.IsStaff);
+
+                if (hasStaffResponse)
+                {
+                    // Son mesaj driver mı? (ve en az bir staff mesajı var)
+                    var lastResponse = responses.LastOrDefault();
+                    if (lastResponse != null && !lastResponse.IsStaff)
+                    {
+                        // En son staff mesajı GELDİKTEN SONRA, arka arkaya driver yazamaz.
+                        throw new InvalidOperationException("Yönetici cevap vermeden tekrar yanıt gönderemezsiniz.");
+                    }
+                }
+                // Eğer hiç staff mesajı yoksa, driver istediği kadar yazabilir.
+            }
+
             var response = new TicketResponse
             {
                 Message = dto.Message,
-                IsStaff = dto.IsStaff,
+                IsStaff = isStaff,
                 SupportTicketId = dto.SupportTicketId,
                 UserId = dto.UserId,
                 UserName = dto.UserName
@@ -165,7 +188,7 @@ namespace EcoRoute.Supports.Services
             var responseResult = _mapper.Map<ResultTicketResponseDto>(response);
 
             // If staff responded, notify the ticket creator
-            if (dto.IsStaff)
+            if (isStaff)
             {
                 await _notificationService.SendTicketResponseNotificationAsync(
                     responseResult,
@@ -183,6 +206,8 @@ namespace EcoRoute.Supports.Services
                     ""); // Empty userId means notification will be sent to all
             }
         }
+
+
         public async Task<bool> UpdateStatusAsync(Guid id, string status)
         {
             var ticket = await _context.SupportTickets.FindAsync(id);
@@ -220,5 +245,5 @@ namespace EcoRoute.Supports.Services
 
             return true;
         }
-    }
+    }   
 }

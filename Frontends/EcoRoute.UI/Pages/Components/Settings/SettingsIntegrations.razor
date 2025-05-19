@@ -1,0 +1,33 @@
+﻿@using EcoRoute.DtoLayer.SettingDtos
+@using Microsoft.AspNetCore.Components
+@using static EcoRoute.UI.Pages.Settings
+
+<div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md col-span-1">
+    <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 flex items-center">
+        <i class="fas fa-link mr-2 text-primary-500"></i> Sistem Entegrasyonları
+    </h3>
+
+    <!-- Google Maps API -->
+    <div class="mb-6">
+        <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Google Maps API</label>
+        <div class="flex">
+            <input type="text"
+                   placeholder="API Anahtarı"
+                   value="@Settings.GoogleMapsApiKey"
+                   @oninput="e => Settings.GoogleMapsApiKey = e.Value?.ToString()"
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md text-gray-800 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500" />
+            <button class="px-3 py-2 bg-primary-500 text-white rounded-r-md hover:bg-primary-600 transition-colors"
+                    @onclick="OnTestApi">
+                <i class="fas fa-check"></i>
+            </button>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Harita özelliklerini etkinleştirmek için geçerli bir Google Maps API anahtarı girin.
+        </p>
+    </div>
+</div>
+
+@code {
+    [Parameter] public SettingsViewModel Settings { get; set; }
+    [Parameter] public EventCallback OnTestApi { get; set; }
+}

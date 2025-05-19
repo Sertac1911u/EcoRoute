@@ -1,0 +1,207 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using EcoRoute.DtoLayer.SupportDtos
+@inject IToastService ToastService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center overflow-y-auto animate-fadeIn">
+    <div class="bg-white dark:bg-gray-800 rounded-xl w-full max-w-2xl shadow-2xl m-4">
+        <div class="p-5 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
+                <i class="fas fa-plus-circle mr-2 text-primary-500"></i>
+                Yeni Destek Talebi Oluştur
+            </h3>
+            <button @onclick="OnClose" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none transition-colors p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+            <div class="relative w-full mb-4">
+                <input type="text" id="ticket-subject"
+                       class="block px-4 pb-2.5 pt-4 w-full text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
+                       @bind="newTicket.Subject"
+                       placeholder=" " />
+                <label for="ticket-subject"
+                       class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">
+                    Konu
+                </label>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Öncelik</label>
+                    <select id="priority"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                            @bind="newTicket.Priority">
+                        <option value="Düşük">Düşük</option>
+                        <option value="Orta" selected>Orta</option>
+                        <option value="Yüksek">Yüksek</option>
+                        <option value="Acil">Acil</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kategori</label>
+                    <select id="category"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                            @bind="newTicket.Category">
+                        <option value="Teknik Sorun">Teknik Sorun</option>
+                        <option value="Hesap Bilgileri">Hesap Bilgileri</option>
+                        <option value="Ödeme">Ödeme</option>
+                        <option value="Öneri">Öneri</option>
+                        <option value="Diğer">Diğer</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Açıklama</label>
+                <textarea id="description"
+                          rows="6"
+                          class="block p-2.5 w-full text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+                          placeholder="Lütfen sorununuzu detaylı bir şekilde açıklayın..."
+                          @bind="newTicket.Description">
+                </textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Dosya Ekle (İsteğe Bağlı)</label>
+                <div class="flex items-center justify-center w-full">
+                    <InputFile OnChange="HandleFileSelected" id="dropzone-file" class="hidden" />
+                    <label for="dropzone-file" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg aria-hidden="true" class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">Dosya yüklemek için tıklayın</span> veya sürükleyip bırakın</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG veya PDF (MAX. 10MB)</p>
+                            @if (uploadedFile != null)
+                            {
+                                <p class="mt-2 text-sm text-green-500 flex items-center">
+                                    <i class="fas fa-check-circle mr-1"></i> @uploadedFile.Name
+                                </p>
+                            }
+                        </div>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-5 border-t border-gray-200 dark:border-gray-700 flex justify-end space-x-3">
+            <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg text-gray-800 dark:text-gray-200 transition-colors"
+                    @onclick="OnClose"
+                    disabled="@IsSubmitting">
+                İptal
+            </button>
+            <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-all duration-300 transform hover:scale-105 shadow-md"
+                    @onclick="CreateSupportTicket"
+                    disabled="@IsSubmitting">
+                @if (IsSubmitting)
+                {
+                    <div class="flex items-center">
+                        <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        <span>Gönderiliyor...</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="flex items-center">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        <span>Gönder</span>
+                    </div>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.3s ease-out;
+    }
+</style>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<MultipartFormDataContent> OnSubmit { get; set; }
+    [Parameter] public bool IsSubmitting { get; set; }
+
+    private CreateSupportTicketDto newTicket = new CreateSupportTicketDto
+        {
+            Priority = "Orta",
+            Category = "Teknik Sorun"
+        };
+    private IBrowserFile uploadedFile;
+    private string userId;
+    private string userName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        userName = user.Identity.Name;
+    }
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        uploadedFile = e.File;
+
+        // Validate file size
+        if (uploadedFile.Size > 10485760) // 10MB
+        {
+            ToastService.ShowWarning("Dosya boyutu 10MB'dan büyük olamaz. Lütfen daha küçük bir dosya seçin.");
+            uploadedFile = null;
+        }
+    }
+
+    private async Task CreateSupportTicket()
+    {
+        // Validation
+        if (string.IsNullOrEmpty(newTicket.Subject))
+        {
+            ToastService.ShowWarning("Lütfen bir konu girin.");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(newTicket.Description))
+        {
+            ToastService.ShowWarning("Lütfen bir açıklama girin.");
+            return;
+        }
+
+        if (IsSubmitting) return;
+
+        var content = new MultipartFormDataContent();
+        content.Add(new StringContent(newTicket.Subject), "Subject");
+        content.Add(new StringContent(newTicket.Description ?? ""), "Description");
+        content.Add(new StringContent(newTicket.Priority), "Priority");
+        content.Add(new StringContent(newTicket.Category ?? ""), "Category");
+        content.Add(new StringContent(userId ?? ""), "UserId");
+        content.Add(new StringContent(userName ?? ""), "UserName");
+
+        // Handle file if present
+        if (uploadedFile != null)
+        {
+            var fileContent = new StreamContent(uploadedFile.OpenReadStream(maxAllowedSize: 10485760)); // 10MB max
+            content.Add(fileContent, "Attachment", uploadedFile.Name);
+        }
+
+        await OnSubmit.InvokeAsync(content);
+    }
+}

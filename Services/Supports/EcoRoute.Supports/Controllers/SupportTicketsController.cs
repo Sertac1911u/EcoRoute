@@ -57,17 +57,26 @@ namespace EcoRoute.Supports.Controllers
         [HttpPost("reply")]
         public async Task<IActionResult> AddResponse([FromForm] CreateTicketResponseDto dto)
         {
-            // 1) Kullanıcı bilgilerini set et
             dto.UserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             dto.UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Bilinmeyen Kullanıcı";
+            dto.IsStaff = User.IsInRole("Manager") || User.IsInRole("SuperAdmin");
 
-            // 2) Şimdi mutlaka IsStaff’ı doğru tespit edin
-            dto.IsStaff = User.IsInRole("Manager")
-                        || User.IsInRole("SuperAdmin");
 
-            // 3) Servise geçin
-            await _supportService.AddResponseAsync(dto);
-            return NoContent();
+            try
+            {
+                await _supportService.AddResponseAsync(dto);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Kural ihlali
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                // Diğer hatalar
+                return StatusCode(500, new { message = "Beklenmeyen bir hata oluştu.", detail = ex.Message });
+            }
         }
 
 

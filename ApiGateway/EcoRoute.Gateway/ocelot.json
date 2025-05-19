@@ -194,6 +194,66 @@
       "UpstreamPathTemplate": "/Uploads/{everything}",
       "UpstreamHttpMethod": [ "GET" ],
       "Priority": 1
+    },
+    {
+      "DownstreamPathTemplate": "/api/reports/{everything}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5009
+        }
+      ],
+      "UpstreamPathTemplate": "/services/reports/{everything}",
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "OPTIONS" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "ReportsFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "ReportsFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/performance",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/api/route/performance",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      }
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/co2-stats",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/api/route/co2-stats",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      }
     }
   ],
   "GlobalConfiguration": {

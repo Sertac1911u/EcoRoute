@@ -1,48 +1,59 @@
 ﻿@using Microsoft.AspNetCore.Components
 
-<div class="flex flex-wrap gap-2 items-center">
+<div class="flex flex-col sm:flex-row flex-wrap gap-3 items-center w-full md:w-auto">
     <!-- Arama Kutusu -->
-    <div class="relative">
+    <div class="relative w-full sm:w-auto">
         <input type="text"
                placeholder="Bildirimlerinde ara..."
-               class="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white"
+               class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white transition-all duration-200"
                value="@SearchTerm"
                @oninput="OnSearchChanged" />
         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <i class="fas fa-search text-gray-400"></i>
         </div>
+        @if (!string.IsNullOrEmpty(SearchTerm))
+        {
+            <button @onclick="ClearSearch" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                <i class="fas fa-times"></i>
+            </button>
+        }
     </div>
-    <!-- Tür Seçimi -->
-    <div class="relative">
-        <select class="pl-4 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white appearance-none"
-                value="@SelectedType"
-                @onchange="OnTypeChanged">
-            <option value="">Tüm Türler</option>
-            <option value="Info">Bilgi</option>
-            <option value="Success">Başarılı</option>
-            <option value="Warning">Uyarı</option>
-            <option value="Error">Hata</option>
-        </select>
-        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <i class="fas fa-chevron-down text-gray-400"></i>
+
+    <div class="flex gap-3 w-full sm:w-auto">
+        <!-- Tür Seçimi -->
+        <div class="relative flex-1 sm:flex-none">
+            <select class="w-full pl-4 pr-8 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white appearance-none transition-all duration-200"
+                    value="@SelectedType"
+                    @onchange="OnTypeChanged">
+                <option value="">Tüm Türler</option>
+                <option value="Info">Bilgi</option>
+                <option value="Success">Başarılı</option>
+                <option value="Warning">Uyarı</option>
+                <option value="Error">Hata</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-400"></i>
+            </div>
+        </div>
+
+        <!-- Okunma Durumu -->
+        <div class="relative flex-1 sm:flex-none">
+            <select class="w-full pl-4 pr-8 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white appearance-none transition-all duration-200"
+                    value="@ReadStatus"
+                    @onchange="OnReadStatusChanged">
+                <option value="">Tümü</option>
+                <option value="unread">Okunmamış</option>
+                <option value="read">Okunmuş</option>
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-400"></i>
+            </div>
         </div>
     </div>
-    <!-- Okunma Durumu -->
-    <div class="relative">
-        <select class="pl-4 pr-8 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-800 dark:text-white appearance-none"
-                value="@ReadStatus"
-                @onchange="OnReadStatusChanged">
-            <option value="">Tümü</option>
-            <option value="unread">Okunmamış</option>
-            <option value="read">Okunmuş</option>
-        </select>
-        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-            <i class="fas fa-chevron-down text-gray-400"></i>
-        </div>
-    </div>
+
     @if (HasUnreadNotifications)
     {
-        <button @onclick="InvokeMarkAllAsRead" class="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors">
+        <button @onclick="InvokeMarkAllAsRead" class="w-full sm:w-auto px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 transition-all duration-200 inline-flex items-center justify-center shadow-sm hover:shadow">
             <i class="fas fa-check-double mr-2"></i> Tümünü Okundu İşaretle
         </button>
     }
@@ -63,6 +74,11 @@
         await SearchTermChanged.InvokeAsync(e.Value?.ToString());
     }
 
+    private async Task ClearSearch()
+    {
+        await SearchTermChanged.InvokeAsync("");
+    }
+
     private async Task OnTypeChanged(ChangeEventArgs e)
     {
         await SelectedTypeChanged.InvokeAsync(e.Value?.ToString());
@@ -75,12 +91,12 @@
 
     private async Task InvokeMarkAllAsRead()
     {
-        Console.WriteLine("Tümünü Okundu İşaretle butonuna tıklandı");  // Debug için log
         await OnMarkAllAsRead.InvokeAsync();
     }
+
     public void RefreshFilterBar()
     {
         StateHasChanged();
     }
-
 }
+

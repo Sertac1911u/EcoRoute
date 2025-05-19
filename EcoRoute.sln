@@ -51,6 +51,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.Notifications", "S
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.RouteOptimization", "Services\RouteOptimization\EcoRoute.RouteOptimization\RouteOptimization\EcoRoute.RouteOptimization.csproj", "{72E4CC97-3EAD-4916-8932-3ED12C4C6A35}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EcoRoute.Reports", "Services\Report\EcoRoute.Reports\EcoRoute.Reports.csproj", "{0E05B5ED-C4F2-40C4-B160-7FD49D60E42B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -97,6 +99,10 @@ Global
 		{72E4CC97-3EAD-4916-8932-3ED12C4C6A35}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{72E4CC97-3EAD-4916-8932-3ED12C4C6A35}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{72E4CC97-3EAD-4916-8932-3ED12C4C6A35}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E05B5ED-C4F2-40C4-B160-7FD49D60E42B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E05B5ED-C4F2-40C4-B160-7FD49D60E42B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E05B5ED-C4F2-40C4-B160-7FD49D60E42B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E05B5ED-C4F2-40C4-B160-7FD49D60E42B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -119,6 +125,7 @@ Global
 		{535D6C67-2842-4C34-A0C7-010CADE060A1} = {AC55BB63-8714-4536-9B27-E773759109F9}
 		{3B92D915-0475-4365-9413-23B7B0AB4986} = {0B2B837B-2A26-4723-8582-5E0F866B359D}
 		{72E4CC97-3EAD-4916-8932-3ED12C4C6A35} = {337A281D-F7C4-4D6F-95AD-6DF6A0071B15}
+		{0E05B5ED-C4F2-40C4-B160-7FD49D60E42B} = {385DB217-BFA2-4F86-B3A3-F20D58724F1B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E3BEE716-F6D6-42BF-95AF-701725F611A1}

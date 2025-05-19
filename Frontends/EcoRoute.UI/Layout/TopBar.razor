@@ -9,56 +9,77 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime JS
 
-<header class="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+<header class="flex-shrink-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-gray-900/10">
     <div class="flex items-center justify-between h-16 px-6">
         <!-- Mobile menu button -->
         <div class="flex items-center">
-            <button type="button" class="md:hidden text-gray-500 dark:text-gray-300 hover:text-gray-700 focus:outline-none focus:text-gray-700" id="mobile-menu-button">
-                <i class="fas fa-bars"></i>
+            <button type="button" class="md:hidden text-gray-500 dark:text-gray-300 hover:text-primary-500 dark:hover:text-primary-400 focus:outline-none transition-colors duration-200" id="mobile-menu-button">
+                <i class="fas fa-bars text-lg"></i>
             </button>
         </div>
 
         <!-- Search bar -->
         <div class="flex-1 mx-4">
-            <div class="relative">
+            <div class="relative max-w-lg">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <i class="fas fa-search text-gray-400 dark:text-gray-500"></i>
                 </div>
-                <input type="search" class="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:text-white transition duration-150 ease-in-out" placeholder="Ara...">
+                <input type="search" class="block w-full pl-10 pr-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 dark:text-white transition-all duration-200" placeholder="Ara...">
+                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                    <span class="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline-block">⌘ + K</span>
+                </div>
             </div>
         </div>
 
-        <!-- User dropdown and darkmode toggle -->
-        <div class="flex items-center">
-           @*  <button @onclick="ToggleDarkMode" class="p-2 rounded-md text-gray-500 dark:text-gray-300 dark:hover:text-white hover:text-gray-700 focus:outline-none">
-                <i class="fas fa-moon dark:hidden"></i>
-                <i class="fas fa-sun hidden dark:inline"></i>
-            </button> *@
+        <!-- Right actions area -->
+        <div class="flex items-center space-x-2">
+          @*   <!-- Dark Mode Toggle -->
+            <button @onclick="ToggleDarkMode" class="relative flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 transition-all duration-200 focus:outline-none" title="Tema Değiştir">
+                <i class="fas @(isDarkMode ? "fa-sun" : "fa-moon") transition-all duration-300"></i>
+                <span class="sr-only">@(isDarkMode ? "Açık Tema" : "Koyu Tema")</span>
+            </button>
+ *@
+            <!-- Notification Menu - bu kısım değiştirilmeyecek -->
             <NotificationMenu />
 
-            <div class="relative ml-3">
-                <div>
-                    <button type="button" class="flex items-center text-md" id="user-menu-button" @onclick="ToggleUserMenu">
-                        <span class="mr-2 text-gray-700 dark:text-gray-300">@formattedUserName</span>
+            <!-- User dropdown -->
+            <div class="relative ml-2">
+                <button type="button" class="flex items-center text-md max-w-xs" id="user-menu-button" @onclick="ToggleUserMenu">
+                    <span class="mr-2 text-gray-700 dark:text-gray-300 hidden sm:block">@formattedUserName</span>
+                    <div class="flex-shrink-0 h-8 w-8 relative group">
                         @if (isAvatarLoading)
                         {
                             <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                         }
                         else if (!string.IsNullOrEmpty(avatarUrl))
                         {
-                            <img src="@avatarUrl" alt="@formattedUserName" class="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700">
+                            <img src="@avatarUrl" alt="@formattedUserName" class="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700 transition-transform duration-300 group-hover:scale-105">
+                            <div class="absolute inset-0 rounded-full bg-black opacity-0 group-hover:opacity-10 transition-all duration-300"></div>
                         }
                         else
                         {
-                            <i class="fas fa-user-circle text-gray-500 dark:text-gray-300 text-3xl"></i>
+                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white font-bold">
+                                @(!string.IsNullOrEmpty(formattedUserName) && formattedUserName.Length > 0 ? formattedUserName[0].ToString().ToUpper() : "U")
+                            </div>
                         }
-                    </button>
-                </div>
-                <div class="@(isUserMenuOpen ? "" : "hidden") origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-900 ring-1 ring-black ring-opacity-5 focus:outline-none z-10" id="user-dropdown">
-                    <a href="/profile" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Profilim</a>
-                    <a href="/settings" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">Ayarlar</a>
-                    <button @onclick="Logout" class="w-full text-left block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800">
-                        Çıkış Yap
+                    </div>
+                </button>
+
+                <!-- User Dropdown -->
+                <div class="@(isUserMenuOpen ? "" : "hidden") origin-top-right absolute right-0 mt-2 w-52 rounded-md shadow-lg py-1 bg-white dark:bg-gray-900 ring-1 ring-black ring-opacity-5 focus:outline-none z-10 transition-all duration-200">
+                    <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-800">
+                        <p class="text-sm font-medium text-gray-800 dark:text-gray-200">@formattedUserName</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">@GetUserEmail()</p>
+                    </div>
+
+                    <a href="/profile" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <i class="fas fa-user-circle mr-2 text-primary-500"></i> Profilim
+                    </a>
+                    <a href="/settings" class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <i class="fas fa-cog mr-2 text-primary-500"></i> Ayarlar
+                    </a>
+                    <button @onclick="Logout" class="w-full text-left block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
+                        <i class="fas fa-sign-out-alt mr-2 text-primary-500"></i> Çıkış Yap
                     </button>
                 </div>
             </div>
@@ -68,13 +89,14 @@
 
 
 <style>
+    /* Search input clear button styling */
     input[type="search"]::-webkit-search-cancel-button {
-    appearance: none;
-    height: 1em;
-    width: 1em;
-    background: url("data:image/svg+xml,%3Csvg fill='%232ba86d' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 1 0-1.41 1.41L10.59 12l-4.89 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4z'/%3E%3C/svg%3E") no-repeat center center;
-    background-size: 1em;
-    cursor: pointer;
+        appearance: none;
+        height: 1em;
+        width: 1em;
+        background: url("data:image/svg+xml,%3Csvg fill='%232ba86d' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7a1 1 0 1 0-1.41 1.41L10.59 12l-4.89 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4z'/%3E%3C/svg%3E") no-repeat center center;
+        background-size: 1em;
+        cursor: pointer;
     }
 </style>
 
@@ -84,6 +106,7 @@
     private string avatarUrl = "";
     private bool isUserMenuOpen = false;
     private bool isAvatarLoading = true;
+    private bool isDarkMode = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -120,7 +143,7 @@
             }
 
             // Dark mode ayarlarını uygula
-            await ApplyDarkMode();
+            await LoadDarkMode();
 
             // Force refresh of avatar from settings service rather than just local storage
             await LoadAvatarFromSettings();
@@ -130,12 +153,26 @@
             Console.WriteLine($"Kullanıcı bilgileri yüklenirken hata oluştu: {ex.Message}");
         }
     }
-    private async Task LoadAvatar()
+
+    private string GetUserEmail()
     {
-        // Avatar URL'ini localStorage'dan al
-        avatarUrl = await localStorage.GetItemAsync<string>("avatarUrl");
-        StateHasChanged();
+        // Bu metod gerçek kullanıcı e-postasını almalı
+        // Örnek olarak username + domain şeklinde oluşturuyoruz
+        return $"{username.ToLower()}@ecoroute.com";
     }
+
+    private async Task LoadDarkMode()
+    {
+        // LocalStorage'dan dark mode ayarını al
+        var darkModeStr = await localStorage.GetItemAsync<string>("darkMode");
+
+        // Dark mode ayarını uygula (string "true" ise true, değilse false)
+        isDarkMode = darkModeStr?.ToLower() == "true";
+
+        // Document root'a dark class'ını ekle veya kaldır
+        await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(isDarkMode ? "add" : "remove")}('dark')");
+    }
+
     private async Task LoadAvatarFromSettings()
     {
         isAvatarLoading = true;
@@ -152,9 +189,6 @@
             // If user IDs don't match or avatar isn't set, refresh from settings
             if (string.IsNullOrEmpty(storedUserId) || storedUserId != currentUserId || string.IsNullOrEmpty(avatarUrl))
             {
-                // Inject SettingsService at the top of the file if not already there
-                // @inject SettingsService settingsService
-
                 var settingsDto = await settingsService.GetSettingsAsync();
                 if (settingsDto != null && !string.IsNullOrEmpty(settingsDto.AvatarUrl))
                 {
@@ -185,26 +219,6 @@
         {
             isAvatarLoading = false;
             StateHasChanged();
-
-        }
-    }
-
-    private async Task ApplyDarkMode()
-    {
-        try
-        {
-            // LocalStorage'dan dark mode ayarını al
-            var darkModeStr = await localStorage.GetItemAsync<string>("darkMode");
-
-            // Dark mode ayarını uygula (string "true" ise true, değilse false)
-            bool isDarkMode = darkModeStr?.ToLower() == "true";
-
-            // Document root'a dark class'ını ekle veya kaldır
-            await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(isDarkMode ? "add" : "remove")}('dark')");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Dark mode uygulanırken hata oluştu: {ex.Message}");
         }
     }
 
@@ -212,11 +226,7 @@
     {
         try
         {
-            // Mevcut dark mode ayarını al
-            var darkModeStr = await localStorage.GetItemAsync<string>("darkMode");
-            bool isDarkMode = darkModeStr?.ToLower() == "true";
-
-            // Tersine çevir
+            // Mevcut dark mode ayarını tersine çevir
             isDarkMode = !isDarkMode;
 
             // LocalStorage'a kaydet

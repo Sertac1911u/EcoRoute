@@ -151,6 +151,46 @@ namespace EcoRoute.IdentityServer.Controllers
 
             return Ok("Kullanıcı başarıyla silindi.");
         }
+
+        [HttpGet("getnamesbyids")]
+        public async Task<IActionResult> GetUserNamesByIds([FromQuery] List<string> id)
+        {
+            var users = await _userManager.Users
+                .Where(u => id.Contains(u.Id))
+                .ToListAsync();
+
+            var result = users.ToDictionary(
+                u => u.Id,
+                u => u.UserName
+            );
+
+            return Ok(result);
+        }
+        [HttpGet("activity")]
+        public async Task<IActionResult> GetUserActivityReport()
+        {
+            var users = await _userManager.Users.ToListAsync();
+            var result = new List<UserActivityReportDto>();
+
+            foreach (var user in users)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                var role = roles.FirstOrDefault(); // çoklu rol desteği yoksa tekini al
+
+                result.Add(new UserActivityReportDto
+                {
+                    Id = user.Id,
+                    UserName = user.UserName,
+                    Role = role,
+                    LastLoginDate = user.LastLoginDate,
+                    OperationCount = 0 // bu veriyi bir yerden topluyorsan buraya koyabilirsin
+                });
+            }
+
+            return Ok(result);
+        }
+
+
     }
 }
 

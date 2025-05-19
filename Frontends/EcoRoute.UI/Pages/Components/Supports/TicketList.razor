@@ -1,0 +1,155 @@
+﻿@using EcoRoute.DtoLayer.SupportDtos
+
+<div class="overflow-x-auto">
+    <table class="w-full text-sm border-collapse">
+        <thead class="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+            <tr class="grid grid-cols-12 gap-2">
+                <th @onclick='() => SortTable("Id")' class="col-span-1 px-6 py-4 font-medium cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <div class="flex items-center">
+                        # @GetSortIcon("Id")
+                    </div>
+                </th>
+                <th @onclick='() => SortTable("Subject")' class="col-span-3 px-6 py-4 font-medium cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <div class="flex items-center">
+                        Konu @GetSortIcon("Subject")
+                    </div>
+                </th>
+                <th @onclick='() => SortTable("Status")' class="col-span-2 px-6 py-4 font-medium cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <div class="flex items-center">
+                        Durum @GetSortIcon("Status")
+                    </div>
+                </th>
+                <th @onclick='() => SortTable("Priority")' class="col-span-2 px-6 py-4 font-medium cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <div class="flex items-center">
+                        Öncelik @GetSortIcon("Priority")
+                    </div>
+                </th>
+                <th @onclick='() => SortTable("CreateDate")' class="col-span-4 px-6 py-4 font-medium cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <div class="flex items-center">
+                        Oluşturulma Tarihi @GetSortIcon("CreateDate")
+                    </div>
+                </th>
+            </tr>
+        </thead>
+        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+            @if (IsLoading)
+            {
+                <tr class="grid grid-cols-12 gap-2">
+                    <td colspan="5" class="col-span-12 text-center p-8 text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="w-12 h-12 rounded-full border-4 border-primary-500 border-t-transparent animate-spin mb-4"></div>
+                            <p>Destek talepleri yükleniyor...</p>
+                        </div>
+                    </td>
+                </tr>
+            }
+            else if (Tickets == null || !Tickets.Any())
+            {
+                <tr class="grid grid-cols-12 gap-2">
+                    <td colspan="5" class="col-span-12 text-center p-10 text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-col justify-center items-center">
+                            <i class="fas fa-ticket-alt text-5xl mb-4 text-gray-300 dark:text-gray-600"></i>
+                            <p class="text-lg">Henüz destek talebi bulunmamaktadır.</p>
+                        </div>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var ticket in Tickets.Select((t, i) => new { Index = i + 1, Ticket = t }))
+                {
+                    <tr @onclick="() => OnTicketSelectClicked(ticket.Ticket)"
+                        class="grid grid-cols-12 gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-all duration-200 transform hover:translate-x-1">
+                        <td class="col-span-1 px-6 py-4 flex items-center text-gray-700 dark:text-gray-300">
+                            @ticket.Index
+                        </td>
+                        <td class="col-span-3 px-6 py-4 flex items-center text-gray-700 dark:text-gray-300 font-medium truncate">
+                            @ticket.Ticket.Subject
+                        </td>
+                        <td class="col-span-2 px-6 py-4 flex items-center">
+                            <span class="@GetStatusBadgeClass(ticket.Ticket.Status) px-3 py-1 text-xs rounded-full">
+                                @ticket.Ticket.Status
+                            </span>
+                        </td>
+                        <td class="col-span-2 px-6 py-4 flex items-center">
+                            <span class="@GetPriorityBadgeClass(ticket.Ticket.Priority) px-3 py-1 text-xs rounded-full">
+                                @ticket.Ticket.Priority
+                            </span>
+                        </td>
+                        <td class="col-span-4 px-6 py-4 flex items-center text-gray-600 dark:text-gray-400 text-sm">
+                            @ticket.Ticket.CreateDate.ToString("dd.MM.yyyy HH:mm")
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter] public List<ResultSupportTicketDto> Tickets { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public string SortColumn { get; set; }
+    [Parameter] public bool Ascending { get; set; }
+    [Parameter] public EventCallback<string> OnSort { get; set; }
+    [Parameter] public EventCallback<ResultSupportTicketDto> OnTicketSelect { get; set; }
+
+    private async Task SortTable(string column)
+    {
+        await OnSort.InvokeAsync(column);
+    }
+
+    private async Task OnTicketSelectClicked(ResultSupportTicketDto ticket)
+    {
+        await OnTicketSelect.InvokeAsync(ticket);
+    }
+
+    private RenderFragment GetSortIcon(string column)
+    {
+        return builder =>
+        {
+            if (SortColumn != column)
+            {
+                builder.OpenElement(0, "i");
+                builder.AddAttribute(1, "class", "fas fa-sort ml-1 text-gray-400");
+                builder.CloseElement();
+            }
+            else if (Ascending)
+            {
+                builder.OpenElement(0, "i");
+                builder.AddAttribute(1, "class", "fas fa-sort-up ml-1 text-primary-500");
+                builder.CloseElement();
+            }
+            else
+            {
+                builder.OpenElement(0, "i");
+                builder.AddAttribute(1, "class", "fas fa-sort-down ml-1 text-primary-500");
+                builder.CloseElement();
+            }
+        };
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Açık" => "inline-flex items-center text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+            "İşlemde" => "inline-flex items-center text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+            "Çözüldü" => "inline-flex items-center text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+            "Kapatıldı" => "inline-flex items-center text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
+            _ => "inline-flex items-center text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+        };
+    }
+
+    private string GetPriorityBadgeClass(string priority)
+    {
+        return priority switch
+        {
+            "Düşük" => "inline-flex items-center text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+            "Orta" => "inline-flex items-center text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+            "Yüksek" => "inline-flex items-center text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+            "Acil" => "inline-flex items-center text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+            _ => "inline-flex items-center text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+        };
+    }
+}

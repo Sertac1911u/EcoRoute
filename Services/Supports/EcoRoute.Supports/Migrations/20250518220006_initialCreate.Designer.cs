@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcoRoute.Supports.Migrations
 {
     [DbContext(typeof(SupportsContext))]
-    [Migration("20250502153039_AddUserInfoToTickets")]
-    partial class AddUserInfoToTickets
+    [Migration("20250518220006_initialCreate")]
+    partial class initialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

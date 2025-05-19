@@ -1,0 +1,129 @@
+﻿@using EcoRoute.DtoLayer.ReportsDtos
+@inject EcoRoute.UI.Services.ReportsServices.IReportService ReportService
+@inject IJSRuntime JS
+
+<div class="space-y-6">
+    <!-- Statistik Kartlar -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 flex flex-col justify-between">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Toplam Emisyon (kg)</p>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white">@($"{TotalCO2:N2}")</h3>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 flex flex-col justify-between">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Günlük Ortalama (kg)</p>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white">@($"{AverageDailyCO2:N2}")</h3>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 flex flex-col justify-between">
+            <p class="text-sm text-gray-500 dark:text-gray-400">En Yüksek Günlük Emisyon</p>
+            <h3 class="text-2xl font-bold text-red-500 dark:text-red-400">@($"{MaxCO2:N2}")</h3>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 flex flex-col justify-between">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Rota Sayısı (Toplam)</p>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white">@TotalRouteCount</h3>
+        </div>
+    </div>
+
+    <!-- CO2 Çizgi/Alan Grafiği -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Günlük CO₂ Emisyon Grafiği</h3>
+        </div>
+        <canvas id="co2Chart" height="80"></canvas>
+    </div>
+
+    <!-- Tablo -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 overflow-x-auto">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Günlük CO₂ Detay Tablosu</h3>
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Tarih</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">CO₂ (kg)</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase">Rota Sayısı</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                @if (ReportList != null && ReportList.Count > 0)
+                {
+                    @foreach (var day in ReportList.OrderByDescending(r => r.Date))
+                    {
+                        <tr>
+                            <td class="px-4 py-2">@day.Date.ToString("dd.MM.yyyy")</td>
+                            <td class="px-4 py-2">@($"{day.CO2Kg:N2}")</td>
+                            <td class="px-4 py-2">@day.RouteCount</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="3" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">Kayıt bulunamadı.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    window.co2Chart = (labels, data) => {
+        if (!window.Chart) return;
+        const ctx = document.getElementById('co2Chart').getContext('2d');
+        if (window._co2ChartInstance) {
+            window._co2ChartInstance.destroy();
+        }
+        window._co2ChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'CO₂ (kg)',
+                    data: data,
+                    tension: 0.3,
+                    borderWidth: 3,
+                    borderColor: 'rgba(59,130,246,1)',
+                    backgroundColor: 'rgba(59,130,246,0.15)',
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        min: 0,
+                        title: { display: true, text: 'CO₂ (kg)' }
+                    }
+                }
+            }
+        });
+    };
+</script>
+@code {
+    private List<CO2EmissionReportDto> ReportList = new();
+
+    private double TotalCO2 => ReportList.Sum(r => r.CO2Kg);
+    private double AverageDailyCO2 => ReportList.Count > 0 ? ReportList.Average(r => r.CO2Kg) : 0;
+    private double MaxCO2 => ReportList.Count > 0 ? ReportList.Max(r => r.CO2Kg) : 0;
+    private int TotalRouteCount => ReportList.Sum(r => r.RouteCount);
+
+    protected override async Task OnInitializedAsync()
+    {
+        ReportList = await ReportService.GetCO2EmissionReportAsync();
+
+        var chartLabels = ReportList
+            .OrderBy(r => r.Date)
+            .Select(r => r.Date.ToString("dd.MM.yyyy"))
+            .ToArray();
+
+        var chartData = ReportList
+            .OrderBy(r => r.Date)
+            .Select(r => r.CO2Kg)
+            .ToArray();
+
+        await JS.InvokeVoidAsync("co2Chart", chartLabels, chartData);
+    }
+}

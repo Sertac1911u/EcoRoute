@@ -1,28 +1,28 @@
 ﻿@page "/settings"
-@using EcoRoute.DtoLayer.SettingDtos
-@using Microsoft.AspNetCore.Authorization
-@using System
-@using System.Collections.Generic
-@using System.Linq
-@using EcoRoute.UI.Services.SettingsServices
+@attribute [Authorize]
+
 @using Blazored.LocalStorage
+@using EcoRoute.UI.Services.SettingsServices
+@using Microsoft.AspNetCore.Authorization
+@using EcoRoute.DtoLayer.SettingDtos
+@using EcoRoute.UI.Pages.Components.Settings
 @using Microsoft.AspNetCore.Components.Authorization
-@inject SettingsService settingsService
+@inject SettingsService SettingsService
+@inject ILocalStorageService localStorage
 @inject IToastService toastService
 @inject IJSRuntime JS
-@inject ILocalStorageService localStorage
-@inject NavigationManager NavigationManager
-@inject AuthenticationStateProvider AuthStateProvider
-@attribute [Authorize]
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden">
     <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
         <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Sistem Ayarları</h2>
         <div class="flex space-x-2">
-            <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-md transition duration-300" @onclick="ResetToDefaults">
+            <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-md transition duration-300"
+                    @onclick="ResetToDefaults">
                 <i class="fas fa-undo mr-2"></i> Varsayılan Ayarlara Dön
             </button>
-            <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md transition duration-300" @onclick="SaveSettings">
+            <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md transition duration-300"
+                    @onclick="SaveSettings">
                 <i class="fas fa-save mr-2"></i> Kaydet
             </button>
         </div>
@@ -30,627 +30,208 @@
 
     @if (isLoading)
     {
-        <div class="flex justify-center items-center p-12">
-            <div class="flex flex-col items-center">
-                <div class="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                <p class="mt-3 text-gray-600 dark:text-gray-300">Yükleniyor...</p>
-            </div>
+        <div class="p-12 text-center">
+            <div class="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <p class="mt-3 text-gray-600 dark:text-gray-300">Yükleniyor...</p>
         </div>
     }
     else
     {
         <div class="p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Görünüm Ayarları -->
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md col-span-1">
-                <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 flex items-center">
-                    <i class="fas fa-palette mr-2 text-primary-500"></i> Görünüm Ayarları
-                </h3>
+            <SettingsAppearance Settings="@settings"
+                                ThemeColors="@themeColors"
+                                SelectedShades="@selectedColorShades"
+                                OnColorSelect="SelectThemeColor" />
 
-                <!-- Dark Mode Toggle -->
-                <div class="mb-6">
-                    <div class="flex justify-between items-center">
-                        <label class="text-gray-700 dark:text-gray-300 font-medium">Karanlık Mod</label>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" @bind="settings.DarkMode" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                        </label>
-                    </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sistemin karanlık modunu etkinleştir/devre dışı bırak</p>
-                </div>
 
-                <!-- Tema Seçimi -->
-                <!-- Enhanced Theme Color Selection -->
-                <div class="mb-6">
-                    <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Tema Rengi</label>
+            <SettingsProfileAndNotifications Settings="@settings"
+                                             OnAvatarClick="@(() => showAvatarModal = true)" />
 
-                    <!-- Color selection grid with names -->
-                    <div class="grid grid-cols-4 gap-3 mb-4">
-                        @foreach (var color in themeColors)
-                        {
-                            <div class="relative flex flex-col items-center">
-                                <input type="radio" id="color-@color.Value.Replace("#", "")" name="theme-color" class="peer hidden"
-                                checked="@(settings.ThemeColor == color.Value)"
-                                @onchange="() => SelectThemeColor(color)" />
-                                <label for="color-@color.Value.Replace("#", "")"
-                                class="flex items-center justify-center h-10 w-10 rounded-full cursor-pointer border-2 transition-all duration-200 @(settings.ThemeColor == color.Value ? "border-gray-900 dark:border-white scale-110" : "border-transparent hover:border-gray-400")"
-                                style="background-color: @color.Value;">
-                                    @if (settings.ThemeColor == color.Value)
-                                    {
-                                        <i class="fas fa-check text-white text-xs"></i>
-                                    }
-                                </label>
-                                <span class="mt-1 text-xs text-gray-600 dark:text-gray-400">@color.Name</span>
-                            </div>
-                        }
-                    </div>
 
-                    <!-- Color shade preview -->
-                    @if (selectedColorShades != null)
-                    {
-                        <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                            <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Renk Paleti</div>
-                            <div class="flex space-x-1">
-                                @foreach (var shade in new[] { "100", "300", "500", "700", "900" })
-                                {
-                                    @if (selectedColorShades.ContainsKey(shade))
-                                    {
-                                        <div class="flex-1 h-8 rounded transition-all" 
-                                        style="background-color: @selectedColorShades[shade]"
-                                        title="@shade"></div>
-                                    }
-                                }
-                            </div>
-                            <div class="mt-2 text-xs text-gray-600 dark:text-gray-400 flex justify-between">
-                                <span>Açık Ton</span>
-                                <span>Koyu Ton</span>
-                            </div>
-                        </div>
-                    }
-
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Sistemin ana rengini değiştir</p>
-                </div>
-                <!-- Font Boyutu -->
-                <div class="mb-6">
-                    <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Yazı Boyutu</label>
-                    <div class="flex items-center">
-                        <span class="text-gray-500 dark:text-gray-400 text-sm mr-2">Küçük</span>
-                        <input type="range" min="12" max="20" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700" @bind="settings.FontSize">
-                        <span class="text-gray-500 dark:text-gray-400 text-sm ml-2">Büyük</span>
-                    </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sistem yazı boyutunu ayarla (şu anki: @settings.FontSize px)</p>
-                </div>
-
-                <!-- Animasyon Efektleri -->
-                <div class="mb-0">
-                    <div class="flex justify-between items-center">
-                        <label class="text-gray-700 dark:text-gray-300 font-medium">Animasyon Efektleri</label>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" @bind="settings.EnableAnimations" class="sr-only peer">
-                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-                        </label>
-                    </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sistem animasyonlarını etkinleştir/devre dışı bırak</p>
-                </div>
-            </div>
-
-            <!-- Profil ve Bildirimler -->
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md col-span-1">
-                <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 flex items-center">
-                    <i class="fas fa-user-shield mr-2 text-primary-500"></i> Profil ve Bildirimler
-                </h3>
-
-                <!-- Avatar Değiştirme -->
-                <div class="mb-6">
-                    <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Profil Avatarı</label>
-                    <div class="flex items-center space-x-4">
-                        <div class="relative">
-                            <img src="@settings.AvatarUrl" alt="Profil Avatarı" class="w-16 h-16 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700" />
-                            <button @onclick="ChangeAvatar" class="absolute bottom-0 right-0 bg-primary-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center hover:bg-primary-600 transition-colors">
-                                <i class="fas fa-pen text-xs"></i>
-                            </button>
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-700 dark:text-gray-300">Profil resminizi değiştirin</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Önerilen: 200x200 piksel</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Bildirim Ayarları -->
-                <div class="mb-0">
-                    <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Bildirim Tercihleri</label>
-                    <div class="space-y-2">
-                        <div class="flex items-center">
-                            <input id="email-notif" type="checkbox" @bind="settings.EmailNotifications" class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                            <label for="email-notif" class="ms-2 text-sm font-medium text-gray-700 dark:text-gray-300">E-posta Bildirimleri</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input id="sms-notif" type="checkbox" @bind="settings.SmsNotifications" class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                            <label for="sms-notif" class="ms-2 text-sm font-medium text-gray-700 dark:text-gray-300">SMS Bildirimleri</label>
-                        </div>
-                        <div class="flex items-center">
-                            <input id="push-notif" type="checkbox" @bind="settings.PushNotifications" class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                            <label for="push-notif" class="ms-2 text-sm font-medium text-gray-700 dark:text-gray-300">Push Bildirimleri</label>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sistem Entegrasyonları -->
-            @if(IsAdmin==true)
+            @if (IsAdmin)
             {
-                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md col-span-1">
-                    <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 flex items-center">
-                        <i class="fas fa-link mr-2 text-primary-500"></i> Sistem Entegrasyonları
-                    </h3>
-
-                    <!-- Google Maps API -->
-                    <div class="mb-6">
-                        <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Google Maps API</label>
-                        <div class="flex">
-                            <input type="text" placeholder="API Anahtarı" value="@settings.GoogleMapsApiKey" @oninput="e => settings.GoogleMapsApiKey = e.Value?.ToString()"
-                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md text-gray-800 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
-                            <button class="px-3 py-2 bg-primary-500 text-white rounded-r-md hover:bg-primary-600 transition-colors" @onclick="TestGoogleMapsApi">
-                                <i class="fas fa-check"></i>
-                            </button>
-                        </div>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Harita özelliklerini etkinleştirmek için API anahtarı</p>
-                    </div>
-                </div>
+                <SettingsIntegrations Settings="@settings"
+                                      OnTestApi="TestGoogleMapsApi" />
             }
         </div>
     }
 </div>
 
-<!-- Avatar Değiştirme Modal -->
-@if (showAvatarModal)
-{
-    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full shadow-xl relative p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Profil Avatarını Değiştir</h3>
-                <button @onclick="() => showAvatarModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
+<AvatarModal @bind-Show="showAvatarModal"
+             Avatars="@avatars"
+             SelectedAvatarUrl="@settings.AvatarUrl"
+             OnSave="OnAvatarChanged"
+             OnCancel="@(() => showAvatarModal = false)" />
 
-            <div class="mb-6">
-                <div class="flex items-center justify-center mb-4">
-                    <img src="@settings.AvatarUrl" alt="Mevcut Avatar" class="w-24 h-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700" />
-                </div>
 
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Yeni Avatar Seçin</label>
-                <div class="grid grid-cols-3 gap-4">
-                    @foreach (var avatar in avatars)
-                    {
-                        <div class="relative">
-                            <img src="@avatar.Url" alt="@avatar.Name"
-                            class="w-full h-24 object-cover rounded-lg cursor-pointer border-2 @(selectedAvatarUrl == avatar.Url ? "border-primary-500" : "border-transparent hover:border-gray-300")"
-                            @onclick="() => SelectAvatar(avatar.Url)" />
-                        </div>
-                    }
-                </div>
-            </div>
+<ResetConfirmationModal Show="@showResetConfirmation"
+                        OnConfirm="ConfirmReset"
+                        OnCancel="CancelReset" />
 
-            <div class="mt-6 flex justify-end space-x-3">
-                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="() => showAvatarModal = false">
-                    İptal
-                </button>
-                <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors" @onclick="SaveAvatar">
-                    Kaydet
-                </button>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- Ayarları Sıfırla Onay Modalı -->
-@if (showResetConfirmation)
-{
-    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl p-6">
-            <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-yellow-100 text-yellow-500 mb-4">
-                    <i class="fas fa-exclamation-triangle text-2xl"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Varsayılan Ayarlara Dön</h3>
-                <p class="text-gray-500 dark:text-gray-400">Tüm ayarları varsayılan değerlere sıfırlamak istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
-            </div>
-            <div class="flex justify-between">
-                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="CancelReset">
-                    İptal
-                </button>
-                <button class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 rounded-lg text-white transition-colors" @onclick="ConfirmReset">
-                    Sıfırla
-                </button>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- Ayarlar Kaydedildi Toast -->
 @if (showSavedToast)
 {
-    <div class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center z-50 fade-in">
-        <i class="fas fa-check-circle mr-2"></i>
-        <span>Ayarlar başarıyla kaydedildi</span>
-    </div>
+    <ToastMessage Message="Ayarlar başarıyla kaydedildi" Type="success" Visible="true" />
 }
 
-<style>
-    .fade-in {
-    animation: fadeIn 0.3s ease-out;
-    }
-
-    @@keyframes fadeIn {
-    from {
-    opacity: 0;
-    transform: translateY(20px);
-    }
-
-    to {
-    opacity: 1;
-    transform: translateY(0);
-    }
-    }
-
-    input[type=range]::-webkit-slider-thumb {
-    background: #3B82F6;
-    }
-
-    input[type=range]::-moz-range-thumb {
-    background: #3B82F6;
-    }
-
-    input[type=range]::-ms-thumb {
-    background: #3B82F6;
-    }
-</style>
-
 @code {
-    [Inject] private SettingsService SettingsService { get; set; }
-    [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; }
-
-    // UI State
+    // State
     private bool isLoading = true;
     private bool showAvatarModal = false;
     private bool showResetConfirmation = false;
     private bool showSavedToast = false;
 
-    // View Models
+    // Models
     private SettingsViewModel settings = new();
     private List<ThemeColorDto> themeColors = new();
     private List<AvatarDto> avatars = new();
-
-    // Avatar selection
-    private string selectedAvatarUrl = string.Empty;
-
-    // Kullanıcı ID'si için değişken
-    private string currentUserId = string.Empty;
     private Dictionary<string, string> selectedColorShades;
+
+    private string currentUserId = string.Empty;
     private bool IsAdmin = false;
 
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
 
-        try
-        {
-            // Önce mevcut kullanıcı kimliğini al
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            var user = authState.User;
-            IsAdmin = user.IsInRole("SuperAdmin");
-            // Kullanıcı ID'sini konsola yaz (hata ayıklama için)
-            Console.WriteLine($"Current user ID: {currentUserId}");
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        IsAdmin = authState.User.IsInRole("SuperAdmin");
 
-            // Tema renklerini yükle
-            themeColors = await SettingsService.GetThemeColorsAsync();
+        themeColors = await SettingsService.GetThemeColorsAsync();
+        avatars = await SettingsService.GetAvatarsAsync();
+        await LoadUserSettings();
+        SetSelectedColorShades();
 
-            // Avatarları yükle
-            avatars = await SettingsService.GetAvatarsAsync();
-            SetSelectedColorShades();
-
-            // Ayarları yükle
-            await LoadUserSettings();
-
-        }
-        catch (Exception ex)
-        {
-            toastService.ShowError($"Ayarlar yüklenirken bir hata oluştu: {ex.Message}");
-            Console.WriteLine($"Error loading settings: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
-        }
+        isLoading = false;
     }
+
     private void SetSelectedColorShades()
     {
-        var currentThemeColor = themeColors.FirstOrDefault(c => c.Value == settings.ThemeColor);
-        if (currentThemeColor != null && currentThemeColor.Shades != null)
-        {
-            selectedColorShades = currentThemeColor.Shades;
-        }
+        selectedColorShades = themeColors.FirstOrDefault(c => c.Value == settings.ThemeColor)?.Shades;
     }
+
     private async Task SelectThemeColor(ThemeColorDto color)
     {
         settings.ThemeColor = color.Value;
         selectedColorShades = color.Shades;
-
-        // Apply the color immediately for preview
-        await ApplyThemeColorPreview(color.Value, color.Shades);
+        await JS.InvokeVoidAsync("themeManager.applyTheme", color.Value, color.Shades);
     }
-    private async Task ApplyThemeColorPreview(string colorValue, Dictionary<string, string> shades)
+
+    private async Task OnAvatarChanged(string url)
     {
-        try
-        {
-            await JS.InvokeVoidAsync("themeManager.applyTheme", colorValue, shades);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error previewing theme color: {ex.Message}");
-        }
+        settings.AvatarUrl = url;
+        showAvatarModal = false; // Bu satır zaten var, kalsın
+
+        await localStorage.SetItemAsync("avatarUrl", url);
+        toastService.ShowSuccess("Profil avatarı başarıyla güncellendi");
     }
 
-    // Kullanıcı ayarlarını yüklemek için ayrı bir metot
-    private async Task LoadUserSettings()
-    {
-        try
-        {
-            // Ayarları yükle
-            var settingsDto = await SettingsService.GetSettingsAsync();
-
-            if (settingsDto != null)
-            {
-                // DTO'yu view model'e dönüştür
-                settings = new SettingsViewModel
-                    {
-                        DarkMode = settingsDto.DarkMode,
-                        ThemeColor = settingsDto.ThemeColor ?? "#3B82F6",
-                        FontSize = settingsDto.FontSize,
-                        EnableAnimations = settingsDto.EnableAnimations,
-                        AvatarUrl = settingsDto.AvatarUrl ?? "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton",
-                        EmailNotifications = settingsDto.EmailNotifications,
-                        SmsNotifications = settingsDto.SmsNotifications,
-                        PushNotifications = settingsDto.PushNotifications,
-                        GoogleMapsApiKey = settingsDto.GoogleMapsApiKey ?? ""
-                    };
-
-                // Dark mode ayarını localstorage'a kaydet
-                await localStorage.SetItemAsync("darkMode", settings.DarkMode.ToString().ToLower());
-
-                // Dark mode'u uygula
-                await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(settings.DarkMode ? "add" : "remove")}('dark')");
-
-                // Avatar URL'ini localstorage'a kaydet
-                await localStorage.SetItemAsync("avatarUrl", settings.AvatarUrl);
-
-                // Kullanıcı ID'sini localstorage'a kaydet
-                await localStorage.SetItemAsync("currentUserId", currentUserId);
-            }
-            else
-            {
-                toastService.ShowWarning("Kullanıcı ayarları bulunamadı, varsayılan ayarlar kullanılıyor.");
-                // Varsayılan ayarları yükle
-                settings = new SettingsViewModel
-                    {
-                        DarkMode = false,
-                        ThemeColor = "#3B82F6",
-                        FontSize = 14,
-                        EnableAnimations = true,
-                        AvatarUrl = "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton",
-                        EmailNotifications = true,
-                        SmsNotifications = false,
-                        PushNotifications = true,
-                        GoogleMapsApiKey = ""
-                    };
-            }
-        }
-        catch (Exception ex)
-        {
-            toastService.ShowError($"Kullanıcı ayarları yüklenirken hata: {ex.Message}");
-            Console.WriteLine($"Error loading user settings: {ex.Message}");
-        }
-    }
-
-    private void ChangeAvatar()
-    {
-        selectedAvatarUrl = settings.AvatarUrl;
-        showAvatarModal = true;
-    }
-
-    private void SelectAvatar(string url)
-    {
-        selectedAvatarUrl = url;
-    }
-
-    private async Task SaveAvatar()
-    {
-        if (!string.IsNullOrEmpty(selectedAvatarUrl))
-        {
-            settings.AvatarUrl = selectedAvatarUrl;
-
-            // Avatar URL'ini localstorage'a kaydet
-            await localStorage.SetItemAsync("avatarUrl", settings.AvatarUrl);
-
-            showAvatarModal = false;
-            toastService.ShowSuccess("Profil avatarı başarıyla seçildi");
-        }
-    }
 
     private async Task SaveSettings()
     {
-        try
+        var dto = new UpdateSystemSettingDto
+            {
+                DarkMode = settings.DarkMode,
+                ThemeColor = settings.ThemeColor,
+                FontSize = settings.FontSize,
+                EnableAnimations = settings.EnableAnimations,
+                AvatarUrl = settings.AvatarUrl,
+                EmailNotifications = settings.EmailNotifications,
+                SmsNotifications = settings.SmsNotifications,
+                PushNotifications = settings.PushNotifications,
+                GoogleMapsApiKey = settings.GoogleMapsApiKey
+            };
+
+        if (await SettingsService.UpdateSettingsAsync(dto))
         {
-            // Kullanıcı kimliğini kontrol et
-            if (string.IsNullOrEmpty(currentUserId))
-            {
-                // Kullanıcı kimliği yoksa tekrar almaya çalış
-                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-                currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                if (string.IsNullOrEmpty(currentUserId))
-                {
-                    toastService.ShowError("Kullanıcı kimliği bulunamadı, lütfen tekrar giriş yapın.");
-                    return;
-                }
-                
-            }
-
-            // View model'i DTO'ya dönüştür
-            var updateDto = new UpdateSystemSettingDto
-                {
-                    DarkMode = settings.DarkMode,
-                    ThemeColor = settings.ThemeColor ?? "#3B82F6", // Null olmamasını sağla
-                    FontSize = settings.FontSize,
-                    EnableAnimations = settings.EnableAnimations,
-                    AvatarUrl = settings.AvatarUrl ?? "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton", // Null olmamasını sağla
-                    EmailNotifications = settings.EmailNotifications,
-                    SmsNotifications = settings.SmsNotifications,
-                    PushNotifications = settings.PushNotifications,
-                    GoogleMapsApiKey = settings.GoogleMapsApiKey ?? ""
-                };
-            if (selectedColorShades != null)
-            {
-                await JS.InvokeVoidAsync("themeManager.applyTheme", settings.ThemeColor, selectedColorShades);
-            }
+            await localStorage.SetItemAsync("darkMode", settings.DarkMode.ToString().ToLower());
+            await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(settings.DarkMode ? "add" : "remove")}('dark')");
+            await localStorage.SetItemAsync("avatarUrl", settings.AvatarUrl);
             showSavedToast = true;
+                StateHasChanged(); 
             await Task.Delay(3000);
             showSavedToast = false;
-            // Kaydet işleminden önce hata ayıklama için loglayalım
-            Console.WriteLine($"Saving settings for user: {currentUserId}");
-            Console.WriteLine($"Settings being saved: {System.Text.Json.JsonSerializer.Serialize(updateDto)}");
-
-            // Ayarları güncelle
-            var result = await SettingsService.UpdateSettingsAsync(updateDto);
-
-            if (result)
-            {
-                // Dark mode ayarını localstorage'a kaydet
-                await localStorage.SetItemAsync("darkMode", settings.DarkMode.ToString().ToLower());
-
-                // Dark mode'u uygula
-                await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(settings.DarkMode ? "add" : "remove")}('dark')");
-
-                // Avatar URL'ini localstorage'a kaydet
-                await localStorage.SetItemAsync("avatarUrl", settings.AvatarUrl);
-
-                // Toast göster
-                showSavedToast = true;
-                await Task.Delay(3000); // 3 saniye sonra toast'ı kapat
-                showSavedToast = false;
-            }
-            else
-            {
-                toastService.ShowError("Ayarlar kaydedilirken bir hata oluştu");
-            }
         }
-        catch (Exception ex)
+        else
         {
-            toastService.ShowError($"Ayarlar kaydedilirken bir hata oluştu: {ex.Message}");
-            Console.WriteLine($"Error saving settings: {ex.Message}");
+            toastService.ShowError("Ayarlar kaydedilemedi.");
+        }
+    }
+
+    private async Task LoadUserSettings()
+    {
+        var dto = await SettingsService.GetSettingsAsync();
+        if (dto is null) return;
+
+        settings = new SettingsViewModel
+            {
+                DarkMode = dto.DarkMode,
+                ThemeColor = dto.ThemeColor ?? "#3B82F6",
+                FontSize = dto.FontSize,
+                EnableAnimations = dto.EnableAnimations,
+                AvatarUrl = dto.AvatarUrl ?? "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton",
+                EmailNotifications = dto.EmailNotifications,
+                SmsNotifications = dto.SmsNotifications,
+                PushNotifications = dto.PushNotifications,
+                GoogleMapsApiKey = dto.GoogleMapsApiKey ?? ""
+            };
+
+        await localStorage.SetItemAsync("darkMode", settings.DarkMode.ToString().ToLower());
+        await localStorage.SetItemAsync("avatarUrl", settings.AvatarUrl);
+    }
+
+    private void ResetToDefaults() => showResetConfirmation = true;
+    private void CancelReset() => showResetConfirmation = false;
+
+    private async Task ConfirmReset()
+    {
+        showResetConfirmation = false;
+        var result = await SettingsService.ResetToDefaultsAsync();
+        if (result)
+        {
+            var defaultColor = themeColors.FirstOrDefault(c => c.Name == "Orijinal" || c.Value == "#2ba86d");
+            settings.ThemeColor = defaultColor?.Value ?? "#2ba86d";
+            selectedColorShades = defaultColor?.Shades;
+
+            settings.DarkMode = false;
+            settings.FontSize = 14;
+            settings.EnableAnimations = true;
+
+            await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.remove('dark')");
+            await localStorage.SetItemAsync("darkMode", "false");
+            toastService.ShowSuccess("Ayarlar varsayılan değerlere döndürüldü.");
+        }
+        else
+        {
+            toastService.ShowError("Ayarlar sıfırlanırken hata oluştu.");
         }
     }
 
     private async Task TestGoogleMapsApi()
     {
-        if (string.IsNullOrEmpty(settings.GoogleMapsApiKey))
+        if (string.IsNullOrWhiteSpace(settings.GoogleMapsApiKey))
         {
-            toastService.ShowWarning("Lütfen Google Maps API anahtarını girin");
+            toastService.ShowWarning("API anahtarı boş olamaz.");
             return;
         }
 
-        try
-        {
-            var result = await SettingsService.TestGoogleMapsApiAsync(settings.GoogleMapsApiKey);
-
-            if (result)
-            {
-                toastService.ShowSuccess("Google Maps API bağlantısı başarılı");
-            }
-            else
-            {
-                toastService.ShowError("Google Maps API bağlantısı başarısız");
-            }
-        }
-        catch (Exception ex)
-        {
-            toastService.ShowError($"Google Maps API testi sırasında bir hata oluştu: {ex.Message}");
-        }
+        var success = await SettingsService.TestGoogleMapsApiAsync(settings.GoogleMapsApiKey);
+        if (success)
+            toastService.ShowSuccess("Google Maps API bağlantısı başarılı.");
+        else
+            toastService.ShowError("Google Maps API bağlantısı başarısız.");
     }
 
-    private void ResetToDefaults()
-    {
-        showResetConfirmation = true;
-    }
-
-    private void CancelReset()
-    {
-        showResetConfirmation = false;
-    }
-
-    private async Task ConfirmReset()
-    {
-        try
-        {
-            showResetConfirmation = false;
-
-            // JavaScript tarafında tema rengini sıfırla
-            await JS.InvokeVoidAsync("themeManager.resetToDefault");
-
-            // Sunucu tarafında ayarları sıfırla
-            var result = await SettingsService.ResetToDefaultsAsync();
-
-            if (result)
-            {
-                // ThemeColors listesindeki varsayılan rengi bulup seçilmiş renk olarak ayarla
-                var defaultColor = themeColors.FirstOrDefault(c => c.Name == "Orijinal" || c.Value == "#2ba86d");
-                if (defaultColor != null)
-                {
-                    settings.ThemeColor = defaultColor.Value;
-                    selectedColorShades = defaultColor.Shades;
-                }
-
-                // Diğer ayarları da varsayılana çek
-                settings.DarkMode = false;
-                settings.FontSize = 14;
-                settings.EnableAnimations = true;
-
-                // Dark mode ayarını uygula
-                await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.remove('dark')");
-                await localStorage.SetItemAsync("darkMode", "false");
-
-                // Başarılı mesajı göster
-                toastService.ShowSuccess("Ayarlar varsayılana döndürüldü");
-            }
-            else
-            {
-                toastService.ShowError("Ayarlar sıfırlanırken bir hata oluştu");
-            }
-        }
-        catch (Exception ex)
-        {
-            toastService.ShowError($"Ayarlar sıfırlanırken bir hata oluştu: {ex.Message}");
-        }
-    }
     public class SettingsViewModel
     {
-        // Görünüm Ayarları
         public bool DarkMode { get; set; }
         public string ThemeColor { get; set; }
         public int FontSize { get; set; }
         public bool EnableAnimations { get; set; }
-
-        // Profil Avatarı
         public string AvatarUrl { get; set; }
-
-        // Bildirim Tercihleri
         public bool EmailNotifications { get; set; }
         public bool SmsNotifications { get; set; }
         public bool PushNotifications { get; set; }
-
-        // Sistem Entegrasyonları
         public string GoogleMapsApiKey { get; set; }
     }
 }

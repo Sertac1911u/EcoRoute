@@ -1,0 +1,52 @@
+﻿@using Microsoft.AspNetCore.Components
+
+@if (Visible)
+{
+    <div class="fixed bottom-4 right-4 bg-@BgColor text-white px-4 py-2 rounded-lg shadow-lg flex items-center z-50 animate-toast">
+        <i class="@IconClass mr-2"></i>
+        <span>@Message</span>
+    </div>
+}
+<style>
+    @@keyframes fadeInUp {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
+
+    .animate-toast {
+        animation: fadeInUp 0.3s ease-out;
+    }
+</style>
+@code {
+    [Parameter] public string Message { get; set; } = "İşlem tamamlandı";
+    [Parameter] public string Type { get; set; } = "success"; // success, error, info, warning
+    [Parameter] public bool Visible { get; set; } = true;
+
+    private string IconClass => Type switch
+    {
+        "success" => "fas fa-check-circle",
+        "error" => "fas fa-times-circle",
+        "info" => "fas fa-info-circle",
+        "warning" => "fas fa-exclamation-triangle",
+        _ => "fas fa-check-circle"
+    };
+
+    private string BgColor => Type switch
+    {
+        "success" => "green-500",
+        "error" => "red-500",
+        "info" => "blue-500",
+        "warning" => "yellow-500",
+        _ => "gray-700"
+    };
+}

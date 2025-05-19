@@ -1,20 +1,28 @@
 ﻿@using Microsoft.AspNetCore.Components
 
-<div class="p-12 text-center">
-    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 mb-4">
+<div class="p-16 text-center flex flex-col items-center justify-center">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500 mb-6 transform transition-all duration-300 hover:scale-110">
         <i class="fas fa-bell-slash text-3xl"></i>
     </div>
-    <h3 class="text-lg font-medium text-gray-900 dark:text-white">Bildirim Bulunamadı</h3>
-    <p class="mt-2 text-gray-500 dark:text-gray-400">
+    <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Bildirim Bulunamadı</h3>
+    <p class="text-gray-500 dark:text-gray-400 max-w-md mx-auto">
         @if (!HasSearchFilter)
         {
-            <span>Henüz hiç bildiriminiz bulunmamaktadır.</span>
+            <span>Henüz hiç bildiriminiz bulunmamaktadır. Yeni bildirimler geldiğinde burada görüntülenecektir.</span>
         }
         else
         {
-            <span>Arama kriterlerinize uygun bildirim bulunamadı.</span>
+            <span>Arama kriterlerinize uygun bildirim bulunamadı. Lütfen filtrelerinizi değiştirmeyi deneyin.</span>
         }
     </p>
+
+    @if (HasSearchFilter)
+    {
+        <button class="mt-6 px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 inline-flex items-center">
+            <i class="fas fa-redo-alt mr-2"></i>
+            Filtreleri Temizle
+        </button>
+    }
 </div>
 
 @code {

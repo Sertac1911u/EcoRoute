@@ -1,0 +1,22 @@
+﻿@using EcoRoute.DtoLayer.SupportDtos
+
+<div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white flex items-center">
+        <i class="fas fa-headset mr-3 text-primary-500"></i>
+        @Title
+    </h2>
+    @if (!IsLoading && !IsAdmin && !IsManager)
+    {
+        <button @onclick="OnCreateTicket" class="flex items-center bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-600 transition-all duration-300 transform hover:scale-105 shadow-md">
+            <i class="fas fa-plus mr-2"></i> Yeni Destek Talebi
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; }
+    [Parameter] public bool IsAdmin { get; set; }
+    [Parameter] public bool IsManager { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public EventCallback OnCreateTicket { get; set; }
+}

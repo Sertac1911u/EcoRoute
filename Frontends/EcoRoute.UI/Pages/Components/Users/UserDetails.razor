@@ -1,0 +1,101 @@
+﻿@using EcoRoute.DtoLayer.IdentityDtos
+
+@if (IsOpen && User != null)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full shadow-xl relative modal-animation">
+            <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white">Kullanıcı Bilgileri</h3>
+                <button @onclick="OnClose" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6">
+                <div class="flex items-center mb-6">
+                    <div class="relative mr-4">
+                        <img class="h-24 w-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
+                             src="https://picsum.photos/200?random=@User.Id" alt="@User.Name's profile" />
+                        <div class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-white dark:border-gray-800"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-semibold text-gray-800 dark:text-white">@User.Name @User.Surname</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">@User.Email</p>
+                        <div class="flex flex-wrap mt-2 gap-1">
+                            @foreach (var role in User.Roles)
+                            {
+                                <span class="@GetRoleBadgeClass(role) px-2 py-1 text-xs rounded-full">@role</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-4">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400 font-medium">Kullanıcı Adı:</span>
+                        <span class="text-gray-800 dark:text-gray-200">@User.UserName</span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400 font-medium">Son Giriş:</span>
+                        <span class="text-gray-800 dark:text-gray-200">@(User.LastLoginDate?.ToString("dd.MM.yyyy HH:mm") ?? "Henüz giriş yapmamış")</span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400 font-medium">Kayıt Tarihi:</span>
+                        <span class="text-gray-800 dark:text-gray-200">@(User.RegistrationDate?.ToString("dd.MM.yyyy") ?? "Bilinmiyor")</span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400 font-medium">Durum:</span>
+                        <span class="@(User.IsActive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")">
+                            @(User.IsActive ? "Aktif" : "Deaktif")
+                        </span>
+                    </div>
+
+                    <div class="flex justify-between">
+                        <span class="text-gray-600 dark:text-gray-400 font-medium">Telefon:</span>
+                        <span class="text-gray-800 dark:text-gray-200">@(string.IsNullOrEmpty(User.PhoneNumber) ? "Belirtilmemiş" : User.PhoneNumber)</span>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-600 dark:text-gray-400 font-medium">Yetkiler:</span>
+                        <div class="flex flex-wrap justify-end gap-1">
+                            @foreach (var role in User.Roles)
+                            {
+                                <span class="@GetRoleBadgeClass(role)">@role</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-end">
+                    <button class="bg-primary-500 text-white px-4 py-2 rounded hover:bg-primary-600 transition-colors" @onclick="OnClose">
+                        Kapat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public ResultUserDto User { get; set; }
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private string GetRoleBadgeClass(string role)
+    {
+        return role switch
+        {
+            "SuperAdmin" => "px-2 py-1 inline-flex text-xs rounded-full bg-red-100 text-red-800",
+            "Manager" => "px-2 py-1 inline-flex text-xs rounded-full bg-blue-100 text-blue-800",
+            "Driver" => "px-2 py-1 inline-flex text-xs rounded-full bg-yellow-100 text-yellow-800",
+            _ => "px-2 py-1 inline-flex text-xs rounded-full bg-gray-100 text-gray-800"
+        };
+    }
+}

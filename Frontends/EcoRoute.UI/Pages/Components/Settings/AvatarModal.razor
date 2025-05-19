@@ -1,0 +1,76 @@
+﻿@using EcoRoute.DtoLayer.SettingDtos
+@using Microsoft.AspNetCore.Components
+
+@if (Show)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full shadow-xl relative p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Profil Avatarını Değiştir</h3>
+                <button @onclick="() => OnCancel.InvokeAsync()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <div class="flex items-center justify-center mb-4">
+                    <img src="@SelectedUrl" alt="Mevcut Avatar"
+                         class="w-24 h-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700" />
+                </div>
+
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Yeni Avatar Seçin</label>
+                <div class="grid grid-cols-3 gap-4">
+                    @foreach (var avatar in Avatars)
+                    {
+                        <div class="relative">
+                            <img src="@avatar.Url" alt="@avatar.Name"
+                                 class="w-full h-24 object-cover rounded-lg cursor-pointer border-2 @(SelectedUrl == avatar.Url ? "border-primary-500" : "border-transparent hover:border-gray-300")"
+                                 @onclick="() => SelectedUrl = avatar.Url" />
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3">
+                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors"
+                        @onclick="() => OnCancel.InvokeAsync()">
+                    İptal
+                </button>
+                <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors"
+                        @onclick="Save">
+                    Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public List<AvatarDto> Avatars { get; set; }
+    [Parameter] public string SelectedAvatarUrl { get; set; }
+    [Parameter] public EventCallback<string> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback<bool> ShowChanged { get; set; }
+
+    private string SelectedUrl;
+
+    protected override void OnParametersSet()
+    {
+        SelectedUrl = SelectedAvatarUrl;
+    }
+
+    private async Task Save()
+    {
+        if (!string.IsNullOrEmpty(SelectedUrl))
+        {
+            await OnSave.InvokeAsync(SelectedUrl);
+            Show = false; // Opsiyonel
+        }
+    }
+    private async Task Close()
+    {
+        Show = false;
+        await ShowChanged.InvokeAsync(false);
+    }
+}

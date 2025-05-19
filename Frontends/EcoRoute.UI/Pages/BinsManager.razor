@@ -320,7 +320,7 @@
                                                             @GetFillStatusText(bin.FillLevel)
                                                         </span>
                                                     </div>
-                                                    
+
                                                     <div class="mt-2 space-y-2">
                                                         <div class="flex justify-between items-center border-t border-gray-200 dark:border-gray-700 pt-2">
                                                             <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini dolma tarihi:</span>
@@ -346,7 +346,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            
+
                                             <!-- Sensörler -->
                                             <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
                                                 <div class="flex justify-between items-center mb-4">
@@ -759,6 +759,7 @@
     </div>
 }
 
+
 <style>
     /* Tooltip Styles */
     .tooltip-container {
@@ -957,7 +958,8 @@
     #bin-sidebar.active {
         right: 0;
     }
-    </style>
+</style>
+
 <script>
     // Global variables
     let mainMap;
@@ -2145,7 +2147,8 @@
         if (fillLevelDropdown) fillLevelDropdown.value = '';
     };
 </script>
-@code{
+
+@code {
     private List<ResultWasteBinDto> wasteBins;
     private List<ResultWasteBinDto> filteredBins = new List<ResultWasteBinDto>();
     private List<ResultWasteBinDto> displayedBins => GetDisplayedBins();
@@ -2415,7 +2418,7 @@
 
         StateHasChanged(); // Force UI update
     }
-    
+
     // Sidebar'ı açmak için JS tarafından çağrılacak metot
     [JSInvokable]
     public async Task OpenBinSidebar(string binId)
@@ -2450,7 +2453,7 @@
             }
         }
     }
-    
+
     private void SortTable(string field)
     {
         // Sıralama öncesi açık detay satırını kapat
@@ -2578,7 +2581,7 @@
         await Task.Delay(100);
         await InitializeLocationPickerMap();
     }
-    
+
     // Doluluk hesaplaması için sabitler
     private const double DAILY_FILL_RATE = 5.0; // Günlük ortalama doluluk artışı yüzdesi
 
@@ -2612,7 +2615,7 @@
 
         return estimatedDate.ToString("dd.MM.yyyy");
     }
-    
+
     private void CloseLocationPickerModal()
     {
         showLocationPickerModal = false;
@@ -2923,7 +2926,7 @@
             _ => "text-green-500"
         };
     }
-    
+
     [JSInvokable]
     public void OnMapInitialized()
     {

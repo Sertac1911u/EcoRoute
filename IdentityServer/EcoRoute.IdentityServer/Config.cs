@@ -66,6 +66,10 @@ namespace EcoRoute.IdentityServer
                         "NotificationsReadPermission"
                     }
                 },
+                new ApiResource("ResourceReports")
+                {
+                    Scopes = { "ReportsFullPermission" }
+                },
                 new ApiResource(IdentityServerConstants.LocalApi.ScopeName)
         };
 
@@ -88,6 +92,7 @@ namespace EcoRoute.IdentityServer
                 new ApiScope("SettingsFullPermission","Full authority for settings operations"),
                 new ApiScope("NotificationsFullPermission", "Full authority for notification operations"),
                 new ApiScope("NotificationsReadPermission", "Read authority for notification operations"),
+                new ApiScope("ReportsFullPermission", "Full authority for reports"),
                 new ApiScope("OcelotFullPermission","Full for oc operations"),
                 new ApiScope(IdentityServerConstants.LocalApi.ScopeName)
         };
@@ -112,6 +117,7 @@ namespace EcoRoute.IdentityServer
                         "OcelotFullPermission",
                         "NotificationsFullPermission",
                         "NotificationsReadPermission",
+                        "ReportsFullPermission",
 
                         IdentityServerConstants.LocalApi.ScopeName,
                         IdentityServerConstants.StandardScopes.Email,
@@ -136,6 +142,7 @@ namespace EcoRoute.IdentityServer
                         "RouteOptimizationFullPermission",
                         "SupportsFullPermission",
                         "NotificationsFullPermission",
+                        "ReportsFullPermission",
                     }
                 },
 
@@ -152,7 +159,8 @@ namespace EcoRoute.IdentityServer
                         "RouteOptimizationFullPermission",
                         "SupportsReadPermission",
                         "NotificationsReadPermission",
-                        "NotificationsReadPermission"
+                        "NotificationsReadPermission",
+                        "ReportsFullPermission"
                     }
                 }
         };

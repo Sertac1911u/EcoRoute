@@ -11,6 +11,7 @@ using EcoRoute.UI.Services.SupportsServices;
 using EcoRoute.UI.Services.SettingsServices;
 using EcoRoute.UI.Services.NotificationServices;
 using EcoRoute.UI.Services.RouteOptimizationServices;
+using EcoRoute.UI.Services.ReportsServices;
 
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -42,6 +43,7 @@ builder.Services.AddScoped<NotificationService>();
 builder.Services.AddScoped<CustomAuthStateProvider>();
 builder.Services.AddScoped<VehicleService>();
 builder.Services.AddScoped<IRouteService, RouteService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 
 // LocalStorage ve Authentication

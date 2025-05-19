@@ -8,12 +8,12 @@
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<div class="relative ml-3">
-    <button @onclick="ToggleNotificationMenu" class="relative p-2 rounded-md text-gray-500 dark:text-gray-300 dark:hover:text-white hover:text-gray-700 focus:outline-none">
-        <i class="fas fa-bell text-xl"></i>
+<div class="relative">
+    <button @onclick="ToggleNotificationMenu" class="relative flex items-center justify-center p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 transition-all duration-200 focus:outline-none" title="Bildirimler">
+        <i class="fas fa-bell text-lg transition-all duration-200"></i>
         @if (unreadCount > 0)
         {
-            <span class="absolute top-0 right-0 w-5 h-5 flex items-center justify-center bg-red-500 text-white text-xs rounded-full">
+            <span class="absolute top-0 right-0 flex items-center justify-center min-w-5 h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-sm animate-pulse">
                 @(unreadCount > 99 ? "99+" : unreadCount.ToString())
             </span>
         }
@@ -21,72 +21,133 @@
 
     @if (isNotificationMenuOpen)
     {
-        <div class="origin-top-right absolute right-0 mt-2 w-96 rounded-md shadow-lg py-1 bg-white dark:bg-gray-900 ring-1 ring-black ring-opacity-5 focus:outline-none z-50" id="notification-dropdown">
-            <div class="flex justify-between items-center px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                <h3 class="text-lg font-medium text-gray-700 dark:text-white">Bildirimler</h3>
+        <div class="origin-top-right absolute right-0 mt-2 w-80 rounded-lg shadow-lg bg-white dark:bg-gray-900 ring-1 ring-black/5 focus:outline-none z-50 transition-all duration-200 overflow-hidden">
+            <!-- Header -->
+            <div class="flex justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                <h3 class="text-base font-medium text-gray-800 dark:text-white flex items-center">
+                    <i class="fas fa-bell text-primary-500 mr-2"></i>
+                    Bildirimler
+                </h3>
                 @if (unreadCount > 0)
                 {
-                    <button @onclick="MarkAllAsRead" class="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
+                    <button @onclick="MarkAllAsRead" class="text-sm px-2 py-1 rounded-md text-primary-600 hover:text-primary-700 hover:bg-primary-50 dark:text-primary-400 dark:hover:text-primary-300 dark:hover:bg-primary-900/20 transition-colors duration-200">
+                        <i class="fas fa-check-double mr-1"></i>
                         Tümünü Okundu İşaretle
                     </button>
                 }
             </div>
 
-            <div class="max-h-96 overflow-y-auto">
+            <!-- Notification List -->
+            <div class="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700">
                 @if (notifications.Count == 0)
                 {
-                    <div class="p-4 text-center text-gray-500 dark:text-gray-400">
-                        <i class="fas fa-bell-slash text-2xl mb-2"></i>
-                        <p>Henüz bildiriminiz bulunmamaktadır.</p>
+                    <div class="p-8 text-center">
+                        <div class="mx-auto flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
+                            <i class="fas fa-bell-slash text-2xl text-gray-400 dark:text-gray-500"></i>
+                        </div>
+                        <p class="text-gray-600 dark:text-gray-400 font-medium">Henüz bildiriminiz bulunmamaktadır.</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-500 mt-1">Yeni bildirimler burada görünecek.</p>
                     </div>
                 }
                 else
                 {
                     @foreach (var notification in notifications)
                     {
-                        <div @onclick="() => HandleNotificationClick(notification)" class="@GetNotificationClasses(notification)">
+                        <div @onclick="() => HandleNotificationClick(notification)"
+                             class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer transition-colors duration-200 border-l-2 @GetNotificationBorderColor(notification)">
                             <div class="flex items-start">
-                                <div class="flex-shrink-0 pt-0.5">
-                                    <span class="@GetNotificationIconClasses(notification)">
+                                <div class="flex-shrink-0 pt-0.5 mr-3">
+                                    <div class="@GetNotificationIconClasses(notification) h-8 w-8 flex items-center justify-center rounded-full">
                                         <i class="@GetNotificationIcon(notification)"></i>
-                                    </span>
+                                    </div>
                                 </div>
-                                <div class="ml-3 w-0 flex-1">
+                                <div class="flex-1 min-w-0">
                                     <p class="text-sm font-medium @(notification.IsRead ? "text-gray-600 dark:text-gray-400" : "text-gray-900 dark:text-white")">
                                         @notification.Title
                                     </p>
-                                    <p class="mt-1 text-sm @(notification.IsRead ? "text-gray-500 dark:text-gray-500" : "text-gray-700 dark:text-gray-300")">
+                                    <p class="mt-1 text-sm @(notification.IsRead ? "text-gray-500 dark:text-gray-500" : "text-gray-700 dark:text-gray-300") line-clamp-2">
                                         @notification.Message
                                     </p>
-                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">
-                                        @GetTimeAgo(notification.CreatedDate)
-                                    </p>
-                                </div>
-                                @if (!notification.IsRead)
-                                {
-                                    <div class="ml-4 flex-shrink-0 flex">
-                                        <button @onclick:stopPropagation="true" @onclick="() => MarkAsRead(notification.Id)" class="rounded-full p-1 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none">
-                                            <i class="fas fa-check"></i>
-                                        </button>
+                                    <div class="mt-1 flex items-center justify-between">
+                                        <p class="text-xs text-gray-500 dark:text-gray-500">
+                                            @GetTimeAgo(notification.CreatedDate)
+                                        </p>
+                                        @if (!notification.IsRead)
+                                        {
+                                            <button @onclick:stopPropagation="true" @onclick="() => MarkAsRead(notification.Id)"
+                                                    class="rounded-full p-1 text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 focus:outline-none transition-colors duration-200"
+                                                    title="Okundu İşaretle">
+                                                <i class="fas fa-check text-xs"></i>
+                                            </button>
+                                        }
                                     </div>
-                                }
+                                </div>
                             </div>
                         </div>
                     }
                 }
             </div>
 
+            <!-- Footer -->
             @if (notifications.Count > 0)
             {
-                <div class="border-t border-gray-200 dark:border-gray-700">
-                    <a href="/notifications" class="block px-4 py-3 text-center text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300">
-                        Tüm Bildirimleri Görüntüle
+                <div class="border-t border-gray-100 dark:border-gray-800">
+                    <a href="/notifications" class="flex items-center justify-center px-4 py-3 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200">
+                        <span>Tüm Bildirimleri Görüntüle</span>
+                        <i class="fas fa-arrow-right ml-2 text-xs"></i>
                     </a>
                 </div>
             }
         </div>
     }
 </div>
+
+<style>
+    /* Custom scrollbar */
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: #CBD5E1;
+        border-radius: 20px;
+    }
+
+    .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: #475569;
+    }
+
+    /* Limit text to 2 lines */
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Notification badge animation */
+    @@keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        }
+
+        70% {
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        }
+    }
+
+    .animate-pulse {
+        animation: pulse 2s infinite;
+    }
+</style>
 
 @code {
     private bool isNotificationMenuOpen = false;
@@ -177,25 +238,30 @@
         isNotificationMenuOpen = false;
     }
 
-    private string GetNotificationClasses(ResultNotificationDto notification)
+    private string GetNotificationBorderColor(ResultNotificationDto notification)
     {
-        var baseClasses = "px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer";
+        if (notification.IsRead)
+            return "border-transparent";
 
-        return notification.IsRead
-            ? baseClasses
-            : $"{baseClasses} bg-blue-50 dark:bg-blue-900/20";
+        return notification.Type switch
+        {
+            "Success" => "border-green-500",
+            "Warning" => "border-yellow-500",
+            "Error" => "border-red-500",
+            _ => "border-primary-500" // Info
+        };
     }
 
     private string GetNotificationIconClasses(ResultNotificationDto notification)
     {
-        var baseClasses = "flex items-center justify-center h-8 h-8 rounded-full";
+        var baseClasses = "flex items-center justify-center h-8 w-8 rounded-full";
 
         return notification.Type switch
         {
             "Success" => $"{baseClasses} bg-green-100 text-green-500 dark:bg-green-900/30 dark:text-green-400",
             "Warning" => $"{baseClasses} bg-yellow-100 text-yellow-500 dark:bg-yellow-900/30 dark:text-yellow-400",
             "Error" => $"{baseClasses} bg-red-100 text-red-500 dark:bg-red-900/30 dark:text-red-400",
-            _ => $"{baseClasses} bg-blue-100 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400" // Info
+            _ => $"{baseClasses} bg-primary-100 text-primary-500 dark:bg-primary-900/30 dark:text-primary-400" // Info
         };
     }
 

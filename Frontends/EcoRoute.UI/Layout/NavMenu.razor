@@ -11,13 +11,22 @@
     private bool isDriver = false;
     private bool isExpanded = false;
     private bool isTransitioning = false;
+    private int notificationCount = 0; // Bildirim sayısı için
 
-    // Düzeltilmiş sınıf yönetimi
+    // Menü öğelerinin stil sınıfı
     private string GetMenuItemClass(bool expanded)
     {
         return expanded
-            ? "menu-item flex items-center px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group"
-            : "menu-item flex items-center justify-center w-full px-2 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900 group";
+            ? "menu-item flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-800/40 hover:text-primary-600 dark:hover:text-primary-400 group transition-all duration-200"
+            : "menu-item flex items-center justify-center w-full px-2 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-800/40 hover:text-primary-600 dark:hover:text-primary-400 group transition-all duration-200";
+    }
+
+    // İkonların stil sınıfı
+    private string GetIconClass(bool expanded)
+    {
+        return expanded
+            ? "text-xl mr-3 text-primary-500 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
+            : "text-xl text-primary-500 transition-transform duration-300 ease-in-out group-hover:scale-110";
     }
 
     protected override async Task OnInitializedAsync()
@@ -27,9 +36,21 @@
         isSuperAdmin = user.IsInRole("SuperAdmin");
         isManager = user.IsInRole("Manager");
         isDriver = user.IsInRole("Driver");
-        // Try to get the collapsed state from localStorage
+
+        // Get saved sidebar state
         var savedState = await localStorage.GetItemAsync<bool?>("sidebarExpanded");
-        isExpanded = savedState ?? false;
+        isExpanded = savedState ?? false; // Default kapalı
+
+        // Bildirim sayısını al
+        await GetNotificationCount();
+    }
+
+    private async Task GetNotificationCount()
+    {
+        // Bu metod gerçek bildirim sayısını almalı
+        // Örnek olarak localStorage'dan alıyoruz, gerçek uygulamada bir servis kullanılmalı
+        var count = await localStorage.GetItemAsync<int?>("notificationCount");
+        notificationCount = count ?? 3; // Varsayılan olarak 3 bildirim
     }
 
     private async Task ToggleSidebar()
@@ -38,27 +59,29 @@
         isExpanded = !isExpanded;
         await localStorage.SetItemAsync("sidebarExpanded", isExpanded);
 
-        // Reset transition state after animation completes
-        // Use shorter delay for opening animation
+        // Geçiş durumunu sıfırla, animasyon tamamlandıktan sonra
         await Task.Delay(isExpanded ? 150 : 300);
         isTransitioning = false;
     }
 }
 
 <div class="hidden md:flex md:flex-shrink-0">
-    <div class="flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ease-in-out @(isExpanded ? "w-64" : "w-16")">
+    <div class="flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-none transition-all duration-300 ease-in-out @(isExpanded ? "w-64" : "w-16")">
+        <!-- Sidebar Header -->
         <div class="flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 px-4">
             <div class="flex items-center @(isExpanded ? "" : "justify-center w-full")">
-                <i class="fas fa-recycle text-primary-500 text-2xl @(isExpanded ? "mr-2" : "") logo-icon"></i>
+                <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 shadow-md">
+                    <i class="fas fa-recycle text-white text-lg logo-icon"></i>
+                </div>
                 @if (isExpanded)
                 {
-                    <h1 class="text-xl font-semibold ml-4 text-white bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100") logo-text">EcoRoute</h1>
+                    <h1 class="text-xl font-semibold ml-3 text-white bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100") logo-text">EcoRoute</h1>
                 }
             </div>
             @if (isExpanded)
             {
                 <button @onclick="ToggleSidebar" class="text-gray-500 hover:text-primary-500 focus:outline-none transition-all duration-300">
-                    <i class="fas fa-chevron-left"></i>
+                    <i class="fas fa-chevron-left text-sm"></i>
                 </button>
             }
         </div>
@@ -67,148 +90,157 @@
         {
             <div class="flex justify-center w-full py-2">
                 <button @onclick="ToggleSidebar" class="text-gray-500 hover:text-primary-500 focus:outline-none transition-all duration-300 rotate-180">
-                    <i class="fas fa-chevron-left"></i>
+                    <i class="fas fa-chevron-left text-sm"></i>
                 </button>
             </div>
         }
 
-        <div class="flex flex-col flex-grow py-4 overflow-hidden @(isExpanded ? "px-3" : "px-2")">
-            <nav class="flex-1 space-y-2">
-                <div class="relative">
-                    <NavLink href="/home" class="@GetMenuItemClass(isExpanded)" activeClass="bg-primary-100 dark:bg-primary-900">
-                        <i class="fas fa-tachometer-alt @(isExpanded ? "mr-3" : "") text-primary-500"></i>
-                        @if (isExpanded)
-                        {
-                            <span class="transition-opacity duration-200 delay-50 @(isTransitioning ? "opacity-0" : "opacity-100")">Ana Dashboard</span>
-                        }
-                    </NavLink>
-                </div>
+        <!-- Sidebar Content -->
+        <div class="flex flex-col flex-grow py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 @(isExpanded ? "px-3" : "px-2")">
+            <nav class="flex-1 space-y-1.5">
+                <!-- Dashboard -->
+                <NavLink href="/home" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                    <i class="fas fa-tachometer-alt @GetIconClass(isExpanded)"></i>
+                    @if (isExpanded)
+                    {
+                        <span class="transition-opacity duration-200 delay-50 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Ana Dashboard</span>
+                    }
+                </NavLink>
 
                 @if (isSuperAdmin)
                 {
-                    <div class="relative">
-                        <NavLink href="/users" class="@GetMenuItemClass(isExpanded)" activeClass="bg-primary-100 dark:bg-primary-900">
-                            <i class="fas fa-users @(isExpanded ? "mr-3" : "") text-primary-500"></i>
-                            @if (isExpanded)
-                            {
-                                <span class="transition-opacity duration-200 delay-75 @(isTransitioning ? "opacity-0" : "opacity-100")">Kullanıcı Yönetimi</span>
-                            }
-                        </NavLink>
-                    </div>
+                    <!-- User Management -->
+                    <NavLink href="/users" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                        <i class="fas fa-users @GetIconClass(isExpanded)"></i>
+                        @if (isExpanded)
+                        {
+                            <span class="transition-opacity duration-200 delay-75 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Kullanıcı Yönetimi</span>
+                        }
+                    </NavLink>
                 }
 
                 @if (isSuperAdmin || isManager)
                 {
-                    <div class="relative">
-                        <NavLink href="/bins" class="@GetMenuItemClass(isExpanded)" activeClass="bg-primary-100 dark:bg-primary-900">
-                            <i class="fas fa-trash-alt @(isExpanded ? "mr-3" : "") text-primary-500"></i>
-                            @if (isExpanded)
-                            {
-                                <span class="transition-opacity duration-200 delay-100 @(isTransitioning ? "opacity-0" : "opacity-100")">Atık Kutusu Yönetimi</span>
-                            }
-                        </NavLink>
-                    </div>
+                    <!-- Bin Management -->
+                    <NavLink href="/bins" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                        <i class="fas fa-trash-alt @GetIconClass(isExpanded)"></i>
+                        @if (isExpanded)
+                        {
+                            <span class="transition-opacity duration-200 delay-100 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Atık Kutusu Yönetimi</span>
+                        }
+                    </NavLink>
 
-                    <div class="relative">
-                        <NavLink href="/routes" class="@GetMenuItemClass(isExpanded)" activeClass="bg-primary-100 dark:bg-primary-900">
-                            <i class="fas fa-route @(isExpanded ? "mr-3" : "") text-primary-500"></i>
-                            @if (isExpanded)
-                            {
-                                <span class="transition-opacity duration-200 delay-125 @(isTransitioning ? "opacity-0" : "opacity-100")">Rota Yönetimi</span>
-                            }
-                        </NavLink>
-                    </div>
+                    <!-- Route Management -->
+                    <NavLink href="/routes" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                        <i class="fas fa-route @GetIconClass(isExpanded)"></i>
+                        @if (isExpanded)
+                        {
+                            <span class="transition-opacity duration-200 delay-125 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Rota Yönetimi</span>
+                        }
+                    </NavLink>
 
-                    <div class="relative">
-                        <NavLink href="/reports" class="@GetMenuItemClass(isExpanded)" activeClass="bg-primary-100 dark:bg-primary-900">
-                            <i class="fas fa-chart-bar @(isExpanded ? "mr-3" : "") text-primary-500"></i>
-                            @if (isExpanded)
-                            {
-                                <span class="transition-opacity duration-200 delay-150 @(isTransitioning ? "opacity-0" : "opacity-100")">Raporlama ve Analiz</span>
-                            }
-                        </NavLink>
-                    </div>
+                    <!-- Reporting -->
+                    <NavLink href="/reports" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                        <i class="fas fa-chart-bar @GetIconClass(isExpanded)"></i>
+                        @if (isExpanded)
+                        {
+                            <span class="transition-opacity duration-200 delay-150 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Raporlama ve Analiz</span>
+                        }
+                    </NavLink>
                 }
 
                 @if (isDriver)
                 {
-                    <div class="relative">
-                        <NavLink href="/driver-routes" class="@GetMenuItemClass(isExpanded)" activeClass="bg-primary-100 dark:bg-primary-900">
-                            <i class="fas fa-map-marked-alt @(isExpanded ? "mr-3" : "") text-primary-500"></i>
-                            @if (isExpanded)
-                            {
-                                <span class="transition-opacity duration-200 delay-175 @(isTransitioning ? "opacity-0" : "opacity-100")">Benim Rotalarım</span>
-                            }
-                        </NavLink>
-                    </div>
+                    <!-- Driver Routes -->
+                    <NavLink href="/driver-routes" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                        <i class="fas fa-map-marked-alt @GetIconClass(isExpanded)"></i>
+                        @if (isExpanded)
+                        {
+                            <span class="transition-opacity duration-200 delay-175 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Benim Rotalarım</span>
+                        }
+                    </NavLink>
                 }
 
-                <div class="relative">
-                    <NavLink href="/notifications" class="@GetMenuItemClass(isExpanded)" activeClass="bg-primary-100 dark:bg-primary-900">
-                        <div class="relative flex items-center">
-                            <i class="fas fa-bell @(isExpanded ? "mr-3" : "") text-primary-500"></i>
-                            <span class="absolute -top-2 -right-1 bg-red-500 text-white text-xs font-medium px-1.5 py-0.5 rounded-full">3</span>
-                        </div>
-                        @if (isExpanded)
+                <!-- Notifications -->
+                <NavLink href="/notifications" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                    <div class="relative flex items-center">
+                        <i class="fas fa-bell @GetIconClass(isExpanded)"></i>
+                        @if (notificationCount > 0)
                         {
-                            <span class="transition-opacity duration-200 delay-200 @(isTransitioning ? "opacity-0" : "opacity-100")">Bildirimler</span>
+                            <span class="absolute -top-2 -right-2 flex items-center justify-center min-w-5 h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-sm animate-pulse">@notificationCount</span>
                         }
-                    </NavLink>
-                </div>
-
-                
-                    <div class="relative">
-                        <NavLink href="/settings" class="@GetMenuItemClass(isExpanded)" activeClass="bg-primary-100 dark:bg-primary-900">
-                            <i class="fas fa-cog @(isExpanded ? "mr-3" : "") text-primary-500"></i>
-                            @if (isExpanded)
-                            {
-                                <span class="transition-opacity duration-200 delay-225 @(isTransitioning ? "opacity-0" : "opacity-100")">Sistem Ayarları</span>
-                            }
-                        </NavLink>
                     </div>
-                
+                    @if (isExpanded)
+                    {
+                        <span class="transition-opacity duration-200 delay-200 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Bildirimler</span>
+                    }
+                </NavLink>
 
-                <div class="relative">
-                    <NavLink href="/supports" class="@GetMenuItemClass(isExpanded)" activeClass="bg-primary-100 dark:bg-primary-900">
-                        <i class="fas fa-headset @(isExpanded ? "mr-3" : "") text-primary-500"></i>
-                        @if (isExpanded)
-                        {
-                            <span class="transition-opacity duration-200 delay-250 @(isTransitioning ? "opacity-0" : "opacity-100")">Destek</span>
-                        }
-                    </NavLink>
-                </div>
+                <!-- Settings -->
+                <NavLink href="/settings" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                    <i class="fas fa-cog @GetIconClass(isExpanded)"></i>
+                    @if (isExpanded)
+                    {
+                        <span class="transition-opacity duration-200 delay-225 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Sistem Ayarları</span>
+                    }
+                </NavLink>
+
+                <!-- Support -->
+                <NavLink href="/supports" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                    <i class="fas fa-headset @GetIconClass(isExpanded)"></i>
+                    @if (isExpanded)
+                    {
+                        <span class="transition-opacity duration-200 delay-250 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Destek</span>
+                    }
+                </NavLink>
             </nav>
         </div>
     </div>
 </div>
 
 <style>
+    /* Özel kaydırma çubuğu */
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: #CBD5E1;
+        border-radius: 20px;
+    }
+
+    .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: #475569;
+    }
+
+    /* Logo animasyonu */
     .logo-icon {
         animation: pulse 2s infinite;
         transform-origin: center;
     }
 
     @@keyframes pulse {
-        0%
+        0% {
+            transform: scale(1);
+        }
 
-    {
-        transform: scale(1);
+        50% {
+            transform: scale(1.1);
+            color: #ffffff;
+        }
+
+        100% {
+            transform: scale(1);
+        }
     }
 
-    50% {
-        transform: scale(1.1);
-        color: #10B981;
-    }
-
-    100% {
-        transform: scale(1);
-    }
-
-    }
-
-    /* Animation for logo text */
+    /* Logo metin animasyonu */
     .logo-text {
-        background: linear-gradient(90deg, #10B981, #3B82F6, #10B981);
+        background: linear-gradient(90deg, #2ba86d, #3089d6, #2ba86d);
         background-size: 200% auto;
         background-clip: text;
         -webkit-background-clip: text;
@@ -219,19 +251,16 @@
     }
 
     @@keyframes gradient {
-        0%
+        0% {
+            background-position: 0% center;
+        }
 
-    {
-        background-position: 0% center;
+        100% {
+            background-position: 200% center;
+        }
     }
 
-    100% {
-        background-position: 200% center;
-    }
-
-    }
-
-    /* Ensure smooth transition for delayed text appearance */
+    /* Metin görünüm gecikmesi için transition */
     span.delay-50 {
         transition-delay: 50ms;
     }
@@ -266,5 +295,24 @@
 
     span.delay-250 {
         transition-delay: 250ms;
+    }
+
+    /* Bildirim rozet animasyonu */
+    @@keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        }
+
+        70% {
+            box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        }
+    }
+
+    .animate-pulse {
+        animation: pulse 2s infinite;
     }
 </style>

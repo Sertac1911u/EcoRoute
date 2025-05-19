@@ -35,6 +35,7 @@ namespace EcoRoute.IdentityServer.Tools
                         claims.Add(new Claim("scope", "SupportsReadPermission")); 
                         claims.Add(new Claim("scope", "SettingsFullPermission")); 
                         claims.Add(new Claim("scope", "OcelotFullPermission"));
+                        claims.Add(new Claim("scope", "ReportsFullPermission"));
                         claims.Add(new Claim("scope", "NotificationsFullPermission"));
                         claims.Add(new Claim("scope", "NotificationsReadPermission"));
 
@@ -47,6 +48,7 @@ namespace EcoRoute.IdentityServer.Tools
                         claims.Add(new Claim("scope", "SupportsFullPermission")); 
                         claims.Add(new Claim("scope", "SupportsReadPermission"));
                         claims.Add(new Claim("scope", "SettingsFullPermission"));
+                        claims.Add(new Claim("scope", "ReportsFullPermission"));
                         claims.Add(new Claim("scope", "NotificationsFullPermission"));
                         claims.Add(new Claim("scope", "NotificationsReadPermission"));
 
@@ -59,6 +61,7 @@ namespace EcoRoute.IdentityServer.Tools
                         claims.Add(new Claim("scope", "SupportsReadPermission")); 
                         claims.Add(new Claim("scope", "SupportsFullPermission"));
                         claims.Add(new Claim("scope", "SettingsFullPermission"));
+                        claims.Add(new Claim("scope", "ReportsFullPermission"));
                         claims.Add(new Claim("scope", "NotificationsReadPermission"));
                         claims.Add(new Claim("scope", "NotificationsFullPermission"));
 

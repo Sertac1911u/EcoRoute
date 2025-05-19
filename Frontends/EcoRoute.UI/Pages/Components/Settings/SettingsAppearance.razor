@@ -1,0 +1,100 @@
+﻿@using EcoRoute.DtoLayer.SettingDtos
+@using Microsoft.AspNetCore.Components
+@using static EcoRoute.UI.Pages.Settings
+
+<div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md col-span-1">
+    <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 flex items-center">
+        <i class="fas fa-palette mr-2 text-primary-500"></i> Görünüm Ayarları
+    </h3>
+
+    <!-- Dark Mode Toggle -->
+    <div class="mb-6">
+        <div class="flex justify-between items-center">
+            <label class="text-gray-700 dark:text-gray-300 font-medium">Karanlık Mod</label>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" @bind="Settings.DarkMode" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+            </label>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sistemin karanlık modunu etkinleştir/devre dışı bırak</p>
+    </div>
+
+    <!-- Tema Seçimi -->
+    <div class="mb-6">
+        <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Tema Rengi</label>
+        <div class="grid grid-cols-4 gap-3 mb-4">
+            @foreach (var color in ThemeColors)
+            {
+                <div class="relative flex flex-col items-center">
+                    <input type="radio" id="color-@color.Value.Replace("#", "")" name="theme-color" class="peer hidden"
+                           checked="@(Settings.ThemeColor == color.Value)"
+                           @onchange="() => OnColorSelect.InvokeAsync(color)" />
+                    <label for="color-@color.Value.Replace("#", "")"
+                           class="flex items-center justify-center h-10 w-10 rounded-full cursor-pointer border-2 transition-all duration-200 @(Settings.ThemeColor == color.Value ? "border-gray-900 dark:border-white scale-110" : "border-transparent hover:border-gray-400")"
+                           style="background-color: @color.Value;">
+                        @if (Settings.ThemeColor == color.Value)
+                        {
+                            <i class="fas fa-check text-white text-xs"></i>
+                        }
+                    </label>
+                    <span class="mt-1 text-xs text-gray-600 dark:text-gray-400">@color.Name</span>
+                </div>
+            }
+        </div>
+
+        @if (SelectedShades != null)
+        {
+            <div class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <div class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Renk Paleti</div>
+                <div class="flex space-x-1">
+                    @foreach (var shade in new[] { "100", "300", "500", "700", "900" })
+                    {
+                        @if (SelectedShades.ContainsKey(shade))
+                        {
+                            <div class="flex-1 h-8 rounded transition-all" style="background-color: @SelectedShades[shade]" title="@shade"></div>
+                        }
+                    }
+                </div>
+                <div class="mt-2 text-xs text-gray-600 dark:text-gray-400 flex justify-between">
+                    <span>Açık Ton</span>
+                    <span>Koyu Ton</span>
+                </div>
+            </div>
+        }
+
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Sistemin ana rengini değiştir</p>
+    </div>
+
+    <!-- Yazı Boyutu -->
+    <div class="mb-6">
+        <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Yazı Boyutu</label>
+        <div class="flex items-center">
+            <span class="text-gray-500 dark:text-gray-400 text-sm mr-2">Küçük</span>
+            <input type="range" min="12" max="20" step="1"
+                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                   @bind="Settings.FontSize">
+            <span class="text-gray-500 dark:text-gray-400 text-sm ml-2">Büyük</span>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sistem yazı boyutunu ayarla (şu anki: @Settings.FontSize px)</p>
+    </div>
+
+    <!-- Animasyon Efektleri -->
+    <div class="mb-0">
+        <div class="flex justify-between items-center">
+            <label class="text-gray-700 dark:text-gray-300 font-medium">Animasyon Efektleri</label>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" @bind="Settings.EnableAnimations" class="sr-only peer">
+                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+            </label>
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sistem animasyonlarını etkinleştir/devre dışı bırak</p>
+    </div>
+</div>
+
+@code {
+    [Parameter] public SettingsViewModel Settings { get; set; }
+    [Parameter] public List<ThemeColorDto> ThemeColors { get; set; }
+    [Parameter] public Dictionary<string, string> SelectedShades { get; set; }
+    [Parameter] public EventCallback<ThemeColorDto> OnColorSelect { get; set; }
+    [Parameter] public EventCallback OnChange { get; set; } // ileriye dönük
+}

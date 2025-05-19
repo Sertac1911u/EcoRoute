@@ -682,5 +682,25 @@ namespace EcoRoute.RouteOptimization.Services
                 DailyStats = dailyStats
             };
         }
+
+        public async Task<List<RoutePerformanceReportDto>> GetRoutePerformanceReportAsync()
+        {
+            var routes = await _context.RouteTasks
+                .Include(r => r.Steps)
+                .ToListAsync();
+
+            return routes.Select(route => new RoutePerformanceReportDto
+            {
+                RouteId = route.Id,
+                DriverId = route.DriverId,
+                TotalDistanceKm = route.TotalDistanceKm,
+                EstimatedDurationMin = route.EstimatedDurationMin,
+                EstimatedFuelL = route.EstimatedFuelL,
+                EstimatedCO2Kg = route.EstimatedCO2Kg,
+                StepCount = route.Steps.Count,
+                CompletedStepCount = route.Steps.Count(s => s.IsCompleted)
+            }).ToList();
+        }
+
     }
 }

@@ -1,0 +1,133 @@
+﻿@using EcoRoute.DtoLayer.ReportsDtos
+@inject EcoRoute.UI.Services.ReportsServices.IReportService ReportService
+@inject IJSRuntime JS
+
+<div class="space-y-6">
+    <!-- Statistik Kartlar -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 flex flex-col justify-between">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Toplam Atık Kutusu</p>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white">@Stats?.TotalBins ?? 0</h3>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 flex flex-col justify-between">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Ort. Doluluk (%)</p>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white">@($"{Stats?.AverageFill:N2}")</h3>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 flex flex-col justify-between">
+            <p class="text-sm text-gray-500 dark:text-gray-400">En Dolu Kutular</p>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white">@($"{Stats?.MaxFill:N2}")</h3>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 flex flex-col justify-between">
+            <p class="text-sm text-gray-500 dark:text-gray-400">En Boş Kutular</p>
+            <h3 class="text-2xl font-bold text-gray-800 dark:text-white">@($"{Stats?.MinFill:N2}")</h3>
+        </div>
+    </div>
+
+    <!-- Doluluk Bar Chart -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Doluluk Oranları Grafiği</h3>
+        </div>
+        <canvas id="wasteBinChart" height="70"></canvas>
+    </div>
+
+    <!-- Tablo -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 overflow-x-auto">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Detaylı Atık Kutusu Raporu</h3>
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase tracking-wider">Etiket</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase tracking-wider">Doluluk (%)</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase tracking-wider">Durum</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase tracking-wider">Son Güncelleme</th>
+                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-200 uppercase tracking-wider">Konum</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                @if (WasteBins != null && WasteBins.Count > 0)
+                {
+                    @foreach (var bin in WasteBins)
+                    {
+                        <tr>
+                            <td class="px-4 py-2">@bin.Label</td>
+                            <td class="px-4 py-2">@($"{bin.FillLevel:N2}")</td>
+                            <td class="px-4 py-2">
+                                <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium
+                                    @(bin.DeviceStatus == "Aktif"
+                                        ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400")">
+                                    @bin.DeviceStatus
+                                </span>
+                            </td>
+                            <td class="px-4 py-2">@bin.LastUpdated.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td class="px-4 py-2">
+                                <a class="text-primary-600 hover:underline"
+                                   href="https://maps.google.com/?q=@bin.Latitude,@bin.Longitude" target="_blank">
+                                    @bin.Latitude, @bin.Longitude
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">Kayıt bulunamadı.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>window.wasteBinReportChart = (labels, data) => {
+    if (!window.Chart) return;
+
+    const ctx = document.getElementById('wasteBinChart').getContext('2d');
+    if (window._wasteBinChartInstance) {
+        window._wasteBinChartInstance.destroy();
+    }
+    window._wasteBinChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Doluluk (%)',
+                data: data,
+                borderRadius: 6,
+                backgroundColor: 'rgba(59,130,246,0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    min: 0,
+                    max: 100,
+                    title: { display: true, text: '%' }
+                }
+            }
+        }
+    });
+};
+</script>
+@code {
+    private List<WasteBinReportDto> WasteBins = new();
+    private WasteBinStatsDto Stats = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        WasteBins = await ReportService.GetWasteBinReportAsync();
+        Stats = await ReportService.GetWasteBinStatsAsync(); // Artık doğrudan obje döner
+
+        await JS.InvokeVoidAsync(
+            "wasteBinReportChart",
+            WasteBins.Select(x => x.Label).ToArray(),
+            WasteBins.Select(x => x.FillLevel ?? 0).ToArray()
+        );
+    }
+
+}

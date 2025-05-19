@@ -1,23 +1,26 @@
 ﻿@using EcoRoute.DtoLayer.NotificationDtos
 @using Microsoft.AspNetCore.Components
 
-<div class="divide-y divide-gray-200 dark:divide-gray-700">
+<div class="divide-y divide-gray-100 dark:divide-gray-800 rounded-lg overflow-hidden">
     @foreach (var notification in Notifications)
     {
-        <div @onclick="() => OnClickNotification.InvokeAsync(notification)" class="@GetNotificationClasses(notification)">
+        <div @onclick="() => OnClickNotification.InvokeAsync(notification)"
+             class="@GetNotificationClasses(notification)"
+             @key="notification.Id">
             <div class="flex items-start">
                 <div class="flex-shrink-0 pt-0.5">
                     <span class="@GetNotificationIconClasses(notification)">
                         <i class="@GetNotificationIcon(notification)"></i>
                     </span>
                 </div>
-                <div class="ml-3 w-0 flex-1">
-                    <div class="flex justify-between">
-                        <p class="text-sm font-medium @(notification.IsRead ? "text-gray-600 dark:text-gray-400" : "text-gray-900 dark:text-white")">
+                <div class="ml-4 w-0 flex-1">
+                    <div class="flex justify-between items-start">
+                        <p class="text-sm font-semibold @(notification.IsRead ? "text-gray-700 dark:text-gray-300" : "text-gray-900 dark:text-white")">
                             @notification.Title
                         </p>
-                        <p class="text-xs text-gray-500 dark:text-gray-500">
-                            @notification.CreatedDate.ToString("dd.MM.yyyy HH:mm")
+                        <p class="text-xs text-gray-500 dark:text-gray-500 ml-2 whitespace-nowrap">
+                            <i class="far fa-clock mr-1 opacity-70"></i>
+                            @FormatDate(notification.CreatedDate)
                         </p>
                     </div>
                     <p class="mt-1 text-sm @(notification.IsRead ? "text-gray-500 dark:text-gray-500" : "text-gray-700 dark:text-gray-300")">
@@ -27,7 +30,10 @@
                 @if (!notification.IsRead)
                 {
                     <div class="ml-4 flex-shrink-0 flex">
-                        <button @onclick:stopPropagation="true" @onclick="() => OnMarkAsRead.InvokeAsync(notification.Id)" class="rounded-md p-2 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 focus:outline-none">
+                        <button @onclick:stopPropagation="true"
+                                @onclick="() => OnMarkAsRead.InvokeAsync(notification.Id)"
+                                class="rounded-full p-2 text-gray-400 hover:text-primary-500 dark:hover:text-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors duration-200"
+                                title="Okundu olarak işaretle">
                             <i class="fas fa-check"></i>
                         </button>
                     </div>
@@ -44,15 +50,15 @@
 
     private string GetNotificationClasses(ResultNotificationDto notification)
     {
-        var baseClasses = "px-6 py-4 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer";
+        var baseClasses = "px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-all duration-200";
         return notification.IsRead
             ? baseClasses
-            : $"{baseClasses} bg-blue-50 dark:bg-blue-900/20";
+            : $"{baseClasses} bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 dark:border-blue-500";
     }
 
     private string GetNotificationIconClasses(ResultNotificationDto notification)
     {
-        var baseClasses = "flex items-center justify-center h-10 w-10 rounded-full";
+        var baseClasses = "flex items-center justify-center h-10 w-10 rounded-full shadow-sm transition-transform duration-200 hover:scale-110";
         return notification.Type switch
         {
             "Success" => $"{baseClasses} bg-green-100 text-green-500 dark:bg-green-900/30 dark:text-green-400",
@@ -71,5 +77,30 @@
             "Error" => "fas fa-times-circle",
             _ => "fas fa-info-circle" // Info
         };
+    }
+
+    private string FormatDate(DateTime date)
+    {
+        // Bugün ise sadece saat göster
+        if (date.Date == DateTime.Today)
+        {
+            return $"Bugün {date:HH:mm}";
+        }
+        // Dün ise "Dün" yaz
+        else if (date.Date == DateTime.Today.AddDays(-1))
+        {
+            return $"Dün {date:HH:mm}";
+        }
+        // Son bir hafta içindeyse günü yaz
+        else if ((DateTime.Today - date.Date).TotalDays < 7)
+        {
+            string dayName = System.Globalization.CultureInfo.GetCultureInfo("tr-TR").DateTimeFormat.GetDayName(date.DayOfWeek);
+            return $"{dayName} {date:HH:mm}";
+        }
+        // Diğer durumlar için tam tarih
+        else
+        {
+            return date.ToString("dd.MM.yyyy HH:mm");
+        }
     }
 }
