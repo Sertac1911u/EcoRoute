@@ -1,62 +1,52 @@
 ﻿@page "/reports"
 @attribute [Authorize(Roles = "SuperAdmin,Manager")]
-
-@using EcoRoute.UI.Services.ReportsServices
 @using EcoRoute.UI.Pages.Components.Reports
-@using EcoRoute.DtoLayer.ReportsDtos
+@using EcoRoute.UI.Services.ReportsServices
 @using Microsoft.AspNetCore.Authorization
 @inject IReportService ReportService
 
-<div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden animate-fadeIn">
-    <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Raporlar Paneli</h2>
-        <span class="px-3 py-1 bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-300 text-xs rounded-md">
+<div class="transition-all duration-300 bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-lg border border-gray-100 dark:border-slate-800 animate-fadeIn">
+    <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-slate-800">
+        <h2 class="text-2xl font-semibold text-slate-800 dark:text-white flex items-center gap-2">
+            <i class="fas fa-chart-line text-primary-500 dark:text-primary-400"></i>
+            Raporlar Paneli
+        </h2>
+        <span class="px-3 py-1 bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 text-xs font-medium rounded-full">
             Beta
         </span>
     </div>
-    <div class="px-6 pt-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+    <div class="px-6 pt-4 pb-2 border-b border-gray-200 dark:border-slate-800 overflow-x-auto">
         <div class="flex flex-wrap gap-3">
-            <button class="@GetTabClass(0)" @onclick="@(() => ActiveTab = 0)">
-                Atık Kutusu
-            </button>
-            <button class="@GetTabClass(1)" @onclick="@(() => ActiveTab = 1)">
-                Sensörler
-            </button>
-            <button class="@GetTabClass(2)" @onclick="@(() => ActiveTab = 2)">
-                Rota Performansı
-            </button>
-            <button class="@GetTabClass(3)" @onclick="@(() => ActiveTab = 3)">
-                CO₂ Emisyonu
-            </button>
-            <button class="@GetTabClass(4)" @onclick="@(() => ActiveTab = 4)">
-                Kullanıcı Aktivitesi
-            </button>
-            <button class="@GetTabClass(5)" @onclick="@(() => ActiveTab = 5)">
-                Genel Rota Listesi
-            </button>
+            @foreach (var tab in TabOptions)
+            {
+                <button class="@GetTabClass(tab.Id) transition-all duration-200" @onclick="@(() => ChangeTab(tab.Id))">
+                    <i class="@tab.Icon mr-2"></i>
+                    @tab.Name
+                </button>
+            }
         </div>
     </div>
 
-    <div class="p-6">
+    <div class="p-6 transition-all duration-500">
         @switch (ActiveTab)
         {
             case 0:
-                <WasteBinReport />
+                <WasteBinGraphs />
                 break;
             case 1:
-                <SensorReport />
+                <SensorGraphs />
                 break;
             case 2:
-                <RoutePerformanceReport />
+                <RoutePerformanceGraphs />
                 break;
             case 3:
-                <CO2Report />
+                <CO2EmissionGraphs />
                 break;
             case 4:
-                <UserActivityReport />
+                <UserActivityGraphs />
                 break;
             case 5:
-                <RouteListReport />
+                <RouteListGraphs />
                 break;
         }
     </div>
@@ -65,17 +55,88 @@
 @code {
     private int ActiveTab = 0;
 
-    private string GetTabClass(int tab)
-        => $"px-4 py-2 rounded-lg transition text-sm " +
-           (ActiveTab == tab
-                ? "bg-primary-500 text-white shadow"
-                : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-primary-200 dark:hover:bg-primary-700");
+    private class TabOption
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Icon { get; set; }
+    }
 
-    // Bileşenler ayrı dosyada, aşağıdaki gibi olacak:
-    // <WasteBinReport />
-    // <SensorReport />
-    // <RoutePerformanceReport />
-    // <CO2Report />
-    // <UserActivityReport />
-    // <RouteListReport />
+    private List<TabOption> TabOptions = new List<TabOption>
+    {
+        new TabOption { Id = 0, Name = "Atık Kutusu", Icon = "fas fa-trash" },
+        new TabOption { Id = 1, Name = "Sensörler", Icon = "fas fa-microchip" },
+        new TabOption { Id = 2, Name = "Rota Performansı", Icon = "fas fa-route" },
+        new TabOption { Id = 3, Name = "CO₂ Emisyonu", Icon = "fas fa-cloud" },
+        new TabOption { Id = 4, Name = "Kullanıcı Aktivitesi", Icon = "fas fa-users" },
+        new TabOption { Id = 5, Name = "Genel Rota Listesi", Icon = "fas fa-list" }
+    };
+
+    private string GetTabClass(int tab)
+        => $"px-4 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium flex items-center " +
+           (ActiveTab == tab
+                ? "bg-primary-500 hover:bg-primary-600 text-white shadow-md"
+                : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700");
+
+    private void ChangeTab(int tabId)
+    {
+        ActiveTab = tabId;
+    }
 }
+
+<style>
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    /* For nice transitions */
+    .transition-all {
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Custom scrollbar for all panels */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.05);
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(0,0,0,0.1);
+        border-radius: 10px;
+    }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0,0,0,0.2);
+        }
+
+    /* Dark mode scrollbar adjustments */
+    .dark ::-webkit-scrollbar-track {
+        background: rgba(255,255,255,0.05);
+    }
+
+    .dark ::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.1);
+    }
+
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
+        }
+</style>

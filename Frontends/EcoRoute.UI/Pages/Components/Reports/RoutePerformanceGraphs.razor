@@ -1,0 +1,469 @@
+﻿@using EcoRoute.DtoLayer.ReportsDtos
+@inject EcoRoute.UI.Services.ReportsServices.IReportService ReportService
+@inject IJSRuntime JS
+
+<div class="space-y-6 animate-fadeIn">
+    <!-- Statistik Özet Kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
+            <div class="flex items-center mb-2">
+                <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-map-marked-alt text-indigo-500 dark:text-indigo-400"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Toplam Rota</p>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 dark:text-white">@ReportList?.Count ?? 0</h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">son 30 gün</span>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
+            <div class="flex items-center mb-2">
+                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-route text-blue-500 dark:text-blue-400"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Ortalama Mesafe (km)</p>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 dark:text-white">@($"{AverageDistance:N2}")</h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">kilometre</span>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
+            <div class="flex items-center mb-2">
+                <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-clock text-amber-500 dark:text-amber-400"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Ortalama Süre (dk)</p>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 dark:text-white">@($"{AverageDurationMinutes:N2}")</h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">dakika</span>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
+            <div class="flex items-center mb-2">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-tachometer-alt text-emerald-500 dark:text-emerald-400"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Ortalama Verimlilik</p>
+            </div>
+            <h3 class="text-2xl font-bold text-emerald-500 dark:text-emerald-400">@($"{AverageEfficiency:N2}")</h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">skor (1-10)</span>
+        </div>
+    </div>
+
+    <!-- Rota Verimlilik Çizgi Grafiği -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
+                <i class="fas fa-chart-line text-emerald-500 dark:text-emerald-400 mr-2"></i>
+                Rota Verimlilik Skoru (Tarih Bazlı)
+            </h3>
+            <div class="flex items-center gap-2">
+                <button @onclick='() => ChangeTimeframe("weekly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "weekly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors">
+                    <i class="fas fa-calendar-week mr-1"></i> Haftalık
+                </button>
+                <button @onclick='() => ChangeTimeframe("monthly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "monthly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors">
+                    <i class="fas fa-calendar-alt mr-1"></i> Aylık
+                </button>
+            </div>
+        </div>
+        <div class="h-64">
+            <canvas id="routePerfChart" class="transition-all duration-500"></canvas>
+        </div>
+    </div>
+
+    <!-- Sürücü Bazlı Verimlilik Radar Grafiği -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
+                <i class="fas fa-user-chart text-indigo-500 dark:text-indigo-400 mr-2"></i>
+                Sürücü Bazlı Verimlilik Performansı
+            </h3>
+            <div>
+                <button class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors">
+                    <i class="fas fa-file-export mr-1"></i> Dışa Aktar
+                </button>
+            </div>
+        </div>
+        <div class="h-72">
+            <canvas id="driverPerfChart" class="transition-all duration-500"></canvas>
+        </div>
+    </div>
+
+    <!-- Mesafe ve Süre Karşılaştırması -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
+                <i class="fas fa-chart-scatter text-blue-500 dark:text-blue-400 mr-2"></i>
+                Mesafe ve Süre Karşılaştırması
+            </h3>
+            <div class="text-sm text-gray-500 dark:text-gray-400">
+                Her bir nokta bir rotayı temsil eder
+            </div>
+        </div>
+        <div class="h-64">
+            <canvas id="distanceDurationChart" class="transition-all duration-500"></canvas>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<RoutePerformanceReportDto> ReportList = new();
+    private string Timeframe = "monthly";
+
+    private double AverageDistance => ReportList.Any() ? ReportList.Average(r => r.DistanceKm) : 0;
+    private double AverageDurationMinutes => ReportList.Any() ? ReportList.Average(r => r.Duration.TotalMinutes) : 0;
+    private double AverageEfficiency => ReportList.Any() ? ReportList.Average(r => r.EfficiencyScore) : 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ReportList = await ReportService.GetRoutePerformanceReportAsync();
+        await RenderCharts();
+    }
+
+    private async Task ChangeTimeframe(string timeframe)
+    {
+        Timeframe = timeframe;
+        await RenderCharts();
+    }
+
+    private async Task RenderCharts()
+    {
+        var orderedReports = ReportList.OrderBy(r => r.CompletedAt).ToList();
+
+        // Zaman aralığına göre filtreleme
+        var filteredData = Timeframe == "weekly"
+            ? orderedReports.TakeLast(7).ToList()
+            : orderedReports;
+
+        // Tarih bazlı verimlilik grafiği için
+        var dateLabels = filteredData.Select(r => r.CompletedAt.ToString("dd.MM.yyyy")).ToArray();
+        var efficiencyData = filteredData.Select(r => r.EfficiencyScore).ToArray();
+        await JS.InvokeVoidAsync("renderRoutePerfChart", dateLabels, efficiencyData);
+
+        // Sürücü bazlı verimlilik radar grafiği için
+        var driverData = ReportList
+            .GroupBy(r => r.DriverName)
+            .Select(g => new
+            {
+                DriverName = g.Key,
+                AverageEfficiency = g.Average(r => r.EfficiencyScore),
+                Count = g.Count()
+            })
+            .OrderByDescending(x => x.AverageEfficiency)
+            .Take(5)
+            .ToList();
+
+        var driverNames = driverData.Select(d => d.DriverName).ToArray();
+        var driverEfficiencies = driverData.Select(d => d.AverageEfficiency).ToArray();
+        await JS.InvokeVoidAsync("renderDriverPerfChart", driverNames, driverEfficiencies);
+
+        // Mesafe ve süre karşılaştırması için
+        var distances = ReportList.Select(r => r.DistanceKm).ToArray();
+        var durations = ReportList.Select(r => r.Duration.TotalMinutes).ToArray();
+        var pointColors = ReportList.Select(r => GetColorForEfficiency(r.EfficiencyScore)).ToArray();
+        await JS.InvokeVoidAsync("renderDistanceDurationChart", distances, durations, pointColors);
+    }
+
+    private string GetColorForEfficiency(double score)
+    {
+        if (score >= 8) return "rgba(16,185,129,0.7)"; // emerald (green)
+        if (score >= 6) return "rgba(59,130,246,0.7)"; // blue
+        if (score >= 4) return "rgba(245,158,11,0.7)"; // amber
+        return "rgba(239,68,68,0.7)"; // red
+    }
+}
+
+<script>
+    // Rota Verimlilik Çizgi Grafiği
+    window.renderRoutePerfChart = (labels, data) => {
+        if (!window.Chart) return;
+        const ctx = document.getElementById('routePerfChart').getContext('2d');
+
+        // Define gradient fill
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(16,185,129,0.3)');
+        gradient.addColorStop(1, 'rgba(16,185,129,0.02)');
+
+        if (window._routePerfChartInstance) {
+            window._routePerfChartInstance.destroy();
+        }
+
+        window._routePerfChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Verimlilik Skoru',
+                    data: data,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    borderColor: 'rgba(16,185,129,0.9)',
+                    backgroundColor: gradient,
+                    fill: true,
+                    pointRadius: 3,
+                    pointBackgroundColor: 'white',
+                    pointBorderColor: 'rgba(16,185,129,0.9)',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: 'white',
+                    pointHoverBorderColor: 'rgba(16,185,129,0.9)',
+                    pointHoverBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        padding: 10,
+                        titleFont: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        borderColor: 'rgba(16,185,129,0.3)',
+                        borderWidth: 1,
+                        cornerRadius: 6,
+                        displayColors: false,
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                return tooltipItems[0].label;
+                            },
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw.toFixed(2)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 10,
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(156, 163, 175, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+    };
+
+    // Sürücü Bazlı Radar Grafiği
+    window.renderDriverPerfChart = (drivers, efficiencies) => {
+        if (!window.Chart) return;
+        const ctx = document.getElementById('driverPerfChart').getContext('2d');
+
+        if (window._driverPerfChartInstance) {
+            window._driverPerfChartInstance.destroy();
+        }
+
+        window._driverPerfChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: drivers,
+                datasets: [{
+                    label: 'Ortalama Verimlilik',
+                    data: efficiencies,
+                    backgroundColor: [
+                        'rgba(16,185,129,0.7)',
+                        'rgba(59,130,246,0.7)',
+                        'rgba(139,92,246,0.7)',
+                        'rgba(245,158,11,0.7)',
+                        'rgba(239,68,68,0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(16,185,129,1)',
+                        'rgba(59,130,246,1)',
+                        'rgba(139,92,246,1)',
+                        'rgba(245,158,11,1)',
+                        'rgba(239,68,68,1)'
+                    ],
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        padding: 10,
+                        titleFont: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        borderColor: 'rgba(107, 114, 128, 0.3)',
+                        borderWidth: 1,
+                        cornerRadius: 6,
+                        callbacks: {
+                            label: function(context) {
+                                return `Verimlilik: ${context.raw.toFixed(2)}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    x: {
+                        min: 0,
+                        max: 10,
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(156, 163, 175, 0.1)'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Verimlilik Skoru (1-10)',
+                            font: { size: 11 }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+    };
+
+    // Mesafe ve Süre Dağılım Grafiği
+    window.renderDistanceDurationChart = (distances, durations, colors) => {
+        if (!window.Chart) return;
+        const ctx = document.getElementById('distanceDurationChart').getContext('2d');
+
+        if (window._distanceDurationChartInstance) {
+            window._distanceDurationChartInstance.destroy();
+        }
+
+        // Veri noktalarını oluştur
+        const data = [];
+        for (let i = 0; i < distances.length; i++) {
+            data.push({
+                x: distances[i],
+                y: durations[i]
+            });
+        }
+
+        window._distanceDurationChartInstance = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Rotalar',
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: 'rgba(255,255,255,0.7)',
+                    borderWidth: 1,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        padding: 10,
+                        titleFont: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        callbacks: {
+                            title: function() {
+                                return 'Rota Detayı';
+                            },
+                            label: function(context) {
+                                return [
+                                    `Mesafe: ${context.raw.x.toFixed(2)} km`,
+                                    `Süre: ${context.raw.y.toFixed(2)} dk`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Süre (dakika)',
+                            font: { size: 11 }
+                        },
+                        beginAtZero: true,
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(156, 163, 175, 0.1)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Mesafe (km)',
+                            font: { size: 11 }
+                        },
+                        beginAtZero: true,
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(156, 163, 175, 0.1)'
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+    };
+</script> 

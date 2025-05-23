@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcoRoute.RouteOptimization.Migrations
 {
     [DbContext(typeof(RouteDbContext))]
-    [Migration("20250514215721_initialCreate")]
-    partial class initialCreate
+    [Migration("20250522034744_init1")]
+    partial class init1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -92,6 +92,10 @@ namespace EcoRoute.RouteOptimization.Migrations
                     b.Property<string>("OverviewPolyline")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("RouteName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime2");
 
@@ -105,9 +109,8 @@ namespace EcoRoute.RouteOptimization.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("WasteType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("WasteType")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

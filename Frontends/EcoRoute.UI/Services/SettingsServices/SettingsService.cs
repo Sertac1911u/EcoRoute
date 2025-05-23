@@ -352,9 +352,12 @@ namespace EcoRoute.UI.Services.SettingsServices
             {
                 DarkMode = false,
                 ThemeColor = "#3B82F6", // varsayılan mavi
-                FontSize = 14,
+                TwoFactorEnabled=false,
+                LocationTracking=false,
+                ActiveSessionLimit=0,
+                SessionTimeout=0,
                 EnableAnimations = true,
-                AvatarUrl = "https://picsum.photos/id/1/200", // varsayılan avatar
+                AvatarUrl = "https://ui-avatars.com/api/?name=Sertaç+Kara\r\n", // varsayılan avatar
                 EmailNotifications = true,
                 SmsNotifications = false,
                 PushNotifications = true,
@@ -395,8 +398,56 @@ namespace EcoRoute.UI.Services.SettingsServices
         {
             return new List<AvatarDto>
             {
-                new AvatarDto { Name = "Avatar 1", Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton" }
+                new AvatarDto { Name = "Avatar 1", Url = "https://ui-avatars.com/api/?name=Sertaç+Kara\r\n" }
             };
         }
+        public async Task<List<FontTypeDto>> GetFontTypesAsync()
+        {
+            await SetAuthHeader();
+
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<List<FontTypeDto>>("services/settings/Settings/font-types");
+                return response ?? new List<FontTypeDto>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Font tipleri alınırken hata oluştu: {ex.Message}");
+                return new List<FontTypeDto>();
+            }
+        }
+
+        public async Task<List<LanguageDto>> GetLanguagesAsync()
+        {
+            await SetAuthHeader();
+
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<List<LanguageDto>>("services/settings/Settings/languages");
+                return response ?? new List<LanguageDto>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Diller alınırken hata oluştu: {ex.Message}");
+                return new List<LanguageDto>();
+            }
+        }
+
+        public async Task<List<DateFormatDto>> GetDateFormatsAsync()
+        {
+            await SetAuthHeader();
+
+            try
+            {
+                var response = await _httpClient.GetFromJsonAsync<List<DateFormatDto>>("services/settings/Settings/date-formats");
+                return response ?? new List<DateFormatDto>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Tarih formatları alınırken hata oluştu: {ex.Message}");
+                return new List<DateFormatDto>();
+            }
+        }
+
     }
 }

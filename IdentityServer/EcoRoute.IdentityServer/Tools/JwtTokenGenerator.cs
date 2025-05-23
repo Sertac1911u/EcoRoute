@@ -54,7 +54,7 @@ namespace EcoRoute.IdentityServer.Tools
 
                         break;
                     case "Driver":
-                    case "Customer": // Include Customer role for Support access
+                    case "Customer": 
                         claims.Add(new Claim("scope", "DataCollectionReadPermission"));
                         claims.Add(new Claim("scope", "DataProcessingReadPermission"));
                         claims.Add(new Claim("scope", "RouteOptimizationFullPermission"));

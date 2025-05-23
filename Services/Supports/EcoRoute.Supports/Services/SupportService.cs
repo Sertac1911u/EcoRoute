@@ -144,7 +144,7 @@ namespace EcoRoute.Supports.Services
                 IsStaff = isStaff,
                 SupportTicketId = dto.SupportTicketId,
                 UserId = dto.UserId,
-                UserName = dto.UserName
+                UserName = dto.UserName,
             };
 
             if (dto.Attachment != null)

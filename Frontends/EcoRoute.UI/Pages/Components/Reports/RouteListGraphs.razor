@@ -1,0 +1,571 @@
+﻿@using EcoRoute.DtoLayer.ReportsDtos
+@inject EcoRoute.UI.Services.ReportsServices.IReportService ReportService
+@inject IJSRuntime JS
+
+<div class="space-y-6 animate-fadeIn">
+    <!-- İstatistik Kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
+            <div class="flex items-center mb-2">
+                <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-route text-indigo-500 dark:text-indigo-400"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Toplam Rota</p>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 dark:text-white">@RouteList.Count</h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">tüm zamanlar</span>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
+            <div class="flex items-center mb-2">
+                <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-check-circle text-emerald-500 dark:text-emerald-400"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Tamamlanan Rota</p>
+            </div>
+            <h3 class="text-2xl font-bold text-emerald-500 dark:text-emerald-400">@CompletedRoutes</h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">başarıyla tamamlandı</span>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
+            <div class="flex items-center mb-2">
+                <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-road text-blue-500 dark:text-blue-400"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Toplam Mesafe</p>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 dark:text-white">@($"{TotalDistance:N1}")</h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">kilometre</span>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
+            <div class="flex items-center mb-2">
+                <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mr-3">
+                    <i class="fas fa-cloud text-amber-500 dark:text-amber-400"></i>
+                </div>
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Toplam CO₂</p>
+            </div>
+            <h3 class="text-2xl font-bold text-amber-500 dark:text-amber-400">@($"{TotalCO2:N1}")</h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">kg</span>
+        </div>
+    </div>
+
+    <!-- Durum Dağılımı ve Zaman Grafiği -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
+                    <i class="fas fa-chart-pie text-primary-500 dark:text-primary-400 mr-2"></i>
+                    Rota Durumları
+                </h3>
+            </div>
+            <div class="h-64">
+                <canvas id="routeStatusChart" class="transition-all duration-500"></canvas>
+            </div>
+        </div>
+
+        <!-- Rota Oluşturma Zaman Grafiği -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
+                    <i class="fas fa-calendar-alt text-indigo-500 dark:text-indigo-400 mr-2"></i>
+                    Rota Oluşturma Trendi
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button @onclick='() => ChangeTimeframe("weekly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "weekly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors">
+                        <i class="fas fa-calendar-week mr-1"></i> Haftalık
+                    </button>
+                    <button @onclick='() => ChangeTimeframe("monthly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "monthly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors">
+                        <i class="fas fa-calendar-alt mr-1"></i> Aylık
+                    </button>
+                </div>
+            </div>
+            <div class="h-64">
+                <canvas id="routeCreationChart" class="transition-all duration-500"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sürücü Bazlı Rota Sayısı -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
+                <i class="fas fa-user-friends text-emerald-500 dark:text-emerald-400 mr-2"></i>
+                Sürücü Bazlı Rota Sayısı
+            </h3>
+            <div>
+                <select @onchange="OnDriverFilterChange" class="text-sm px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-0 focus:ring-2 focus:ring-primary-500">
+                    <option value="all">Tüm Sürücüler</option>
+                    <option value="active">Sadece Aktif Sürücüler</option>
+                    <option value="top">En Aktif 5 Sürücü</option>
+                </select>
+            </div>
+        </div>
+        <div class="h-64">
+            <canvas id="driverRouteChart" class="transition-all duration-500"></canvas>
+        </div>
+    </div>
+
+    <!-- CO2 ve Mesafe Oranı -->
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
+                <i class="fas fa-chart-scatter text-blue-500 dark:text-blue-400 mr-2"></i>
+                CO₂ ve Mesafe İlişkisi
+            </h3>
+        </div>
+        <div class="h-64">
+            <canvas id="co2DistanceChart" class="transition-all duration-500"></canvas>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<RouteReportDto> RouteList = new();
+    private string Timeframe = "monthly";
+    private string DriverFilter = "all";
+
+    private int CompletedRoutes => RouteList.Count(r => r.Status == 1);
+    private double TotalDistance => RouteList.Sum(r => r.TotalDistanceKm);
+    private double TotalCO2 => RouteList.Sum(r => r.EstimatedCO2Kg);
+
+    protected override async Task OnInitializedAsync()
+    {
+        RouteList = await ReportService.GetRouteReportAsync();
+        await RenderCharts();
+    }
+
+    private async Task ChangeTimeframe(string timeframe)
+    {
+        Timeframe = timeframe;
+        await RenderRouteCreationChart();
+    }
+
+    private async Task OnDriverFilterChange(ChangeEventArgs e)
+    {
+        DriverFilter = e.Value.ToString();
+        await RenderDriverRouteChart();
+    }
+
+    private async Task RenderCharts()
+    {
+        await RenderRouteStatusChart();
+        await RenderRouteCreationChart();
+        await RenderDriverRouteChart();
+        await RenderCO2DistanceChart();
+    }
+
+    private async Task RenderRouteStatusChart()
+    {
+        var completed = RouteList.Count(r => r.Status == 1);
+        var active = RouteList.Count(r => r.Status == 0);
+        var unknown = RouteList.Count(r => r.Status != 0 && r.Status != 1);
+
+        var statusLabels = new[] { "Tamamlandı", "Aktif", "Diğer" };
+        var statusCounts = new[] { completed, active, unknown };
+        var statusColors = new[] { "rgba(16,185,129,0.7)", "rgba(245,158,11,0.7)", "rgba(156,163,175,0.7)" };
+
+        await JS.InvokeVoidAsync("renderRouteStatusChart", statusLabels, statusCounts, statusColors);
+    }
+
+    private async Task RenderRouteCreationChart()
+    {
+        var now = DateTime.Now;
+        var timeData = new List<(string Label, int Count)>();
+
+        if (Timeframe == "weekly")
+        {
+            // Son 7 günün verileri
+            for (int i = 6; i >= 0; i--)
+            {
+                var date = now.AddDays(-i);
+                var count = RouteList.Count(r => r.StartTime.Date == date.Date);
+                timeData.Add((date.ToString("dd MMM"), count));
+            }
+        }
+        else
+        {
+            // Son 30 günün verileri
+            for (int i = 29; i >= 0; i--)
+            {
+                var date = now.AddDays(-i);
+                var count = RouteList.Count(r => r.StartTime.Date == date.Date);
+                timeData.Add((date.ToString("dd MMM"), count));
+            }
+        }
+
+        var labels = timeData.Select(d => d.Label).ToArray();
+        var counts = timeData.Select(d => d.Count).ToArray();
+
+        await JS.InvokeVoidAsync("renderRouteCreationChart", labels, counts);
+    }
+
+    private async Task RenderDriverRouteChart()
+    {
+        var driverRoutes = RouteList
+            .GroupBy(r => r.DriverName ?? "Bilinmeyen")
+            .Select(g => new { Driver = g.Key, Count = g.Count() })
+            .OrderByDescending(d => d.Count)
+            .AsEnumerable();
+
+        if (DriverFilter == "top")
+        {
+            driverRoutes = driverRoutes.Take(5);
+        }
+        else if (DriverFilter == "active")
+        {
+            driverRoutes = driverRoutes.Where(d => d.Count > 0);
+        }
+
+        var drivers = driverRoutes.Select(d => d.Driver).ToArray();
+        var counts = driverRoutes.Select(d => d.Count).ToArray();
+
+        await JS.InvokeVoidAsync("renderDriverRouteChart", drivers, counts);
+    }
+
+    private async Task RenderCO2DistanceChart()
+    {
+        var distances = RouteList.Select(r => r.TotalDistanceKm).ToArray();
+        var co2Values = RouteList.Select(r => r.EstimatedCO2Kg).ToArray();
+        var routeIds = RouteList.Select(r => r.Id.ToString().Substring(0, 8)).ToArray();
+
+        await JS.InvokeVoidAsync("renderCO2DistanceChart", distances, co2Values, routeIds);
+    }
+}
+
+<script>
+    // Rota Durumları Grafiği
+    window.renderRouteStatusChart = (labels, data, colors) => {
+        if (!window.Chart) return;
+        const ctx = document.getElementById('routeStatusChart').getContext('2d');
+
+        if (window._routeStatusChartInstance) {
+            window._routeStatusChartInstance.destroy();
+        }
+
+        window._routeStatusChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: 'white',
+                    borderWidth: 2,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 15,
+                            boxWidth: 10,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        padding: 10,
+                        titleFont: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${context.label}: ${value} rota (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+    };
+
+    // Rota Oluşturma Grafiği
+    window.renderRouteCreationChart = (labels, data) => {
+        if (!window.Chart) return;
+        const ctx = document.getElementById('routeCreationChart').getContext('2d');
+
+        if (window._routeCreationChartInstance) {
+            window._routeCreationChartInstance.destroy();
+        }
+
+        // Define gradient fill
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, 'rgba(139,92,246,0.3)');
+        gradient.addColorStop(1, 'rgba(139,92,246,0.02)');
+
+        window._routeCreationChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Oluşturulan Rota Sayısı',
+                    data: data,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    borderColor: 'rgba(139,92,246,0.9)',
+                    backgroundColor: gradient,
+                    fill: true,
+                    pointRadius: 3,
+                    pointBackgroundColor: 'white',
+                    pointBorderColor: 'rgba(139,92,246,0.9)',
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: 'white',
+                    pointHoverBorderColor: 'rgba(139,92,246,0.9)',
+                    pointHoverBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        padding: 10,
+                        titleFont: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(156, 163, 175, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 },
+                            maxRotation: 45,
+                            minRotation: 45
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+    };
+
+    // Sürücü Bazlı Rota Sayısı
+    window.renderDriverRouteChart = (drivers, counts) => {
+        if (!window.Chart) return;
+        const ctx = document.getElementById('driverRouteChart').getContext('2d');
+
+        if (window._driverRouteChartInstance) {
+            window._driverRouteChartInstance.destroy();
+        }
+
+        // Create a color palette for the bars
+        const colors = counts.map((count, index) => {
+            const hue = (index * 20) % 360;
+            return `hsla(${hue}, 75%, 60%, 0.7)`;
+        });
+
+        window._driverRouteChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: drivers,
+                datasets: [{
+                    label: 'Rota Sayısı',
+                    data: counts,
+                    backgroundColor: colors,
+                    borderColor: colors.map(c => c.replace('0.7', '1')),
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        padding: 10,
+                        titleFont: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                return `Rota Sayısı: ${context.raw}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(156, 163, 175, 0.1)'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Rota Sayısı',
+                            font: { size: 11 }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+    };
+
+    // CO2 ve Mesafe İlişkisi
+    window.renderCO2DistanceChart = (distances, co2Values, routeIds) => {
+        if (!window.Chart) return;
+        const ctx = document.getElementById('co2DistanceChart').getContext('2d');
+
+        if (window._co2DistanceChartInstance) {
+            window._co2DistanceChartInstance.destroy();
+        }
+
+        // Create scatter plot data points
+        const data = [];
+        for (let i = 0; i < distances.length; i++) {
+            data.push({
+                x: distances[i],
+                y: co2Values[i],
+                routeId: routeIds[i]
+            });
+        }
+
+        window._co2DistanceChartInstance = new Chart(ctx, {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: 'Rotalar',
+                    data: data,
+                    backgroundColor: 'rgba(59,130,246,0.7)',
+                    borderColor: 'white',
+                    borderWidth: 1,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        padding: 10,
+                        titleFont: {
+                            size: 13,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 12
+                        },
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                return `Rota ID: ${tooltipItems[0].raw.routeId}...`;
+                            },
+                            label: function(context) {
+                                return [
+                                    `Mesafe: ${context.raw.x.toFixed(2)} km`,
+                                    `CO₂: ${context.raw.y.toFixed(2)} kg`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(156, 163, 175, 0.1)'
+                        },
+                        title: {
+                            display: true,
+                            text: 'CO₂ Emisyonu (kg)',
+                            font: { size: 11 }
+                        }
+                    },
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            padding: 8,
+                            font: { size: 11 }
+                        },
+                        grid: {
+                            color: 'rgba(156, 163, 175, 0.1)'
+                        },
+                        title: {
+                            display: true,
+                            text: 'Mesafe (km)',
+                            font: { size: 11 }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 800,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+    };
+</script>

@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EcoRoute.DataCollection.Controllers
 {
-    [Authorize(Policy = "DataCollectionFullAccess")] 
     [Route("api/[controller]")]
     [ApiController]
     public class SensorsController : ControllerBase
@@ -18,6 +17,7 @@ namespace EcoRoute.DataCollection.Controllers
         }
 
         [HttpGet]
+        [Authorize(Policy = "DataCollectionFullAccess")]
         public async Task<IActionResult> SensorList()
         {
             var sensors = await _sensorService.GetAllSensorAsync();
@@ -25,6 +25,7 @@ namespace EcoRoute.DataCollection.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize(Policy = "DataCollectionFullAccess")]
         public async Task<IActionResult> GetSensorById(Guid id)
         {
             var sensor = await _sensorService.GetByIdSensorAsync(id);
@@ -34,6 +35,7 @@ namespace EcoRoute.DataCollection.Controllers
         }
 
         [HttpPost]
+        [Authorize(Policy = "DataCollectionFullAccess")]
         public async Task<IActionResult> CreateSensor(CreateSensorDto createSensorDto)
         {
             await _sensorService.CreateSensorAsync(createSensorDto);
@@ -41,6 +43,7 @@ namespace EcoRoute.DataCollection.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Policy = "DataCollectionFullAccess")]
         public async Task<IActionResult> DeleteSensor(Guid id)
         {
             await _sensorService.DeleteSensorAsync(id);
@@ -48,6 +51,7 @@ namespace EcoRoute.DataCollection.Controllers
         }
 
         [HttpPut]
+        [Authorize(Policy = "DataCollectionFullAccess")]
         public async Task<IActionResult> UpdateSensor(UpdateSensorDto updateSensorDto)
         {
             await _sensorService.UpdateSensorAsync(updateSensorDto);

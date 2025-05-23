@@ -2,51 +2,66 @@
 
 @if (Visible)
 {
-    <div class="fixed bottom-4 right-4 bg-@BgColor text-white px-4 py-2 rounded-lg shadow-lg flex items-center z-50 animate-toast">
-        <i class="@IconClass mr-2"></i>
-        <span>@Message</span>
+    <div class="fixed bottom-4 right-4 max-w-sm bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 p-4 z-50 animate-toast">
+        <div class="flex items-center">
+            <div class="flex-shrink-0 bg-@BgColor-100 dark:bg-@BgColor-900/30 rounded-full p-2 text-@BgColor-500 dark:text-@BgColor-400 mr-3">
+                <i class="@IconClass"></i>
+            </div>
+            <div>
+                <p class="font-medium text-gray-800 dark:text-white">@Title</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">@Message</p>
+            </div>
+        </div>
     </div>
 }
+
 <style>
-    @@keyframes fadeInUp {
-        from
-
-    {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    }
-
     .animate-toast {
-        animation: fadeInUp 0.3s ease-out;
+        animation: fadeInUp 0.3s ease-out forwards;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 </style>
+
 @code {
     [Parameter] public string Message { get; set; } = "İşlem tamamlandı";
     [Parameter] public string Type { get; set; } = "success"; // success, error, info, warning
     [Parameter] public bool Visible { get; set; } = true;
 
+    private string Title => Type switch
+    {
+        "success" => "Başarılı",
+        "error" => "Hata",
+        "info" => "Bilgi",
+        "warning" => "Uyarı",
+        _ => "Bildirim"
+    };
+
     private string IconClass => Type switch
     {
-        "success" => "fas fa-check-circle",
+        "success" => "fas fa-check",
         "error" => "fas fa-times-circle",
         "info" => "fas fa-info-circle",
         "warning" => "fas fa-exclamation-triangle",
-        _ => "fas fa-check-circle"
+        _ => "fas fa-bell"
     };
 
     private string BgColor => Type switch
     {
-        "success" => "green-500",
-        "error" => "red-500",
-        "info" => "blue-500",
-        "warning" => "yellow-500",
-        _ => "gray-700"
+        "success" => "green",
+        "error" => "red",
+        "info" => "blue",
+        "warning" => "yellow",
+        _ => "gray"
     };
 }

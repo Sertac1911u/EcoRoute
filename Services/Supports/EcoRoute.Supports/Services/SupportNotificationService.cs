@@ -57,7 +57,7 @@ namespace EcoRoute.Supports.Services
                     Type = "Info",
                     UserId = "", // Boş bırakıp...
                     UserRole = "Admin,SuperAdmin,Manager", // ...sadece yönetici rollerini belirt
-                    Url = $"/supports/{ticket.Id}"
+                    Url = $"/supports/"
                 };
 
                 var response = await client.PostAsJsonAsync("api/Notifications", notification);

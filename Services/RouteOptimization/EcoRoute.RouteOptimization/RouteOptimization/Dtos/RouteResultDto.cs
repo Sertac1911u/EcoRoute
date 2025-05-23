@@ -5,11 +5,12 @@ namespace EcoRoute.RouteOptimization.Dtos
     public class RouteResultDto
     {
         public Guid Id { get; set; }
+        public string RouteName { get; set; }
         public string DriverId { get; set; }
         public string VehicleId { get; set; }
-        public string WasteType { get; set; }
+        public WasteType WasteType { get; set; }
         public OptimizationType OptimizationType { get; set; }
-        public DateTime StartTime { get; set; }
+        public DateTime StartTime { get; set; } = DateTime.Now;
         public double TotalDistanceKm { get; set; }
         public int EstimatedDurationMin { get; set; }
         public RouteStatus Status { get; set; }

@@ -965,11 +965,13 @@
     let mainMap;
     let locationPickerMap;
     let markers = [];
+    let markerCluster = null;
     let currentInfoWindow = null;
     let sidebarOpen = false;
     let dotNetRef = null;
     let selectedBinId = null;
     let userLocationMarker = null;
+    let isDarkMode = false;
 
     // Constants
     const DEFAULT_CENTER = { lat: 41.1634, lng: 27.7951 }; // Çorlu merkez
@@ -977,6 +979,235 @@
     const FOCUS_ZOOM = 18; // Zoom level when focusing on a bin
     const DEFAULT_TILT = 67.7; // Default tilt for 3D view
     const MAP_ID = '8b70db4a26fb9f4cd11929e3'; // Your custom map style ID
+    const PRIMARY_COLOR = '#3B82F6'; // Primary blue color
+    const RECYCLING_GREEN = "#10B981"; // Theme color for recycling
+
+    // Dark mode detection
+    function detectDarkMode() {
+        isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ||
+                   document.documentElement.classList.contains('dark');
+        return isDarkMode;
+    }
+
+    // Watch for dark mode changes
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            isDarkMode = e.matches || document.documentElement.classList.contains('dark');
+            updateMapTheme();
+        });
+    }
+
+    // Observer for dark class changes
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const newDarkMode = document.documentElement.classList.contains('dark');
+                if (newDarkMode !== isDarkMode) {
+                    isDarkMode = newDarkMode;
+                    updateMapTheme();
+                }
+            }
+        });
+    });
+
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+
+    function updateMapTheme() {
+        if (mainMap) {
+            mainMap.setOptions({
+                styles: getMapStyles()
+            });
+        }
+        if (locationPickerMap) {
+            locationPickerMap.setOptions({
+                styles: getMapStyles()
+            });
+        }
+    }
+
+    function getMapStyles() {
+        detectDarkMode();
+
+        if (isDarkMode) {
+            return [
+                // Genel geometri - koyu
+                { elementType: "geometry", stylers: [{ color: "#0f0f0f" }] },
+                { elementType: "labels.text.stroke", stylers: [{ color: "#0f0f0f" }] },
+                { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+
+                // Yönetimsel bölgeler
+                {
+                    featureType: "administrative.locality",
+                    elementType: "labels.text.fill",
+                    stylers: [{ color: "#c4c4c4" }]
+                },
+                {
+                    featureType: "administrative.country",
+                    elementType: "geometry.stroke",
+                    stylers: [{ color: "#4e5c6e" }]
+                },
+
+                // İlgi çekici yerler
+                {
+                    featureType: "poi",
+                    elementType: "labels.text.fill",
+                    stylers: [{ color: "#6b7280" }]
+                },
+                {
+                    featureType: "poi.park",
+                    elementType: "geometry.fill",
+                    stylers: [{ color: "#1a2e1a" }]
+                },
+                {
+                    featureType: "poi.business",
+                    stylers: [{ visibility: "off" }]
+                },
+
+                // Yollar - daha koyu
+                {
+                    featureType: "road",
+                    elementType: "geometry",
+                    stylers: [{ color: "#1f1f1f" }]
+                },
+                {
+                    featureType: "road",
+                    elementType: "geometry.stroke",
+                    stylers: [{ color: "#0a0a0a" }]
+                },
+                {
+                    featureType: "road.highway",
+                    elementType: "geometry",
+                    stylers: [{ color: "#2d2d2d" }]
+                },
+                {
+                    featureType: "road.highway",
+                    elementType: "geometry.stroke",
+                    stylers: [{ color: "#1a1a1a" }]
+                },
+                {
+                    featureType: "road.arterial",
+                    elementType: "geometry",
+                    stylers: [{ color: "#262626" }]
+                },
+                {
+                    featureType: "road.local",
+                    elementType: "geometry",
+                    stylers: [{ color: "#1a1a1a" }]
+                },
+
+                // Su - koyu mavi
+                {
+                    featureType: "water",
+                    elementType: "geometry.fill",
+                    stylers: [{ color: "#0a1a2a" }]
+                },
+                {
+                    featureType: "water",
+                    elementType: "labels.text.fill",
+                    stylers: [{ color: "#4a90a4" }]
+                },
+
+                // Transit
+                {
+                    featureType: "transit",
+                    elementType: "geometry",
+                    stylers: [{ color: "#1e1e1e" }]
+                },
+                {
+                    featureType: "transit.station",
+                    elementType: "labels.text.fill",
+                    stylers: [{ color: "#757575" }]
+                },
+
+                // Binalar
+                {
+                    featureType: "landscape.man_made",
+                    elementType: "geometry.fill",
+                    stylers: [{ color: "#1a1a1a" }]
+                },
+
+                // Doğal manzara
+                {
+                    featureType: "landscape.natural",
+                    elementType: "geometry.fill",
+                    stylers: [{ color: "#0d0d0d" }]
+                }
+            ];
+        } else {
+            return [
+                {
+                    "featureType": "all",
+                    "elementType": "geometry",
+                    "stylers": [{"color": "#f5f5f5"}]
+                },
+                {
+                    "featureType": "landscape.man_made",
+                    "elementType": "geometry.fill",
+                    "stylers": [{"color": "#e8f0e4"}]
+                },
+                {
+                    "featureType": "poi.park",
+                    "elementType": "geometry.fill",
+                    "stylers": [{"color": "#c8e6c9"}]
+                },
+                {
+                    "featureType": "water",
+                    "elementType": "geometry.fill",
+                    "stylers": [{"color": "#bbdefb"}]
+                },
+                {
+                    "featureType": "road",
+                    "elementType": "geometry.fill",
+                    "stylers": [{"color": "#ffffff"}]
+                },
+                {
+                    "featureType": "road",
+                    "elementType": "geometry.stroke",
+                    "stylers": [{"color": "#e0e0e0"}]
+                }
+            ];
+        }
+    }
+
+    // Load MarkerClusterer library if not available
+    function loadMarkerClusterer() {
+        return new Promise((resolve, reject) => {
+            // Check if MarkerClusterer is already available
+            if (window.MarkerClusterer || window.markerClusterer) {
+                console.log("MarkerClusterer already available");
+                resolve();
+                return;
+            }
+
+            // Try loading the newer version first
+            const script1 = document.createElement('script');
+            script1.src = 'https://unpkg.com/@@googlemaps/markerclusterer/dist/index.min.js';
+            script1.onload = () => {
+                console.log("New MarkerClusterer loaded successfully");
+                resolve();
+            };
+            script1.onerror = () => {
+                console.log("Failed to load new MarkerClusterer, trying legacy version");
+
+                // Fallback to legacy version
+                const script2 = document.createElement('script');
+                script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/js-marker-clusterer/1.0.0/markerclusterer.min.js';
+                script2.onload = () => {
+                    console.log("Legacy MarkerClusterer loaded successfully");
+                    resolve();
+                };
+                script2.onerror = () => {
+                    console.error("Failed to load any MarkerClusterer library");
+                    reject(new Error("MarkerClusterer could not be loaded"));
+                };
+                document.head.appendChild(script2);
+            };
+            document.head.appendChild(script1);
+        });
+    }
 
     /**
      * Initialize Google Maps integration
@@ -984,7 +1215,13 @@
      */
     window.initializeGoogleMaps = function (reference) {
         dotNetRef = reference;
+        detectDarkMode();
         console.log("Google Maps initialization started");
+
+        // Load MarkerClusterer library
+        loadMarkerClusterer().catch(error => {
+            console.warn("MarkerClusterer not available:", error);
+        });
     };
 
     /**
@@ -1024,45 +1261,11 @@
                     rotateControl: true,
                     zoomControl: true,
                     fullscreenControl: true,
-                    // Custom map styles for recycling theme
-                    styles: [
-                        {
-                            "featureType": "all",
-                            "elementType": "geometry",
-                            "stylers": [{"color": "#f5f5f5"}]
-                        },
-                        {
-                            "featureType": "landscape.man_made",
-                            "elementType": "geometry.fill",
-                            "stylers": [{"color": "#e8f0e4"}]
-                        },
-                        {
-                            "featureType": "poi.park",
-                            "elementType": "geometry.fill",
-                            "stylers": [{"color": "#c8e6c9"}]
-                        },
-                        {
-                            "featureType": "water",
-                            "elementType": "geometry.fill",
-                            "stylers": [{"color": "#bbdefb"}]
-                        },
-                        {
-                            "featureType": "road",
-                            "elementType": "geometry.fill",
-                            "stylers": [{"color": "#ffffff"}]
-                        },
-                        {
-                            "featureType": "road",
-                            "elementType": "geometry.stroke",
-                            "stylers": [{"color": "#e0e0e0"}]
-                        }
-                    ]
+                    styles: getMapStyles()
                 });
 
-                // Add 3D Toggle button
+                // Add custom controls
                 this.add3DToggle(mainMap);
-
-                // Add user location button
                 this.addUserLocationButton(mainMap);
 
                 // Add map loaded event
@@ -1110,34 +1313,27 @@
             const style = document.createElement('style');
             style.textContent = `
                 .toggle-view-button {
-                    background-color: #fff;
-                    border: 2px solid #fff;
-                    border-radius: 3px;
-                    box-shadow: 0 2px 6px rgba(0,0,0,.3);
-                    color: #555;
+                    background-color: ${isDarkMode ? '#1F2937' : '#fff'};
+                    border: 2px solid ${isDarkMode ? '#374151' : '#fff'};
+                    border-radius: 6px;
+                    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+                    color: ${isDarkMode ? '#E5E7EB' : '#555'};
                     cursor: pointer;
                     font-family: 'Inter', -apple-system, sans-serif;
                     font-size: 14px;
+                    font-weight: 500;
                     margin: 10px;
-                    padding: 8px 16px;
+                    padding: 10px 16px;
                     text-align: center;
-                    transition: background-color 0.3s, color 0.3s;
+                    transition: all 0.3s ease;
                 }
                 .toggle-view-button:hover {
-                    background-color: #f1f1f1;
+                    background-color: ${isDarkMode ? '#374151' : '#f8f9fa'};
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,.25);
                 }
                 .toggle-view-button i {
-                    margin-right: 5px;
-                }
-    @@media (prefers-color-scheme: dark) {
-                    .toggle-view-button {
-                        background-color: #1F2937;
-                        border-color: #374151;
-                        color: #E5E7EB;
-                    }
-                    .toggle-view-button:hover {
-                        background-color: #374151;
-                    }
+                    margin-right: 6px;
                 }
             `;
             document.head.appendChild(style);
@@ -1155,6 +1351,8 @@
 
             locationButton.addEventListener('click', () => {
                 if (navigator.geolocation) {
+                    locationButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
                     navigator.geolocation.getCurrentPosition(
                         (position) => {
                             const pos = {
@@ -1173,13 +1371,14 @@
                                 map: map,
                                 icon: {
                                     path: google.maps.SymbolPath.CIRCLE,
-                                    fillColor: '#4285F4',
+                                    fillColor: PRIMARY_COLOR,
                                     fillOpacity: 1,
                                     strokeColor: '#FFFFFF',
-                                    strokeWeight: 2,
-                                    scale: 8,
+                                    strokeWeight: 3,
+                                    scale: 10,
                                 },
                                 title: 'Your Location',
+                                animation: google.maps.Animation.DROP
                             });
 
                             // Add accuracy circle
@@ -1187,18 +1386,21 @@
                                 center: pos,
                                 radius: position.coords.accuracy,
                                 map: map,
-                                fillColor: '#4285F4',
+                                fillColor: PRIMARY_COLOR,
                                 fillOpacity: 0.15,
-                                strokeColor: '#4285F4',
+                                strokeColor: PRIMARY_COLOR,
                                 strokeOpacity: 0.3,
                                 strokeWeight: 1,
                             });
 
                             // Pan to location with smooth animation
                             this.smoothPanTo(map, pos);
+
+                            locationButton.innerHTML = '<i class="fas fa-location-arrow"></i>';
                         },
                         () => {
                             alert('Error: The Geolocation service failed.');
+                            locationButton.innerHTML = '<i class="fas fa-location-arrow"></i>';
                         }
                     );
                 } else {
@@ -1212,37 +1414,29 @@
             const style = document.createElement('style');
             style.textContent = `
                 .location-button {
-                    background-color: #fff;
-                    border: 2px solid #fff;
+                    background-color: ${isDarkMode ? '#1F2937' : '#fff'};
+                    border: 2px solid ${isDarkMode ? '#374151' : '#fff'};
                     border-radius: 50%;
-                    box-shadow: 0 2px 6px rgba(0,0,0,.3);
-                    color: #666;
+                    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+                    color: ${isDarkMode ? '#E5E7EB' : '#666'};
                     cursor: pointer;
-                    height: 40px;
-                    width: 40px;
+                    height: 44px;
+                    width: 44px;
                     margin: 10px;
                     padding: 0;
                     text-align: center;
-                    transition: background-color 0.3s;
+                    transition: all 0.3s ease;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                 }
                 .location-button:hover {
-                    background-color: #f1f1f1;
+                    background-color: ${isDarkMode ? '#374151' : '#f8f9fa'};
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,.25);
                 }
                 .location-button i {
                     font-size: 16px;
-                }
-    @@media (prefers-color-scheme: dark) {
-                    .location-button {
-                        background-color: #1F2937;
-                        border-color: #374151;
-                        color: #E5E7EB;
-                    }
-                    .location-button:hover {
-                        background-color: #374151;
-                    }
                 }
             `;
             document.head.appendChild(style);
@@ -1266,7 +1460,8 @@
                     mapTypeId: 'roadmap',
                     streetViewControl: false,
                     mapTypeControl: false,
-                    fullscreenControl: false
+                    fullscreenControl: false,
+                    styles: getMapStyles()
                 });
 
                 // Place marker at initial position
@@ -1274,94 +1469,9 @@
                     position: initialPosition,
                     map: locationPickerMap,
                     draggable: true,
-                    icon: this.getBinMarkerIcon('Active', 0),
+                    icon: this.getBinMarkerIcon('Active', 0, 1, 1.2),
                     animation: google.maps.Animation.DROP
                 });
-
-                // Add search box for location picking
-                const searchBoxDiv = document.createElement('div');
-                searchBoxDiv.className = 'location-search-container';
-                searchBoxDiv.innerHTML = `
-                    <div class="location-search-input">
-                        <input id="location-search-box" type="text" placeholder="Konum ara..." class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                        <button id="location-search-button" class="absolute right-2 top-1/2 transform -translate-y-1/2">
-                            <i class="fas fa-search text-gray-500"></i>
-                        </button>
-                    </div>
-                `;
-                locationPickerMap.controls[google.maps.ControlPosition.TOP_CENTER].push(searchBoxDiv);
-
-                // Initialize the search box
-                setTimeout(() => {
-                    const input = document.getElementById('location-search-box');
-                    if (input) {
-                        const searchBox = new google.maps.places.SearchBox(input);
-
-                        // Listen for the event fired when the user selects a prediction and retrieve more details
-                        searchBox.addListener('places_changed', () => {
-                            const places = searchBox.getPlaces();
-
-                            if (places.length === 0) {
-                                return;
-                            }
-
-                            // For each place, get the location
-                            const bounds = new google.maps.LatLngBounds();
-                            places.forEach((place) => {
-                                if (!place.geometry || !place.geometry.location) {
-                                    console.log("Returned place contains no geometry");
-                                    return;
-                                }
-
-                                // Update marker position
-                                marker.setPosition(place.geometry.location);
-
-                                // Trigger the dragend event to update coordinates
-                                google.maps.event.trigger(marker, 'dragend');
-
-                                if (place.geometry.viewport) {
-                                    // Only geocodes have viewport
-                                    bounds.union(place.geometry.viewport);
-                                } else {
-                                    bounds.extend(place.geometry.location);
-                                }
-                            });
-                            locationPickerMap.fitBounds(bounds);
-                        });
-
-                        // Style for search box
-                        const style = document.createElement('style');
-                        style.textContent = `
-                            .location-search-container {
-                                margin-top: 10px;
-                                width: 80%;
-                                max-width: 400px;
-                            }
-                            .location-search-input {
-                                position: relative;
-                                width: 100%;
-                            }
-                            #location-search-box {
-                                width: 100%;
-                                padding: 10px 40px 10px 12px;
-                                border: none;
-                                border-radius: 4px;
-                                box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-                                font-size: 14px;
-                            }
-                            #location-search-button {
-                                position: absolute;
-                                right: 12px;
-                                top: 50%;
-                                transform: translateY(-50%);
-                                background: none;
-                                border: none;
-                                cursor: pointer;
-                            }
-                        `;
-                        document.head.appendChild(style);
-                    }
-                }, 300);
 
                 // Update coordinates when marker is dragged
                 google.maps.event.addListener(marker, 'dragend', function () {
@@ -1399,7 +1509,7 @@
         },
 
         /**
-         * Show all waste bins on the main map
+         * Show all waste bins on the main map with clustering
          * @@param {string} binsJson - JSON string of waste bin data
          */
         showAllBins: function (binsJson) {
@@ -1408,14 +1518,14 @@
                 return;
             }
 
-            // Clear existing markers
+            // Clear existing markers and clusters
             this.clearMarkers();
 
             try {
                 const bins = JSON.parse(binsJson);
                 console.log(`Showing ${bins.length} bins on map`);
 
-                // Store the bins data globally for later use (for nearby bins calculation)
+                // Store the bins data globally for later use
                 window.binsData = bins;
 
                 // Create bounds object to fit all markers
@@ -1425,13 +1535,15 @@
                     if (bin.Latitude && bin.Longitude) {
                         const position = { lat: bin.Latitude, lng: bin.Longitude };
 
-                        // Create marker
+                        // Create enhanced marker
                         const marker = new google.maps.Marker({
                             position: position,
-                            map: mainMap,
+                            map: null, // Don't add to map yet, will be added via clusterer
                             title: bin.Label,
-                            icon: this.getBinMarkerIcon(bin.DeviceStatus, bin.FillLevel),
-                            binId: bin.Id
+                            icon: this.getBinMarkerIcon(bin.DeviceStatus, bin.FillLevel, 1, 1.5),
+                            binId: bin.Id,
+                            binData: bin,
+                            animation: google.maps.Animation.DROP
                         });
 
                         // Add marker to markers array
@@ -1440,36 +1552,24 @@
                         // Add marker to bounds
                         bounds.extend(position);
 
-                        // Add click listener to marker - Smooth zoom to bin location
+                        // Add enhanced click listener
                         marker.addListener('click', () => {
-                            // Close currently open info window if any
-                            if (currentInfoWindow) {
-                                currentInfoWindow.close();
-                                currentInfoWindow = null;
-                            }
+                            this.onMarkerClick(marker, bin);
+                        });
 
-                            // Set zoom level to FOCUS_ZOOM (18)
-                            mainMap.setZoom(FOCUS_ZOOM);
+                        // Add hover effects
+                        marker.addListener('mouseover', () => {
+                            marker.setIcon(this.getBinMarkerIcon(bin.DeviceStatus, bin.FillLevel, 1, 1.7));
+                        });
 
-                            // Ensure 3D mode with correct tilt
-                            mainMap.setTilt(DEFAULT_TILT);
-
-                            // Smooth pan to marker position
-                            this.smoothPanTo(mainMap, position);
-
-                            // Open sidebar with detailed information
-                            this.openBinSidebar(bin);
-
-                            // Store selected bin ID
-                            selectedBinId = bin.Id;
-
-                            // Notify Blazor of bin selection
-                            if (dotNetRef) {
-                                dotNetRef.invokeMethodAsync('OpenBinDetail', bin.Id);
-                            }
+                        marker.addListener('mouseout', () => {
+                            marker.setIcon(this.getBinMarkerIcon(bin.DeviceStatus, bin.FillLevel, 1, 1.5));
                         });
                     }
                 });
+
+                // Initialize marker clustering
+                this.initializeMarkerClustering();
 
                 // Adjust map to fit all markers if there are any
                 if (markers.length > 0) {
@@ -1489,204 +1589,273 @@
         },
 
         /**
-         * Smoothly pan to a location
-         * @@param {google.maps.Map} map - Map object
-         * @@param {google.maps.LatLng} position - Position to pan to
+         * Initialize marker clustering with multiple fallback methods
          */
-        smoothPanTo: function (map, position) {
-            // Validate position coordinates
-            if (!position || !isFinite(position.lat) || !isFinite(position.lng)) {
-                console.error("Invalid coordinates for smoothPanTo:", position);
-                return; // Exit early if coordinates are invalid
+        initializeMarkerClustering: function() {
+            if (markerCluster) {
+                markerCluster.clearMarkers();
+                markerCluster = null;
             }
 
-            const currentCenter = map.getCenter();
-            const currentLat = currentCenter.lat();
-            const currentLng = currentCenter.lng();
-            const targetLat = position.lat;
-            const targetLng = position.lng;
-
-            // Validate calculated coordinates
-            if (!isFinite(currentLat) || !isFinite(currentLng) ||
-                !isFinite(targetLat) || !isFinite(targetLng)) {
-                console.error("Invalid coordinate calculation in smoothPanTo");
-                return; // Exit if any coordinates are invalid
-            }
-
-            // Animation parameters - improved for smoother motion
-            const frames = 40; // Increased number of frames for smoother animation
-            const duration = 850; // Slightly longer duration for more natural motion
-            let frame = 0;
-
-            const animate = () => {
-                if (frame >= frames) {
-                    // End of animation
-                    try {
-                        map.panTo(position);
-                    } catch (e) {
-                        console.error("Error in final panTo:", e);
-                    }
-                    return;
-                }
-
-                // Calculate progress (ease-out cubic function)
-                // This provides a more natural deceleration at the end
-                const progress = 1 - Math.pow(1 - frame / frames, 3);
-
-                // Calculate intermediate position
-                const lat = currentLat + (targetLat - currentLat) * progress;
-                const lng = currentLng + (targetLng - currentLng) * progress;
-
-                // Validate the calculated position
-                if (!isFinite(lat) || !isFinite(lng)) {
-                    console.error("Animation calculated invalid coordinates:", { lat, lng });
-                    return; // Stop animation if invalid coordinates
-                }
-
-                // Pan to intermediate position
-                try {
-                    map.panTo({ lat, lng });
-                } catch (e) {
-                    console.error("Error during animation panTo:", e);
-                    return; // Stop animation on error
-                }
-
-                // Next frame
-                frame++;
-                setTimeout(animate, duration / frames);
-            };
-
-            // Start animation
-            animate();
-        },
-
-        /**
-         * Show waste bins on the location picker map (for reference)
-         * @@param {string} binsJson - JSON string of waste bin data
-         */
-        showBinsOnPickerMap: function (binsJson) {
-            if (!locationPickerMap) {
-                console.error("Location picker map not initialized");
+            if (markers.length === 0) {
+                console.log("No markers to cluster");
                 return;
             }
 
+            // Custom cluster styles using recycling theme
+            const clusterStyles = [
+                {
+                    textColor: 'white',
+                    url: this.createClusterIcon(35, RECYCLING_GREEN),
+                    height: 35,
+                    width: 35,
+                    textSize: 11,
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 'bold'
+                },
+                {
+                    textColor: 'white',
+                    url: this.createClusterIcon(45, '#F59E0B'),
+                    height: 45,
+                    width: 45,
+                    textSize: 13,
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 'bold'
+                },
+                {
+                    textColor: 'white',
+                    url: this.createClusterIcon(55, '#EF4444'),
+                    height: 55,
+                    width: 55,
+                    textSize: 15,
+                    fontFamily: 'Inter, sans-serif',
+                    fontWeight: 'bold'
+                }
+            ];
+
             try {
-                const bins = JSON.parse(binsJson);
+                // Try multiple approaches to find the MarkerClusterer
+                if (window.markerClusterer && window.markerClusterer.MarkerClusterer) {
+                    console.log("Using new MarkerClusterer (window.markerClusterer.MarkerClusterer)");
+                    markerCluster = new window.markerClusterer.MarkerClusterer({
+                        map: mainMap,
+                        markers: markers,
+                        renderer: {
+                            render: ({ count, position }) => {
+                                const color = count < 10 ? RECYCLING_GREEN : count < 50 ? '#F59E0B' : '#EF4444';
+                                const size = count < 10 ? 35 : count < 50 ? 45 : 55;
 
-                bins.forEach(bin => {
-                    if (bin.Latitude && bin.Longitude) {
-                        const position = { lat: bin.Latitude, lng: bin.Longitude };
+                                return new google.maps.Marker({
+                                    position,
+                                    icon: {
+                                        url: this.createClusterIcon(size, color),
+                                        scaledSize: new google.maps.Size(size, size),
+                                        anchor: new google.maps.Point(size / 2, size / 2)
+                                    },
+                                    label: {
+                                        text: String(count),
+                                        color: 'white',
+                                        fontSize: '12px',
+                                        fontWeight: 'bold'
+                                    },
+                                    title: `${count} atık kutusu`,
+                                    zIndex: Number(google.maps.Marker.MAX_ZINDEX) + count,
+                                });
+                            }
+                        }
+                    });
+                }
+                else if (window.MarkerClusterer) {
+                    console.log("Using global MarkerClusterer constructor");
+                    markerCluster = new window.MarkerClusterer(mainMap, markers, {
+                        styles: clusterStyles,
+                        gridSize: 50,
+                        maxZoom: 15,
+                        minimumClusterSize: 2,
+                        zoomOnClick: true,
+                        averageCenter: true
+                    });
+                }
+                else if (typeof MarkerClusterer === 'function') {
+                    console.log("Using legacy MarkerClusterer constructor");
+                    markerCluster = new MarkerClusterer(mainMap, markers, {
+                        styles: clusterStyles,
+                        gridSize: 50,
+                        maxZoom: 15,
+                        minimumClusterSize: 2,
+                        zoomOnClick: true,
+                        averageCenter: true
+                    });
+                }
+                else {
+                    console.warn("MarkerClusterer library not found, displaying individual markers");
+                    // Fallback: display individual markers
+                    markers.forEach(marker => marker.setMap(mainMap));
+                }
 
-                        // Create marker with non-interactive icon
-                        const marker = new google.maps.Marker({
-                            position: position,
-                            map: locationPickerMap,
-                            title: bin.Label,
-                            icon: this.getBinMarkerIcon(bin.DeviceStatus, bin.FillLevel, 0.7), // 70% opacity
-                            clickable: false // Make non-interactive
-                        });
-                    }
-                });
-
+                if (markerCluster) {
+                    console.log("MarkerClusterer initialized successfully with", markers.length, "markers");
+                }
             } catch (error) {
-                console.error("Error showing bins on picker map:", error);
+                console.error("Error creating marker clusterer:", error);
+                // Fallback: display individual markers
+                markers.forEach(marker => marker.setMap(mainMap));
             }
         },
 
         /**
-         * Focus on a specific bin in the main map - Table "Haritada Göster" button handler
-         * @@param {string} binId - ID of the bin to focus on
+         * Create cluster icon SVG
+         * @@param {number} size - Icon size
+         * @@param {string} color - Icon color
+         * @@returns {string} - Data URL for the icon
          */
-        focusOnBin: function (binId) {
-            if (!binId) {
-                console.error("Invalid binId provided to focusOnBin");
-                return;
-            }
-
-            const marker = markers.find(m => m.binId === binId);
-
-            if (!marker) {
-                console.error("No marker found with binId:", binId);
-                return;
-            }
-
-            try {
-                // Get position from marker
-                const position = marker.getPosition();
-
-                // Validate position
-                if (!position || !isFinite(position.lat()) || !isFinite(position.lng())) {
-                    console.error("Invalid marker position:", position);
-                    return;
-                }
-
-                // Set zoom level to FOCUS_ZOOM (18)
-                mainMap.setZoom(FOCUS_ZOOM);
-
-                // Ensure map stays in 3D mode with the correct tilt
-                mainMap.setTilt(DEFAULT_TILT);
-
-                // Enhanced smooth pan animation
-                this.smoothPanTo(mainMap, {
-                    lat: position.lat(),
-                    lng: position.lng()
-                });
-
-                // Add temporary bounce animation
-                marker.setAnimation(google.maps.Animation.BOUNCE);
-                setTimeout(() => {
-                    marker.setAnimation(null);
-                }, 1500);
-
-                // Trigger click event to show info
-                google.maps.event.trigger(marker, 'click');
-            } catch (e) {
-                console.error("Error in focusOnBin:", e);
-            }
+        createClusterIcon: function(size, color) {
+            const svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+                    <defs>
+                        <filter id="shadow-${size}" x="-50%" y="-50%" width="200%" height="200%">
+                            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+                        </filter>
+                        <radialGradient id="grad-${size}" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${this.darkenColor(color, 20)};stop-opacity:1" />
+                        </radialGradient>
+                    </defs>
+                    <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}"
+                            fill="url(#grad-${size})"
+                            stroke="white"
+                            stroke-width="3"
+                            opacity="0.95"
+                            filter="url(#shadow-${size})"/>
+                    <circle cx="${size/2}" cy="${size/2}" r="${size/2-8}" fill="white" opacity="0.2"/>
+                    <g transform="translate(${size/2}, ${size/2}) scale(${size/50})">
+                        <path d="M-8,-8 L-8,8 L8,8 L8,-8 Z" fill="white" opacity="0.9"/>
+                        <path d="M-6,-6 L-6,6 L6,6 L6,-6 Z" fill="${color}"/>
+                        <circle cx="0" cy="0" r="3" fill="white" opacity="0.8"/>
+                    </g>
+                </svg>
+            `;
+            return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
         },
 
         /**
-         * Reset the map state (close info windows, etc.)
+         * Darken a color by a percentage
+         * @@param {string} color - Hex color
+         * @@param {number} percent - Percentage to darken
+         * @@returns {string} - Darkened hex color
          */
-        resetMapState: function () {
-            // Close any open info windows
+        darkenColor: function(color, percent) {
+            // Remove # if present
+            const hex = color.replace('#', '');
+
+            // Convert to RGB
+            const num = parseInt(hex, 16);
+            const amt = Math.round(2.55 * percent);
+
+            // Extract RGB components
+            const R = Math.max(0, Math.min(255, (num >> 16) - amt));
+            const G = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) - amt));
+            const B = Math.max(0, Math.min(255, (num & 0x0000FF) - amt));
+
+            // Convert back to hex
+            return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        },
+
+        /**
+         * Handle marker click with enhanced animations
+         * @@param {google.maps.Marker} marker - Clicked marker
+         * @@param {object} bin - Bin data
+         */
+        onMarkerClick: function(marker, bin) {
+            // Close currently open info window if any
             if (currentInfoWindow) {
                 currentInfoWindow.close();
                 currentInfoWindow = null;
             }
 
-            // Close sidebar if open
-            this.closeBinSidebar();
+            // Get position from marker
+            const position = marker.getPosition();
 
-            // Clear selected bin
-            selectedBinId = null;
-        },
+            // Enhanced zoom animation
+            const currentZoom = mainMap.getZoom();
+            if (currentZoom < FOCUS_ZOOM) {
+                // Smooth zoom animation
+                let zoom = currentZoom;
+                const zoomInterval = setInterval(() => {
+                    if (zoom >= FOCUS_ZOOM) {
+                        clearInterval(zoomInterval);
+                        mainMap.setZoom(FOCUS_ZOOM);
+                    } else {
+                        zoom += 1;
+                        mainMap.setZoom(zoom);
+                    }
+                }, 100);
+            }
 
-        /**
-         * Clear all markers from the map
-         */
-        clearMarkers: function () {
-            markers.forEach(marker => {
-                marker.setMap(null);
+            // Ensure 3D mode with correct tilt
+            mainMap.setTilt(DEFAULT_TILT);
+
+            // Enhanced smooth pan to marker position
+            this.smoothPanTo(mainMap, {
+                lat: position.lat(),
+                lng: position.lng()
             });
-            markers = [];
+
+            // Enhanced marker animation
+            marker.setAnimation(google.maps.Animation.BOUNCE);
+            setTimeout(() => {
+                marker.setAnimation(null);
+                // Add pulsing effect
+                this.addMarkerPulseEffect(marker, bin);
+            }, 1500);
+
+            // Open enhanced sidebar with detailed information
+            this.openEnhancedBinSidebar(bin);
+
+            // Store selected bin ID
+            selectedBinId = bin.Id;
+
+            // Notify Blazor of bin selection
+            if (dotNetRef) {
+                dotNetRef.invokeMethodAsync('OpenBinDetail', bin.Id);
+            }
         },
 
         /**
-         * Open sidebar with detailed bin information
+         * Add pulsing effect to marker
+         * @@param {google.maps.Marker} marker - Marker to animate
          * @@param {object} bin - Bin data
          */
-        openBinSidebar: function (bin) {
+        addMarkerPulseEffect: function(marker, bin) {
+            let pulseCount = 0;
+            const pulseInterval = setInterval(() => {
+                if (pulseCount >= 3) {
+                    clearInterval(pulseInterval);
+                    marker.setIcon(this.getBinMarkerIcon(bin.DeviceStatus, bin.FillLevel, 1, 1.5));
+                    return;
+                }
+
+                // Pulse animation
+                const scale = pulseCount % 2 === 0 ? 1.8 : 1.5;
+                marker.setIcon(this.getBinMarkerIcon(bin.DeviceStatus, bin.FillLevel, 1, scale));
+                pulseCount++;
+            }, 300);
+        },
+
+        /**
+         * Open enhanced sidebar with better animations and content
+         * @@param {object} bin - Bin data
+         */
+        openEnhancedBinSidebar: function (bin) {
             // Get sidebar element
             const sidebar = document.getElementById('bin-sidebar');
             if (!sidebar) return;
 
-            // Calculate estimated fill date and rates
-            const DAILY_FILL_RATE = 5.0; // Daily average fill rate percentage
-
+            // Calculate estimates with improved algorithm
             const getEstimatedFillDate = (fillLevel) => {
                 if (!fillLevel || fillLevel >= 100) return "Bilinmiyor";
 
+                const DAILY_FILL_RATE = 5.0;
                 const remainingCapacity = 100 - fillLevel;
                 const daysUntilFull = Math.ceil(remainingCapacity / DAILY_FILL_RATE);
 
@@ -1698,68 +1867,38 @@
 
             const getEstimatedFillRate = (fillLevel, days) => {
                 if (!fillLevel) return 0;
-
+                const DAILY_FILL_RATE = 5.0;
                 const estimatedFill = fillLevel + (DAILY_FILL_RATE * days);
                 return Math.min(estimatedFill, 100).toFixed(0);
             };
 
-            // Get fill level color
+            // Enhanced styling functions
             const getFillLevelColor = (level) => {
-                if (!level) return '#6B7280'; // Gray for null/undefined
-
-                if (level >= 90) return '#EF4444'; // Red for 90-100%
-                if (level >= 70) return '#F97316'; // Orange for 70-90%
-                if (level >= 50) return '#F59E0B'; // Amber for 50-70%
-                if (level >= 30) return '#3B82F6'; // Blue for 30-50%
-                return '#10B981'; // Green for 0-30%
+                if (!level) return '#6B7280';
+                if (level >= 90) return '#EF4444';
+                if (level >= 70) return '#F97316';
+                if (level >= 50) return '#F59E0B';
+                if (level >= 30) return '#3B82F6';
+                return '#10B981';
             };
 
-            // Get fill status text
-            const getFillStatusText = (level) => {
-                if (!level) return "Durum Bilinmiyor";
-
-                if (level >= 90) return "Acil Boşaltılmalı";
-                if (level >= 70) return "Yakında Boşaltılmalı";
-                if (level >= 50) return "Orta Doluluk";
-                return "Boşaltma Gerekmiyor";
+            // Get device status with icons
+            const getDeviceStatusDisplay = (status) => {
+                const statusMap = {
+                    'Active': { text: "Aktif", icon: "fa-check-circle", color: "#10B981" },
+                    'Inactive': { text: "Pasif", icon: "fa-ban", color: "#6B7280" },
+                    'Maintenance': { text: "Bakımda", icon: "fa-wrench", color: "#F59E0B" },
+                    'Faulty': { text: "Arızalı", icon: "fa-exclamation-triangle", color: "#EF4444" }
+                };
+                return statusMap[status] || { text: status, icon: "fa-question", color: "#6B7280" };
             };
 
-            // Get fill status badge class
-            const getFillStatusBadge = (level) => {
-                if (!level) return "bg-gray-100 text-gray-800";
+            const deviceStatus = getDeviceStatusDisplay(bin.DeviceStatus);
 
-                if (level >= 90) return "bg-red-100 text-red-800";
-                if (level >= 70) return "bg-orange-100 text-orange-800";
-                if (level >= 50) return "bg-yellow-100 text-yellow-800";
-                return "bg-green-100 text-green-800";
-            };
-
-            // Get device status text
-            const getDeviceStatusText = (status) => {
-                switch (status) {
-                    case 'Active': return "Aktif";
-                    case 'Inactive': return "Pasif";
-                    case 'Maintenance': return "Bakımda";
-                    case 'Faulty': return "Arızalı";
-                    default: return status;
-                }
-            };
-
-            // Get device status color
-            const getDeviceStatusColor = (status) => {
-                switch (status) {
-                    case 'Active': return "bg-green-100 text-green-800";
-                    case 'Inactive': return "bg-gray-100 text-gray-800";
-                    case 'Maintenance': return "bg-yellow-100 text-yellow-800";
-                    case 'Faulty': return "bg-red-100 text-red-800";
-                    default: return "bg-gray-100 text-gray-800";
-                }
-            };
-
-            // Build sidebar HTML
+            // Build enhanced sensor list
             const sensorsList = bin.Sensors && bin.Sensors.length > 0
                 ? bin.Sensors.map(sensor => `
-                    <div class="bg-white dark:bg-gray-700 p-3 rounded-lg border-l-4 ${sensor.IsActive ? 'border-green-500' : 'border-red-500'} mb-2 transform transition-transform hover:translate-x-1">
+                    <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border-l-4 ${sensor.IsActive ? 'border-green-500' : 'border-red-500'} mb-2 transition-transform duration-300 hover:translate-x-1">
                         <div class="flex justify-between items-center mb-1">
                             <span class="font-medium text-gray-800 dark:text-white">${sensor.Type}</span>
                             <span class="${sensor.IsActive ? 'text-green-500' : 'text-red-500'} text-xs flex items-center">
@@ -1776,7 +1915,7 @@
                       <p class="text-sm text-gray-500 dark:text-gray-400">Sensör bulunamadı</p>
                    </div>`;
 
-            // Main sidebar content
+            // Enhanced sidebar content with better UX
             sidebar.innerHTML = `
                 <div class="h-full flex flex-col">
                     <div class="p-4 bg-primary-500 text-white flex justify-between items-center">
@@ -1789,8 +1928,8 @@
                     </div>
 
                     <div class="p-4 bg-white dark:bg-gray-800 shadow-md">
-                        <div class="${getDeviceStatusColor(bin.DeviceStatus)} px-3 py-1 inline-block rounded-full text-sm font-medium mb-2">
-                            ${getDeviceStatusText(bin.DeviceStatus)}
+                        <div class="bg-${deviceStatus.color.includes('10B981') ? 'green' : deviceStatus.color.includes('EF4444') ? 'red' : deviceStatus.color.includes('F59E0B') ? 'yellow' : 'gray'}-100 text-${deviceStatus.color.includes('10B981') ? 'green' : deviceStatus.color.includes('EF4444') ? 'red' : deviceStatus.color.includes('F59E0B') ? 'yellow' : 'gray'}-800 dark:bg-${deviceStatus.color.includes('10B981') ? 'green' : deviceStatus.color.includes('EF4444') ? 'red' : deviceStatus.color.includes('F59E0B') ? 'yellow' : 'gray'}-900/20 dark:text-${deviceStatus.color.includes('10B981') ? 'green' : deviceStatus.color.includes('EF4444') ? 'red' : deviceStatus.color.includes('F59E0B') ? 'yellow' : 'gray'}-300 px-3 py-1 inline-block rounded-full text-sm font-medium mb-2">
+                            ${deviceStatus.text}
                         </div>
                         <p class="text-gray-700 dark:text-gray-300 mb-2 flex items-start">
                             <i class="fas fa-map-marker-alt text-red-500 mr-2 mt-1"></i>
@@ -1799,103 +1938,84 @@
                     </div>
 
                     <div class="flex-1 overflow-y-auto p-4">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <!-- Doluluk Durumu -->
-                            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4">
-                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center">
-                                    <i class="fas fa-fill-drip mr-2 text-blue-500"></i> Doluluk Durumu
+                        <!-- Doluluk Durumu -->
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 mb-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                                    <i class="fas fa-chart-line mr-2 text-amber-500"></i>
+                                    Doluluk Durumu
                                 </h3>
-
-                                <div class="flex flex-col items-center">
-                                    <!-- Circular progress -->
-                                    <div class="relative w-32 h-32 mb-3">
-                                        <svg viewBox="0 0 36 36" class="w-full h-full">
-                                            <path class="stroke-current text-gray-200 dark:text-gray-700" fill="none" stroke-width="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                            <path style="stroke: ${getFillLevelColor(bin.FillLevel)}" fill="none" stroke-width="3.8" stroke-linecap="round" stroke-dasharray="${bin.FillLevel || 0}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831">
-                                                <animate attributeName="stroke-dasharray" from="0, 100" to="${bin.FillLevel || 0}, 100" dur="1s" fill="freeze" calcMode="spline" keyTimes="0; 1" keySplines="0.42 0 0.58 1" />
-                                            </path>
-                                            <text x="18" y="20.5" fill="${getFillLevelColor(bin.FillLevel)}" text-anchor="middle" font-size="${bin.FillLevel >= 100 ? '6' : '7'}" font-weight="bold">
-                                                ${bin.FillLevel || 0}%
-                                            </text>
-                                        </svg>
-                                    </div>
-
-                                    <!-- Fill status badge -->
-                                    <span class="${getFillStatusBadge(bin.FillLevel)} px-3 py-1 rounded-full text-sm font-medium mb-4">
-                                        ${getFillStatusText(bin.FillLevel)}
-                                    </span>
-
-                                    <!-- Fill predictions -->
-                                    <div class="w-full space-y-2 border-t border-gray-200 dark:border-gray-700 pt-3">
-                                        <div class="flex justify-between">
-                                            <span class="text-sm text-gray-600 dark:text-gray-400">Tahmini dolma tarihi:</span>
-                                            <span class="text-sm font-medium">${getEstimatedFillDate(bin.FillLevel)}</span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-sm text-gray-600 dark:text-gray-400">3 Gün Sonra Doluluk:</span>
-                                            <span class="text-sm font-medium" style="color: ${getFillLevelColor(getEstimatedFillRate(bin.FillLevel, 3))}">
-                                                %${getEstimatedFillRate(bin.FillLevel, 3)}
-                                            </span>
-                                        </div>
-                                        <div class="flex justify-between">
-                                            <span class="text-sm text-gray-600 dark:text-gray-400">7 Gün Sonra Doluluk:</span>
-                                            <span class="text-sm font-medium" style="color: ${getFillLevelColor(getEstimatedFillRate(bin.FillLevel, 7))}">
-                                                %${getEstimatedFillRate(bin.FillLevel, 7)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
 
-                            <!-- Genel Bilgiler -->
-                            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4">
-                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center">
-                                    <i class="fas fa-info-circle mr-2 text-green-500"></i> Genel Bilgiler
-                                </h3>
+                            <div class="flex flex-col items-center justify-center space-y-3 py-2">
+                                <div class="relative w-32 h-32">
+                                    <svg class="w-full h-full" viewBox="0 0 36 36">
+                                        <path class="stroke-current text-gray-200 dark:text-gray-700" fill="none" stroke-width="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                        <path style="stroke: ${getFillLevelColor(bin.FillLevel)}" fill="none" stroke-width="3.8" stroke-linecap="round"
+                                              stroke-dasharray="${(bin.FillLevel || 0) * 100 / 100}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831">
+                                            <animate attributeName="stroke-dasharray"
+                                                     from="0, 100"
+                                                     to="${(bin.FillLevel || 0) * 100 / 100}, 100"
+                                                     dur="1s"
+                                                     fill="freeze"
+                                                     calcMode="spline"
+                                                     keyTimes="0; 1"
+                                                     keySplines="0.42 0 0.58 1" />
+                                        </path>
+                                        <text x="18" y="20.5" class="fill-current font-bold text-gray-700 dark:text-gray-200" text-anchor="middle" font-size="${bin.FillLevel >= 100 ? '6' : '7'}">${bin.FillLevel || 0}%</text>
+                                    </svg>
+                                </div>
 
-                                <div class="space-y-2">
-                                    <div class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                                        <span class="text-sm text-gray-600 dark:text-gray-400">Oluşturulma Tarihi:</span>
-                                        <span class="text-sm font-medium">${new Date(bin.CreatedAt).toLocaleString('tr-TR')}</span>
+                                <div class="mt-2 space-y-2 w-full">
+                                    <div class="flex justify-between items-center border-t border-gray-200 dark:border-gray-700 pt-2">
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini dolma tarihi:</span>
+                                        <span class="font-medium text-gray-700 dark:text-gray-300">${getEstimatedFillDate(bin.FillLevel)}</span>
                                     </div>
-                                    <div class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">
-                                        <span class="text-sm text-gray-600 dark:text-gray-400">Güncellenme Tarihi:</span>
-                                        <span class="text-sm font-medium">${new Date(bin.UpdatedAt).toLocaleString('tr-TR')}</span>
-                                    </div>
-                                    <div class="flex justify-between py-2">
-                                        <span class="text-sm text-gray-600 dark:text-gray-400">Durum:</span>
-                                        <span class="text-sm font-medium" style="color: ${getFillLevelColor(bin.FillLevel)}">
-                                            ${bin.IsFilled ? 'Dolu' : 'Boş'}
+
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">3 Gün Sonra Doluluk:</span>
+                                        <span class="font-medium" style="color: ${getFillLevelColor(getEstimatedFillRate(bin.FillLevel, 3))}">
+                                            %${getEstimatedFillRate(bin.FillLevel, 3)}
                                         </span>
                                     </div>
+
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">7 Gün Sonra Doluluk:</span>
+                                        <span class="font-medium" style="color: ${getFillLevelColor(getEstimatedFillRate(bin.FillLevel, 7))}">
+                                            %${getEstimatedFillRate(bin.FillLevel, 7)}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                                    Son güncelleme: ${bin.UpdatedAt ? new Date(bin.UpdatedAt).toLocaleString('tr-TR') : '-'}
                                 </div>
                             </div>
                         </div>
 
                         <!-- Sensörler -->
-                        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 mb-4">
-                            <div class="flex justify-between items-center mb-3">
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 mb-4">
+                            <div class="flex justify-between items-center mb-4">
                                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                                    <i class="fas fa-microchip mr-2 text-purple-500"></i> Sensörler
+                                    <i class="fas fa-microchip mr-2 text-green-500"></i>
+                                    Sensörler
                                 </h3>
-                                <span class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 text-xs px-2 py-1 rounded-full">
+                                <span class="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-xs">
                                     ${bin.Sensors ? bin.Sensors.length : 0} adet
                                 </span>
                             </div>
 
-                            <div class="space-y-2">
+                            <div class="space-y-3 max-h-60 overflow-y-auto">
                                 ${sensorsList}
                             </div>
                         </div>
 
-                        <!-- Yakındaki Noktalar (örnek) -->
-                        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4">
+                        <!-- Yakındaki Noktalar -->
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center">
                                 <i class="fas fa-map-marked-alt mr-2 text-amber-500"></i> Yakındaki Atık Kutuları
                             </h3>
 
-                            <div class="space-y-2 max-h-48 overflow-y-auto">
-                                <!-- Burada haritada yakın olan kutuları gösterebilirsiniz, isterseniz örnek bir liste oluşturalım -->
+                            <div class="space-y-2 max-h-48 overflow-y-auto overflow-x-hidden">
                                 ${this.getNearbyBins(bin)}
                             </div>
                         </div>
@@ -1919,14 +2039,17 @@
         },
 
         /**
-         * Get nearby bins sorted by distance
+         * Get nearby bins sorted by distance with improved styling
          * @@param {object} currentBin - Current bin data
          * @@returns {string} - HTML for nearby bins list
          */
         getNearbyBins: function(currentBin) {
             // Find nearby bins based on actual distance from current bin
             if (!currentBin || !markers || markers.length === 0) {
-                return `<div class="text-center text-gray-500 dark:text-gray-400 p-3">Yakında atık kutusu bulunamadı.</div>`;
+                return `<div class="text-center text-gray-500 dark:text-gray-400 p-4">
+                          <i class="fas fa-map-marked-alt text-2xl mb-2 opacity-50"></i>
+                          <p>Yakında atık kutusu bulunamadı</p>
+                        </div>`;
             }
 
             try {
@@ -1949,7 +2072,7 @@
 
                     // Find the bin data for this marker
                     const bin = this.findBinById(marker.binId);
-                    if (bin) {
+                    if (bin && distance <= 2000) { // Only show bins within 2km
                         nearbyBins.push({
                             bin: bin,
                             distance: distance,
@@ -1958,43 +2081,85 @@
                     }
                 });
 
-                // Sort by distance and take the closest 3
+                // Sort by distance and take the closest 4
                 nearbyBins.sort((a, b) => a.distance - b.distance);
-                const closestBins = nearbyBins.slice(0, 3);
+                const closestBins = nearbyBins.slice(0, 4);
 
                 if (closestBins.length === 0) {
-                    return `<div class="text-center text-gray-500 dark:text-gray-400 p-3">Yakında atık kutusu bulunamadı.</div>`;
+                    return `<div class="text-center text-gray-500 dark:text-gray-400 p-4">
+                              <i class="fas fa-search-location text-2xl mb-2 opacity-50"></i>
+                              <p>2km içinde atık kutusu bulunamadı</p>
+                            </div>`;
                 }
 
-                // Create HTML for the closest bins
+                // Create HTML for the closest bins with improved styling
                 let html = '';
-                closestBins.forEach(item => {
+                closestBins.forEach((item, index) => {
                     const bin = item.bin;
                     const distanceInMeters = Math.round(item.distance);
                     let distanceText = distanceInMeters < 1000 ?
                         `${distanceInMeters}m` :
                         `${(distanceInMeters / 1000).toFixed(1)}km`;
 
-                    // Get color based on bin's fill level
-                    let fillColor = '#10B981'; // Default green
-                    if (bin.FillLevel >= 90) fillColor = '#EF4444'; // Red
-                    else if (bin.FillLevel >= 70) fillColor = '#F97316'; // Orange
-                    else if (bin.FillLevel >= 50) fillColor = '#F59E0B'; // Yellow
-                    else if (bin.FillLevel >= 30) fillColor = '#3B82F6'; // Blue
+                    // Get color and icon based on bin's fill level
+                    let fillColor = '#10B981';
+                    let fillIcon = 'fa-battery-quarter';
+                    let fillText = 'Az Dolu';
+
+                    if (bin.FillLevel >= 90) {
+                        fillColor = '#EF4444';
+                        fillIcon = 'fa-exclamation-triangle';
+                        fillText = 'Kritik';
+                    } else if (bin.FillLevel >= 70) {
+                        fillColor = '#F97316';
+                        fillIcon = 'fa-fill';
+                        fillText = 'Yüksek';
+                    } else if (bin.FillLevel >= 50) {
+                        fillColor = '#F59E0B';
+                        fillIcon = 'fa-fill-drip';
+                        fillText = 'Orta';
+                    } else if (bin.FillLevel >= 30) {
+                        fillColor = '#3B82F6';
+                        fillIcon = 'fa-battery-half';
+                        fillText = 'Az Dolu';
+                    }
 
                     html += `
-                        <div class="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 cursor-pointer mb-2"
-                             onclick="googleMapsInterop.focusOnBin('${bin.Id}')">
-                            <div class="flex items-center">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white mr-3" style="background-color: ${fillColor}">
-                                    <i class="fas fa-recycle"></i>
+                        <div class="group flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer mb-3
+                                   transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-md border border-gray-100 dark:border-gray-600 hover:border-gray-200 dark:hover:border-gray-500"
+                             onclick="googleMapsInterop.smoothFocusOnBin('${bin.Id}', ${index})"
+                             style="animation-delay: ${index * 100}ms">
+                            <div class="flex items-center min-w-0 flex-1">
+                                <div class="relative">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-sm transition-transform duration-300 group-hover:scale-110"
+                                         style="background: linear-gradient(135deg, ${fillColor}, ${this.darkenColor(fillColor, 15)})">
+                                        <i class="fas ${fillIcon} text-sm"></i>
+                                    </div>
+                                    ${bin.FillLevel >= 90 ? `
+                                        <div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse">
+                                            <div class="absolute inset-0 bg-red-500 rounded-full animate-ping"></div>
+                                        </div>
+                                    ` : ''}
                                 </div>
-                                <div>
-                                    <div class="font-medium">${bin.Label}</div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">${distanceText} - %${bin.FillLevel || 0} dolu</div>
+                                <div class="ml-3 min-w-0 flex-1">
+                                    <div class="font-semibold text-gray-900 dark:text-white truncate text-sm group-hover:text-${fillColor.includes('10B981') ? 'green' : fillColor.includes('EF4444') ? 'red' : fillColor.includes('F97316') ? 'orange' : fillColor.includes('F59E0B') ? 'yellow' : 'blue'}-600 transition-colors duration-300">
+                                        ${bin.Label}
+                                    </div>
+                                    <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 mt-1 space-x-2">
+                                        <span class="flex items-center">
+                                            <i class="fas fa-route mr-1"></i>
+                                            ${distanceText}
+                                        </span>
+                                        <span class="flex items-center" style="color: ${fillColor}">
+                                            <i class="fas fa-percentage mr-1"></i>
+                                            ${bin.FillLevel || 0}% ${fillText}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
-                            <i class="fas fa-chevron-right text-gray-400"></i>
+                            <div class="flex items-center text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-all duration-300 group-hover:translate-x-1">
+                                <i class="fas fa-arrow-right text-sm"></i>
+                            </div>
                         </div>
                     `;
                 });
@@ -2002,19 +2167,268 @@
                 return html;
             } catch (error) {
                 console.error("Error finding nearby bins:", error);
-                return `<div class="text-center text-gray-500 dark:text-gray-400 p-3">Yakın atık kutuları hesaplanırken hata oluştu.</div>`;
+                return `<div class="text-center text-gray-500 dark:text-gray-400 p-4">
+                          <i class="fas fa-exclamation-triangle text-2xl mb-2 text-red-400"></i>
+                          <p>Yakın atık kutuları hesaplanırken hata oluştu</p>
+                        </div>`;
             }
         },
 
         /**
-         * Find bin data by ID
-         * @@param {string} binId - Bin ID to find
-         * @@returns {object|null} - Bin data or null if not found
+         * Smooth focus on nearby bin with enhanced animation and delay
+         * @@param {string} binId - ID of the bin to focus on
+         * @@param {number} animationDelay - Animation delay for staggered effects
          */
-        findBinById: function(binId) {
-            if (!window.binsData || !binId) return null;
+        smoothFocusOnBin: function(binId, animationDelay = 0) {
+            const marker = markers.find(m => m.binId === binId);
+            if (!marker) return;
 
-            return window.binsData.find(bin => bin.Id === binId) || null;
+            // Add click feedback animation
+            const clickedElement = event.currentTarget;
+            if (clickedElement) {
+                clickedElement.style.transform = 'scale(0.98)';
+                setTimeout(() => {
+                    clickedElement.style.transform = '';
+                }, 150);
+            }
+
+            // Close current sidebar with smooth animation
+            this.closeBinSidebar();
+
+            setTimeout(() => {
+                const position = marker.getPosition();
+
+                // Enhanced smooth zoom and pan with easing
+                const currentZoom = mainMap.getZoom();
+                if (currentZoom < FOCUS_ZOOM) {
+                    this.smoothZoomTo(mainMap, FOCUS_ZOOM);
+                }
+
+                // Smooth pan with custom timing
+                this.smoothPanTo(mainMap, {
+                    lat: position.lat(),
+                    lng: position.lng()
+                });
+
+                // Enhanced marker highlight with multiple effects
+                setTimeout(() => {
+                    // Bounce animation
+                    marker.setAnimation(google.maps.Animation.BOUNCE);
+
+                    // Scale animation
+                    const originalIcon = marker.getIcon();
+                    marker.setIcon(this.getBinMarkerIcon(
+                        marker.binData.DeviceStatus,
+                        marker.binData.FillLevel,
+                        1,
+                        2.0
+                    ));
+
+                    setTimeout(() => {
+                        marker.setAnimation(null);
+                        marker.setIcon(originalIcon);
+
+                        // Trigger click to open sidebar
+                        google.maps.event.trigger(marker, 'click');
+                    }, 1000);
+                }, 400);
+
+            }, 300 + (animationDelay * 50)); // Staggered animation delay
+        },
+
+        /**
+         * Smooth zoom animation
+         * @@param {google.maps.Map} map - Map object
+         * @@param {number} targetZoom - Target zoom level
+         */
+        smoothZoomTo: function(map, targetZoom) {
+            const currentZoom = map.getZoom();
+            if (currentZoom === targetZoom) return;
+
+            const zoomStep = currentZoom < targetZoom ? 1 : -1;
+            let zoom = currentZoom;
+
+            const zoomInterval = setInterval(() => {
+                zoom += zoomStep;
+                map.setZoom(zoom);
+
+                if (zoom === targetZoom) {
+                    clearInterval(zoomInterval);
+                }
+            }, 150);
+        },
+
+        /**
+         * Smoothly pan to a location with enhanced easing
+         * @@param {google.maps.Map} map - Map object
+         * @@param {google.maps.LatLng} position - Position to pan to
+         */
+        smoothPanTo: function (map, position) {
+            if (!position || !isFinite(position.lat) || !isFinite(position.lng)) {
+                console.error("Invalid coordinates for smoothPanTo:", position);
+                return;
+            }
+
+            const currentCenter = map.getCenter();
+            const currentLat = currentCenter.lat();
+            const currentLng = currentCenter.lng();
+            const targetLat = position.lat;
+            const targetLng = position.lng;
+
+            if (!isFinite(currentLat) || !isFinite(currentLng) ||
+                !isFinite(targetLat) || !isFinite(targetLng)) {
+                console.error("Invalid coordinate calculation in smoothPanTo");
+                return;
+            }
+
+            // Enhanced animation with better easing
+            const frames = 60;
+            const duration = 1200;
+            let frame = 0;
+
+            const animate = () => {
+                if (frame >= frames) {
+                    try {
+                        map.panTo(position);
+                    } catch (e) {
+                        console.error("Error in final panTo:", e);
+                    }
+                    return;
+                }
+
+                // Cubic bezier easing (ease-in-out)
+                const t = frame / frames;
+                const progress = t < 0.5 ?
+                    4 * t * t * t :
+                    1 - Math.pow(-2 * t + 2, 3) / 2;
+
+                const lat = currentLat + (targetLat - currentLat) * progress;
+                const lng = currentLng + (targetLng - currentLng) * progress;
+
+                if (!isFinite(lat) || !isFinite(lng)) {
+                    console.error("Animation calculated invalid coordinates:", { lat, lng });
+                    return;
+                }
+
+                try {
+                    map.panTo({ lat, lng });
+                } catch (e) {
+                    console.error("Error during animation panTo:", e);
+                    return;
+                }
+
+                frame++;
+                requestAnimationFrame(animate);
+            };
+
+            animate();
+        },
+
+        /**
+         * Show waste bins on the location picker map (for reference)
+         * @@param {string} binsJson - JSON string of waste bin data
+         */
+        showBinsOnPickerMap: function (binsJson) {
+            if (!locationPickerMap) {
+                console.error("Location picker map not initialized");
+                return;
+            }
+
+            try {
+                const bins = JSON.parse(binsJson);
+
+                bins.forEach(bin => {
+                    if (bin.Latitude && bin.Longitude) {
+                        const position = { lat: bin.Latitude, lng: bin.Longitude };
+
+                        // Create marker with semi-transparent icon
+                        const marker = new google.maps.Marker({
+                            position: position,
+                            map: locationPickerMap,
+                            title: bin.Label,
+                            icon: this.getBinMarkerIcon(bin.DeviceStatus, bin.FillLevel, 0.6, 1.0),
+                            clickable: false
+                        });
+                    }
+                });
+
+            } catch (error) {
+                console.error("Error showing bins on picker map:", error);
+            }
+        },
+
+        /**
+         * Focus on a specific bin in the main map
+         * @@param {string} binId - ID of the bin to focus on
+         */
+        focusOnBin: function (binId) {
+            if (!binId) {
+                console.error("Invalid binId provided to focusOnBin");
+                return;
+            }
+
+            const marker = markers.find(m => m.binId === binId);
+
+            if (!marker) {
+                console.error("No marker found with binId:", binId);
+                return;
+            }
+
+            try {
+                const position = marker.getPosition();
+
+                if (!position || !isFinite(position.lat()) || !isFinite(position.lng())) {
+                    console.error("Invalid marker position:", position);
+                    return;
+                }
+
+                // Enhanced focus animation
+                this.smoothZoomTo(mainMap, FOCUS_ZOOM);
+                mainMap.setTilt(DEFAULT_TILT);
+
+                this.smoothPanTo(mainMap, {
+                    lat: position.lat(),
+                    lng: position.lng()
+                });
+
+                // Enhanced marker animation
+                marker.setAnimation(google.maps.Animation.BOUNCE);
+                setTimeout(() => {
+                    marker.setAnimation(null);
+                    google.maps.event.trigger(marker, 'click');
+                }, 1500);
+
+            } catch (e) {
+                console.error("Error in focusOnBin:", e);
+            }
+        },
+
+        /**
+         * Reset the map state
+         */
+        resetMapState: function () {
+            if (currentInfoWindow) {
+                currentInfoWindow.close();
+                currentInfoWindow = null;
+            }
+
+            this.closeBinSidebar();
+            selectedBinId = null;
+        },
+
+        /**
+         * Clear all markers from the map
+         */
+        clearMarkers: function () {
+            if (markerCluster) {
+                markerCluster.clearMarkers();
+                markerCluster = null;
+            }
+
+            markers.forEach(marker => {
+                marker.setMap(null);
+            });
+            markers = [];
         },
 
         /**
@@ -2039,98 +2453,134 @@
         },
 
         /**
-         * Simulate focusing on a nearby bin
-         * @@param {string} binId - ID of the nearby bin (simulated)
+         * Find bin data by ID
+         * @@param {string} binId - Bin ID to find
+         * @@returns {object|null} - Bin data or null if not found
          */
-        focusOnNearbyBin: function(binId) {
-            // In a real app, you would look up the actual bin
-            // For this demo, we'll just show an alert
-            alert(`Bu özellik demo amaçlıdır. Gerçek uygulamada ${binId} ID'li kutuya odaklanacaktır.`);
+        findBinById: function(binId) {
+            if (!window.binsData || !binId) return null;
+            return window.binsData.find(bin => bin.Id === binId) || null;
         },
 
         /**
-         * Get marker icon based on bin status and fill level
+         * Get enhanced marker icon based on bin status and fill level
          * @@param {string} status - Bin status
          * @@param {number} fillLevel - Fill level percentage
          * @@param {number} opacity - Icon opacity (0-1)
+         * @@param {number} scale - Icon scale multiplier
          * @@returns {object} - Marker icon configuration
          */
-        getBinMarkerIcon: function (status, fillLevel, opacity = 1) {
-            // Define colors based on status and fill level
-            let fillColor;
-            let strokeColor;
-
+        getBinMarkerIcon: function (status, fillLevel, opacity = 1, scale = 1.5) {
             // Determine colors based on fill level
+            let fillColor, strokeColor;
+
             if (fillLevel >= 90) {
-                fillColor = '#EF4444'; // Red for 90-100%
+                fillColor = '#EF4444'; // Red
                 strokeColor = '#B91C1C';
             } else if (fillLevel >= 70) {
-                fillColor = '#F97316'; // Orange for 70-90%
+                fillColor = '#F97316'; // Orange
                 strokeColor = '#C2410C';
             } else if (fillLevel >= 50) {
-                fillColor = '#F59E0B'; // Amber for 50-70%
+                fillColor = '#F59E0B'; // Amber
                 strokeColor = '#B45309';
             } else if (fillLevel >= 30) {
-                fillColor = '#3B82F6'; // Blue for 30-50%
+                fillColor = PRIMARY_COLOR; // Blue
                 strokeColor = '#1D4ED8';
             } else {
-                fillColor = '#10B981'; // Green for 0-30%
+                fillColor = '#10B981'; // Green
                 strokeColor = '#059669';
             }
 
             // Adjust for status
             if (status === 'Inactive') {
-                fillColor = '#9CA3AF'; // Gray
+                fillColor = '#9CA3AF';
                 strokeColor = '#6B7280';
             } else if (status === 'Maintenance') {
-                // Make the color more yellowish
                 fillColor = '#FBBF24';
                 strokeColor = '#D97706';
             } else if (status === 'Faulty') {
-                // Keep red but apply a pattern
                 fillColor = '#F87171';
                 strokeColor = '#DC2626';
             }
 
-            // Create SVG for pin-style trash bin icon - improved design
+            const size = 32 * scale;
+            const iconSize = 16 * scale;
+
+            // Enhanced SVG with better design and animations
             const svg = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="48">
-                    <!-- Pin Top -->
-                    <circle cx="12" cy="10" r="10" fill="${fillColor}" stroke="${strokeColor}" stroke-width="1.5" opacity="${opacity}" />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size + 16} ${size + 20}" width="${size + 16}" height="${size + 20}">
+                    <defs>
+                        <filter id="shadow-${status}-${fillLevel}" x="-50%" y="-50%" width="200%" height="200%">
+                            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3"/>
+                        </filter>
+                        <radialGradient id="grad-${status}-${fillLevel}" cx="50%" cy="30%" r="70%">
+                            <stop offset="0%" style="stop-color:${fillColor};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${strokeColor};stop-opacity:1" />
+                        </radialGradient>
+                        ${fillLevel >= 90 ? `
+                        <animate attributeName="r" values="0;12;0" dur="2s" repeatCount="indefinite" begin="0s"/>
+                        ` : ''}
+                    </defs>
 
-                    <!-- Pin Bottom -->
-                    <path d="M12,20 L16,32 L8,32 Z" fill="${fillColor}" stroke="${strokeColor}" stroke-width="1" opacity="${opacity}" />
+                    <!-- Pulse ring for critical bins -->
+                    ${fillLevel >= 90 ? `
+                    <circle cx="${(size + 16) / 2}" cy="${size / 2 + 8}" r="0" fill="${fillColor}" opacity="0.3">
+                        <animate attributeName="r" values="0;${size/2 + 8};0" dur="2s" repeatCount="indefinite"/>
+                        <animate attributeName="opacity" values="0.3;0;0.3" dur="2s" repeatCount="indefinite"/>
+                    </circle>
+                    ` : ''}
 
-                    <!-- Trash Bin Icon -->
-                    <g transform="translate(6, 5) scale(0.6)">
-                        <path d="M4,6 L4,18 C4,19.1 4.9,20 6,20 L14,20 C15.1,20 16,19.1 16,18 L16,6" fill="white" stroke="white" stroke-width="1" />
-                        <path d="M3,6 L17,6" stroke="white" stroke-width="2" stroke-linecap="round" />
-                        <path d="M8,6 L8,4 C8,3.4 8.4,3 9,3 L11,3 C11.6,3 12,3.4 12,4 L12,6" fill="white" stroke="white" stroke-width="1" />
+                    <!-- Main pin circle -->
+                    <circle cx="${(size + 16) / 2}" cy="${size / 2 + 8}" r="${size / 2}"
+                            fill="url(#grad-${status}-${fillLevel})"
+                            stroke="white"
+                            stroke-width="3"
+                            opacity="${opacity}"
+                            filter="url(#shadow-${status}-${fillLevel})"/>
+
+                    <!-- Pin point -->
+                    <path d="M${(size + 16) / 2},${size + 8} L${(size + 16) / 2 + 6},${size + 18} L${(size + 16) / 2 - 6},${size + 18} Z"
+                          fill="url(#grad-${status}-${fillLevel})"
+                          stroke="white"
+                          stroke-width="2"
+                          opacity="${opacity}"/>
+
+                    <!-- Trash bin icon -->
+                    <g transform="translate(${(size + 16) / 2 - iconSize / 2}, ${size / 2 + 8 - iconSize / 2}) scale(${iconSize / 16})">
+                        <!-- Bin body -->
+                        <rect x="2" y="5" width="12" height="9" rx="1" fill="white" opacity="0.9"/>
+                        <!-- Bin lid -->
+                        <rect x="1" y="4" width="14" height="2" rx="1" fill="white" opacity="0.9"/>
+                        <!-- Handle -->
+                        <rect x="6" y="2" width="4" height="3" rx="1" fill="white" opacity="0.7"/>
 
                         <!-- Fill level indicator -->
-                        <rect x="5" y="${20 - (fillLevel / 10)}" width="10" height="${fillLevel / 10}" fill="white" opacity="0.8" />
+                        <rect x="3" y="${14 - (fillLevel / 100) * 8}" width="10" height="${(fillLevel / 100) * 8}"
+                              fill="${fillColor}" opacity="0.3" rx="0.5"/>
+
+                        <!-- Recycling symbol -->
+                        <g transform="translate(8, 9) scale(0.4)" fill="white" opacity="0.8">
+                            <path d="M0,-3 L-1.5,-1 L1.5,-1 Z M-3,1.5 L-4.5,0 L-1.5,0 Z M3,1.5 L1.5,0 L4.5,0 Z"/>
+                        </g>
                     </g>
 
-                    <!-- Status indicators -->
-                    ${status === 'Faulty' ? '<circle cx="18" cy="5" r="3" fill="#DC2626" stroke="white" stroke-width="1" />' : ''}
-                    ${status === 'Maintenance' ? '<circle cx="18" cy="5" r="3" fill="#D97706" stroke="white" stroke-width="1" />' : ''}
-                    ${status === 'Inactive' ? '<circle cx="18" cy="5" r="3" fill="#6B7280" stroke="white" stroke-width="1" />' : ''}
-
-                    <!-- Recycling symbol -->
-                    <g transform="translate(12, 10) scale(0.3)">
-                        <path d="M0,-9 L-2,-5 L2,-5 Z M-7.8,4.5 L-9.8,0.5 L-5.8,0.5 Z M7.8,4.5 L5.8,0.5 L9.8,0.5 Z" fill="white" stroke="white" stroke-width="0.5" />
-                    </g>
+                    <!-- Status indicator -->
+                    ${status === 'Faulty' ? `<circle cx="${size + 8}" cy="8" r="6" fill="#DC2626" stroke="white" stroke-width="2"/>
+                                            <path d="M${size + 5},5 L${size + 11},11 M${size + 11},5 L${size + 5},11" stroke="white" stroke-width="2" stroke-linecap="round"/>` : ''}
+                    ${status === 'Maintenance' ? `<circle cx="${size + 8}" cy="8" r="6" fill="#D97706" stroke="white" stroke-width="2"/>
+                                                  <path d="M${size + 5},8 L${size + 11},8 M${size + 8},5 L${size + 8},11" stroke="white" stroke-width="2" stroke-linecap="round"/>` : ''}
+                    ${status === 'Inactive' ? `<circle cx="${size + 8}" cy="8" r="6" fill="#6B7280" stroke="white" stroke-width="2"/>
+                                              <circle cx="${size + 8}" cy="8" r="2" fill="white"/>` : ''}
                 </svg>
             `;
 
-            // Convert SVG to base64 data URL
             const svgBase64 = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
 
             return {
                 url: svgBase64,
-                scaledSize: new google.maps.Size(32, 48),
-                anchor: new google.maps.Point(16, 40),
-                labelOrigin: new google.maps.Point(12, -8)
+                scaledSize: new google.maps.Size(size + 16, size + 20),
+                anchor: new google.maps.Point((size + 16) / 2, size + 18),
+                labelOrigin: new google.maps.Point((size + 16) / 2, -8)
             };
         }
     };
@@ -2139,13 +2589,123 @@
      * Reset filter dropdowns (called from Blazor)
      */
     window.resetFilterDropdowns = function () {
-        // Reset select elements for filters
         const statusDropdown = document.querySelector('select[onchange*="FilterByStatus"]');
         const fillLevelDropdown = document.querySelector('select[onchange*="FilterByFillLevel"]');
 
         if (statusDropdown) statusDropdown.value = '';
         if (fillLevelDropdown) fillLevelDropdown.value = '';
     };
+
+    /**
+     * Enhanced search functionality for Blazor integration has been removed.
+     * Map search feature is no longer available.
+     *
+     * To fix search functionality in Blazor table, use this pattern:
+     *
+     * HTML:
+     * <input type="text"
+     *        placeholder="Etiket veya adres ara..."
+     *        class="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+     *        @@bind="searchText"
+     *        @@bind:event="oninput"
+     *        @@oninput="OnSearchChanged" />
+     *
+     * C#:
+     * private void OnSearchChanged(ChangeEventArgs e)
+     * {
+     *     searchText = e.Value?.ToString() ?? string.Empty;
+     *     ApplyFilters();
+     * }
+     *
+     * private void ApplyFilters()
+     * {
+     *     if (wasteBins == null)
+     *     {
+     *         filteredBins = new List<ResultWasteBinDto>();
+     *         return;
+     *     }
+     *
+     *     var query = wasteBins.AsEnumerable();
+     *
+     *     // Apply search text with Turkish culture support
+     *     if (!string.IsNullOrEmpty(searchText))
+     *     {
+     *         var search = searchText.ToLower(new CultureInfo("tr-TR"));
+     *         query = query.Where(b =>
+     *             (b.Label?.ToLower(new CultureInfo("tr-TR")).Contains(search) == true) ||
+     *             (b.Address?.ToLower(new CultureInfo("tr-TR")).Contains(search) == true));
+     *     }
+     *
+     *     // Apply other filters...
+     *     filteredBins = query.ToList();
+     *     StateHasChanged();
+     * }
+     *
+     * For the "Yakındaki Atık Kutuları" section, update the container as follows:
+     *
+     * <!-- Yakındaki Noktalar -->
+     * <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
+     *     <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center">
+     *         <i class="fas fa-map-marked-alt mr-2 text-amber-500"></i> Yakındaki Atık Kutuları
+     *     </h3>
+     *
+     *     <!-- Add overflow-x-hidden to prevent horizontal scrolling -->
+     *     <div class="space-y-2 max-h-48 overflow-y-auto overflow-x-hidden">
+     *         @* JS-generated list content *@
+     *     </div>
+     * </div>
+     *
+     * Enhanced Dark Mode Styles:
+     * Dark mode now provides a much darker map experience with:
+     * - Very dark backgrounds (#0f0f0f)
+     * - Dark roads and highways
+     * - Dark water bodies (#0a1a2a)
+     * - Reduced visual clutter
+     * - Better contrast for markers and text
+     *
+     * Additional CSS for smooth animations (add to your main CSS file):
+     *
+     * .group:hover .group-hover\:scale-110 {
+     *     transform: scale(1.1);
+     * }
+     *
+     * .group:hover .group-hover\:translate-x-1 {
+     *     transform: translateX(0.25rem);
+     * }
+     *
+     * .transition-all {
+     *     transition-property: all;
+     *     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+     * }
+     *
+     * .duration-300 {
+     *     transition-duration: 300ms;
+     * }
+     *
+     * .ease-out {
+     *     transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+     * }
+     *
+     * @@keyframes pulse {
+     *     0%, 100% { opacity: 1; }
+     *     50% { opacity: 0.5; }
+     * }
+     *
+     * @@keyframes ping {
+     *     75%, 100% {
+     *         transform: scale(2);
+     *         opacity: 0;
+     *     }
+     * }
+     *
+     * .animate-pulse {
+     *     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+     * }
+     *
+     * .animate-ping {
+     *     animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+     * }
+     */
 </script>
 
 @code {
@@ -2980,6 +3540,6 @@
                     }
                 }
             }
-        }
+        }   
     }
 }

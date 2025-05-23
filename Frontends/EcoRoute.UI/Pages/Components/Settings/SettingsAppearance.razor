@@ -1,6 +1,7 @@
 ﻿@using EcoRoute.DtoLayer.SettingDtos
 @using Microsoft.AspNetCore.Components
 @using static EcoRoute.UI.Pages.Settings
+@inject IJSRuntime JS
 
 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md col-span-1">
     <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-4 flex items-center">
@@ -12,7 +13,7 @@
         <div class="flex justify-between items-center">
             <label class="text-gray-700 dark:text-gray-300 font-medium">Karanlık Mod</label>
             <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" @bind="Settings.DarkMode" class="sr-only peer">
+                <input type="checkbox" @bind="Settings.DarkMode" @bind:after="DarkModeChanged" class="sr-only peer">
                 <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
             </label>
         </div>
@@ -65,27 +66,35 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Sistemin ana rengini değiştir</p>
     </div>
 
-    <!-- Yazı Boyutu -->
+    <!-- Font Type Selection -->
     <div class="mb-6">
-        <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Yazı Boyutu</label>
-        <div class="flex items-center">
-            <span class="text-gray-500 dark:text-gray-400 text-sm mr-2">Küçük</span>
-            <input type="range" min="12" max="20" step="1"
-                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-                   @bind="Settings.FontSize">
-            <span class="text-gray-500 dark:text-gray-400 text-sm ml-2">Büyük</span>
+        <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Yazı Tipi</label>
+        <div class="relative">
+            <select @bind="Settings.FontTypeId" @bind:after="FontTypeChanged"
+                    class="w-full h-10 px-3 pr-8 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-800 dark:text-white bg-white dark:bg-gray-700 appearance-none focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <option value="">- Yazı Tipi Seçin -</option>
+                @foreach (var fontType in FontTypes)
+                {
+                    <option value="@fontType.Id">@fontType.Name</option>
+                }
+            </select>
+            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                <i class="fas fa-chevron-down text-gray-400"></i>
+            </div>
         </div>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sistem yazı boyutunu ayarla (şu anki: @Settings.FontSize px)</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Uygulama için kullanılacak yazı tipini seçin</p>
     </div>
 
     <!-- Animasyon Efektleri -->
     <div class="mb-0">
         <div class="flex justify-between items-center">
             <label class="text-gray-700 dark:text-gray-300 font-medium">Animasyon Efektleri</label>
-            <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" @bind="Settings.EnableAnimations" class="sr-only peer">
-                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
-            </label>
+            <div class="relative">
+                <label class="switch">
+                    <input type="checkbox" @bind="Settings.EnableAnimations" @bind:after="NotifySettingChanged" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+                </label>
+            </div>
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sistem animasyonlarını etkinleştir/devre dışı bırak</p>
     </div>
@@ -95,6 +104,50 @@
     [Parameter] public SettingsViewModel Settings { get; set; }
     [Parameter] public List<ThemeColorDto> ThemeColors { get; set; }
     [Parameter] public Dictionary<string, string> SelectedShades { get; set; }
+    [Parameter] public List<FontTypeDto> FontTypes { get; set; } = new List<FontTypeDto>();
     [Parameter] public EventCallback<ThemeColorDto> OnColorSelect { get; set; }
-    [Parameter] public EventCallback OnChange { get; set; } // ileriye dönük
+    [Parameter] public EventCallback OnSettingChanged { get; set; }
+
+    private async Task NotifySettingChanged()
+    {
+        if (OnSettingChanged.HasDelegate)
+        {
+            await OnSettingChanged.InvokeAsync();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Apply the saved font on component load
+            if (Settings.FontTypeId != null)
+            {
+                var selectedFont = FontTypes.FirstOrDefault(f => f.Id == Settings.FontTypeId);
+                if (selectedFont != null)
+                {
+                    await JS.InvokeVoidAsync("fontManager.applyFont", selectedFont.CssValue);
+                }
+            }
+        }
+    }
+    private async Task FontTypeChanged()
+    {
+        // Get the selected font CSS value
+        var selectedFont = FontTypes.FirstOrDefault(f => f.Id == Settings.FontTypeId);
+        if (selectedFont != null)
+        {
+            // Apply the font via JavaScript
+            await JS.InvokeVoidAsync("fontManager.applyFont", selectedFont.CssValue);
+        }
+
+        // Notify parent that a setting changed
+        await NotifySettingChanged();
+    }
+    private async Task DarkModeChanged()
+    {
+        // Apply dark mode immediately
+        await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(Settings.DarkMode ? "add" : "remove")}('dark')");
+        await NotifySettingChanged();
+    }
 }

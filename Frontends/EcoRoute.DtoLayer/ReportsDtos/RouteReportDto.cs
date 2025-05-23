@@ -12,8 +12,8 @@ namespace EcoRoute.DtoLayer.ReportsDtos
         public string DriverId { get; set; }
         public string DriverName { get; set; }
         public int Status { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public DateTime StartTime { get; set; }
         public double TotalDistanceKm { get; set; }
-        public double CO2EmissionKg { get; set; }
+        public double EstimatedCO2Kg { get; set; }
     }
 }

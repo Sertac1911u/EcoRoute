@@ -2,75 +2,191 @@
 
 @if (IsOpen && User != null)
 {
-    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full shadow-xl relative modal-animation">
-            <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-                <h3 class="text-xl font-bold text-gray-800 dark:text-white">Kullanıcı Bilgileri</h3>
-                <button @onclick="OnClose" class="text-gray-400 hover:text-gray-600 transition-colors">
-                    <i class="fas fa-times"></i>
-                </button>
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl max-w-2xl w-full shadow-2xl border border-white/20 dark:border-gray-700/50 overflow-hidden transform animate-slideIn">
+            <!-- Header -->
+            <div class="relative bg-gradient-to-r from-primary-500 to-primary-600 px-8 py-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <div class="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                            <i class="fas fa-user text-white text-xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white">Kullanıcı Detayları</h3>
+                            <p class="text-primary-100 text-sm">Detaylı kullanıcı bilgileri</p>
+                        </div>
+                    </div>
+                    <button @onclick="OnClose"
+                            class="p-2 text-white/80 hover:text-white hover:bg-white/20 rounded-lg transition-all duration-200 transform hover:scale-110">
+                        <i class="fas fa-times text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Decorative Elements -->
+                <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+                <div class="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full translate-y-12 -translate-x-12"></div>
             </div>
-            <div class="p-6">
-                <div class="flex items-center mb-6">
-                    <div class="relative mr-4">
-                        <img class="h-24 w-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700"
-                             src="https://picsum.photos/200?random=@User.Id" alt="@User.Name's profile" />
-                        <div class="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-white dark:border-gray-800"></div>
+
+            <!-- Content -->
+            <div class="p-8">
+                <!-- User Profile Section -->
+                <div class="flex flex-col lg:flex-row lg:items-start gap-8 mb-8">
+                    <!-- Avatar Section -->
+                    <div class="flex flex-col items-center lg:items-start">
+                        <div class="relative mb-4">
+                            <div class="w-24 h-24 bg-gradient-to-r from-primary-400 to-primary-500 rounded-2xl flex items-center justify-center shadow-xl">
+                                <span class="text-white font-bold text-2xl">
+                                    @(User.Name?.FirstOrDefault())@(User.Surname?.FirstOrDefault())
+                                </span>
+                            </div>
+                            <div class="absolute -bottom-2 -right-2 w-8 h-8 @(User.IsActive ? "bg-green-400" : "bg-gray-400") border-4 border-white dark:border-gray-800 rounded-full flex items-center justify-center">
+                                <i class="fas @(User.IsActive ? "fa-check" : "fa-times") text-white text-xs"></i>
+                            </div>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full @(User.IsActive ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" : "bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400")">
+                            <div class="w-2 h-2 rounded-full @(User.IsActive ? "bg-green-400" : "bg-gray-400")"></div>
+                            <span class="text-sm font-medium">@(User.IsActive ? "Aktif Kullanıcı" : "Pasif Kullanıcı")</span>
+                        </div>
                     </div>
-                    <div>
-                        <h4 class="text-lg font-semibold text-gray-800 dark:text-white">@User.Name @User.Surname</h4>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">@User.Email</p>
-                        <div class="flex flex-wrap mt-2 gap-1">
-                            @foreach (var role in User.Roles)
-                            {
-                                <span class="@GetRoleBadgeClass(role) px-2 py-1 text-xs rounded-full">@role</span>
-                            }
+
+                    <!-- User Info -->
+                    <div class="flex-1">
+                        <div class="mb-6">
+                            <h4 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                                @User.Name @User.Surname
+                            </h4>
+                            <p class="text-gray-600 dark:text-gray-400 text-lg">@@@User.UserName</p>
+                        </div>
+
+                        <!-- Roles -->
+                        <div class="mb-6">
+                            <p class="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Kullanıcı Rolleri</p>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach (var role in User.Roles)
+                                {
+                                    <span class="@GetRoleBadgeClass(role) px-4 py-2 rounded-xl font-medium shadow-sm">
+                                        <i class="@GetRoleIcon(role) mr-2"></i>
+                                        @role
+                                    </span>
+                                }
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-4">
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400 font-medium">Kullanıcı Adı:</span>
-                        <span class="text-gray-800 dark:text-gray-200">@User.UserName</span>
+                <!-- Details Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Contact Information -->
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/10 dark:to-blue-800/10 rounded-xl p-6 border border-blue-200/50 dark:border-blue-700/30">
+                        <h5 class="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-4 flex items-center">
+                            <i class="fas fa-address-card mr-2"></i>
+                            İletişim Bilgileri
+                        </h5>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="p-2 bg-blue-200 dark:bg-blue-800/50 rounded-lg">
+                                    <i class="fas fa-envelope text-blue-600 dark:text-blue-400 text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-blue-700 dark:text-blue-300">E-posta</p>
+                                    <p class="text-blue-900 dark:text-blue-100 break-all">@User.Email</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start space-x-3">
+                                <div class="p-2 bg-blue-200 dark:bg-blue-800/50 rounded-lg">
+                                    <i class="fas fa-phone text-blue-600 dark:text-blue-400 text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-blue-700 dark:text-blue-300">Telefon</p>
+                                    <p class="text-blue-900 dark:text-blue-100">
+                                        @(string.IsNullOrEmpty(User.PhoneNumber) ? "Belirtilmemiş" : User.PhoneNumber)
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400 font-medium">Son Giriş:</span>
-                        <span class="text-gray-800 dark:text-gray-200">@(User.LastLoginDate?.ToString("dd.MM.yyyy HH:mm") ?? "Henüz giriş yapmamış")</span>
-                    </div>
+                    <!-- Account Information -->
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/10 dark:to-purple-800/10 rounded-xl p-6 border border-purple-200/50 dark:border-purple-700/30">
+                        <h5 class="text-lg font-semibold text-purple-800 dark:text-purple-300 mb-4 flex items-center">
+                            <i class="fas fa-user-cog mr-2"></i>
+                            Hesap Bilgileri
+                        </h5>
+                        <div class="space-y-4">
+                            <div class="flex items-start space-x-3">
+                                <div class="p-2 bg-purple-200 dark:bg-purple-800/50 rounded-lg">
+                                    <i class="fas fa-calendar-plus text-purple-600 dark:text-purple-400 text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-purple-700 dark:text-purple-300">Kayıt Tarihi</p>
+                                    <p class="text-purple-900 dark:text-purple-100">
+                                        @(User.RegistrationDate?.ToString("dd MMMM yyyy") ?? "Bilinmiyor")
+                                    </p>
+                                </div>
+                            </div>
 
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400 font-medium">Kayıt Tarihi:</span>
-                        <span class="text-gray-800 dark:text-gray-200">@(User.RegistrationDate?.ToString("dd.MM.yyyy") ?? "Bilinmiyor")</span>
-                    </div>
-
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400 font-medium">Durum:</span>
-                        <span class="@(User.IsActive ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400")">
-                            @(User.IsActive ? "Aktif" : "Deaktif")
-                        </span>
-                    </div>
-
-                    <div class="flex justify-between">
-                        <span class="text-gray-600 dark:text-gray-400 font-medium">Telefon:</span>
-                        <span class="text-gray-800 dark:text-gray-200">@(string.IsNullOrEmpty(User.PhoneNumber) ? "Belirtilmemiş" : User.PhoneNumber)</span>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                        <span class="text-gray-600 dark:text-gray-400 font-medium">Yetkiler:</span>
-                        <div class="flex flex-wrap justify-end gap-1">
-                            @foreach (var role in User.Roles)
-                            {
-                                <span class="@GetRoleBadgeClass(role)">@role</span>
-                            }
+                            <div class="flex items-start space-x-3">
+                                <div class="p-2 bg-purple-200 dark:bg-purple-800/50 rounded-lg">
+                                    <i class="fas fa-clock text-purple-600 dark:text-purple-400 text-sm"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-purple-700 dark:text-purple-300">Son Giriş</p>
+                                    <p class="text-purple-900 dark:text-purple-100">
+                                        @(User.LastLoginDate?.ToString("dd MMMM yyyy HH:mm") ?? "Henüz giriş yapmamış")
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-6 flex justify-end">
-                    <button class="bg-primary-500 text-white px-4 py-2 rounded hover:bg-primary-600 transition-colors" @onclick="OnClose">
-                        Kapat
+                <!-- Activity Summary -->
+                <div class="mt-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700/30 dark:to-gray-600/30 rounded-xl p-6 border border-gray-200/50 dark:border-gray-600/30">
+                    <h5 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        Hesap Özeti
+                    </h5>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                                @User.Roles.Count
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Aktif Rol</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+                                @((DateTime.Now - (User.RegistrationDate ?? DateTime.Now)).Days)
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Üyelik Günü</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold @(User.IsActive ? "text-green-600 dark:text-green-400" : "text-gray-600 dark:text-gray-400")">
+                                @(User.IsActive ? "✓" : "✗")
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Durum</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                                @(User.LastLoginDate.HasValue ? "✓" : "✗")
+                            </div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">Giriş Yaptı</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-8 py-6 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200/50 dark:border-gray-600/50">
+                <div class="flex justify-end">
+                    <button class="group px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 font-medium"
+                            @onclick="OnClose">
+                        <div class="flex items-center space-x-2">
+                            <span>Kapat</span>
+                            <i class="fas fa-times group-hover:rotate-90 transition-transform duration-300"></i>
+                        </div>
                     </button>
                 </div>
             </div>
@@ -78,24 +194,68 @@
     </div>
 }
 
+<style>
+    @@keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
+    }
+
+    @@keyframes slideIn {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .animate-slideIn {
+        animation: slideIn 0.4s ease-out;
+    }
+</style>
+
 @code {
-    [Parameter]
-    public ResultUserDto User { get; set; }
-
-    [Parameter]
-    public bool IsOpen { get; set; }
-
-    [Parameter]
-    public EventCallback OnClose { get; set; }
+    [Parameter] public ResultUserDto User { get; set; }
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
 
     private string GetRoleBadgeClass(string role)
     {
         return role switch
         {
-            "SuperAdmin" => "px-2 py-1 inline-flex text-xs rounded-full bg-red-100 text-red-800",
-            "Manager" => "px-2 py-1 inline-flex text-xs rounded-full bg-blue-100 text-blue-800",
-            "Driver" => "px-2 py-1 inline-flex text-xs rounded-full bg-yellow-100 text-yellow-800",
-            _ => "px-2 py-1 inline-flex text-xs rounded-full bg-gray-100 text-gray-800"
+            "SuperAdmin" => "bg-gradient-to-r from-red-100 to-red-200 text-red-700 border border-red-300 dark:from-red-900/30 dark:to-red-800/40 dark:text-red-300 dark:border-red-700/50",
+            "Manager" => "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-700 border border-blue-300 dark:from-blue-900/30 dark:to-blue-800/40 dark:text-blue-300 dark:border-blue-700/50",
+            "Driver" => "bg-gradient-to-r from-orange-100 to-orange-200 text-orange-700 border border-orange-300 dark:from-orange-900/30 dark:to-orange-800/40 dark:text-orange-300 dark:border-orange-700/50",
+            _ => "bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 border border-gray-300 dark:from-gray-900/30 dark:to-gray-800/40 dark:text-gray-300 dark:border-gray-700/50"
+        };
+    }
+
+    private string GetRoleIcon(string role)
+    {
+        return role switch
+        {
+            "SuperAdmin" => "fas fa-crown",
+            "Manager" => "fas fa-user-tie",
+            "Driver" => "fas fa-truck",
+            _ => "fas fa-user"
         };
     }
 }

@@ -1,6 +1,6 @@
 ﻿@using EcoRoute.DtoLayer.SupportDtos
 
-<div class="overflow-x-auto">
+<div class="relative overflow-hidden">
     <table class="w-full text-sm border-collapse">
         <thead class="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
             <tr class="grid grid-cols-12 gap-2">
@@ -85,6 +85,7 @@
         </tbody>
     </table>
 </div>
+
 
 @code {
     [Parameter] public List<ResultSupportTicketDto> Tickets { get; set; }

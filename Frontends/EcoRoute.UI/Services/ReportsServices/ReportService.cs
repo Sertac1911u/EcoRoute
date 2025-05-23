@@ -2,6 +2,7 @@
 using EcoRoute.DtoLayer.ReportsDtos;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace EcoRoute.UI.Services.ReportsServices
 {
@@ -9,13 +10,21 @@ namespace EcoRoute.UI.Services.ReportsServices
     {
         private readonly HttpClient _httpClient;
         private readonly ILocalStorageService _localStorage;
+        private readonly ILogger<ReportService> _logger;
 
-        public ReportService(HttpClient httpClient, ILocalStorageService localStorage)
+        public ReportService(
+            HttpClient httpClient,
+            ILocalStorageService localStorage,
+            ILogger<ReportService> logger)
         {
             _httpClient = httpClient;
             _localStorage = localStorage;
+            _logger = logger;
         }
 
+        /// <summary>
+        /// Sets the authorization header with JWT token from local storage
+        /// </summary>
         private async Task SetAuthorizationHeader()
         {
             var token = await _localStorage.GetItemAsync<string>("authToken");
@@ -25,104 +34,73 @@ namespace EcoRoute.UI.Services.ReportsServices
             }
         }
 
-        public async Task<List<WasteBinReportDto>> GetWasteBinReportAsync()
+        /// <summary>
+        /// Generic method to get data from the API with proper error handling
+        /// </summary>
+        private async Task<TResult> GetAsync<TResult>(string endpoint) where TResult : new()
         {
             await SetAuthorizationHeader();
 
             try
             {
-                // Ocelot konfigürasyonuna göre doğru endpoint
-                var response = await _httpClient.GetFromJsonAsync<List<WasteBinReportDto>>("services/reports/wastebins");
-                return response ?? new List<WasteBinReportDto>();
+                var response = await _httpClient.GetAsync(endpoint);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("API Error: {StatusCode} - {Error}",
+                        (int)response.StatusCode, errorContent);
+
+                    return new TResult();
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<TResult>(content,
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+                return result ?? new TResult();
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Atık kutuları raporu alınamadı: {ex.Message}");
-                return new List<WasteBinReportDto>();
+                _logger.LogError(ex, "Error calling {Endpoint}: {Message}", endpoint, ex.Message);
+                return new TResult();
             }
+        }
+
+        public async Task<List<WasteBinReportDto>> GetWasteBinReportAsync()
+        {
+            return await GetAsync<List<WasteBinReportDto>>("services/reports/wastebins");
         }
 
         public async Task<List<SensorReportDto>> GetSensorReportAsync()
         {
-            await SetAuthorizationHeader();
-
-            try
-            {
-                var response = await _httpClient.GetFromJsonAsync<List<SensorReportDto>>("services/reports/sensors");
-                return response ?? new List<SensorReportDto>();
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Sensör raporu alınamadı: {ex.Message}");
-                return new List<SensorReportDto>();
-            }
+            return await GetAsync<List<SensorReportDto>>("services/reports/sensors");
         }
 
         public async Task<List<RoutePerformanceReportDto>> GetRoutePerformanceReportAsync()
         {
-            await SetAuthorizationHeader();
-
-            try
-            {
-                var response = await _httpClient.GetFromJsonAsync<List<RoutePerformanceReportDto>>("services/reports/routes/performance");
-                return response ?? new List<RoutePerformanceReportDto>();
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Rota performans raporu alınamadı: {ex.Message}");
-                return new List<RoutePerformanceReportDto>();
-            }
+            return await GetAsync<List<RoutePerformanceReportDto>>("services/reports/routes/performance");
         }
 
         public async Task<List<RouteReportDto>> GetRouteReportAsync()
         {
-            await SetAuthorizationHeader();
-
-            try
-            {
-                var response = await _httpClient.GetFromJsonAsync<List<RouteReportDto>>("services/reports/routes");
-                return response ?? new List<RouteReportDto>();
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Rota raporu alınamadı: {ex.Message}");
-                return new List<RouteReportDto>();
-            }
+            return await GetAsync<List<RouteReportDto>>("services/reports/routes");
         }
 
         public async Task<List<UserActivityReportDto>> GetUserActivityReportAsync()
         {
-            await SetAuthorizationHeader();
-
-            try
-            {
-                var response = await _httpClient.GetFromJsonAsync<List<UserActivityReportDto>>("services/reports/users/activity");
-                return response ?? new List<UserActivityReportDto>();
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Kullanıcı aktivite raporu alınamadı: {ex.Message}");
-                return new List<UserActivityReportDto>();
-            }
+            return await GetAsync<List<UserActivityReportDto>>("services/reports/users/activity");
         }
 
         public async Task<List<CO2EmissionReportDto>> GetCO2EmissionReportAsync()
         {
-            await SetAuthorizationHeader();
-
-            try
-            {
-                var response = await _httpClient.GetFromJsonAsync<List<CO2EmissionReportDto>>("services/reports/routes/co2");
-                return response ?? new List<CO2EmissionReportDto>();
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"CO2 emisyon raporu alınamadı: {ex.Message}");
-                return new List<CO2EmissionReportDto>();
-            }
+            return await GetAsync<List<CO2EmissionReportDto>>("services/reports/routes/co2");
         }
 
-        // Ekstra yardımcı metodlar
+        public async Task<WasteBinStatsDto> GetWasteBinStatsAsync()
+        {
+            return await GetAsync<WasteBinStatsDto>("services/reports/wastebins/stats");
+        }
 
         public async Task<byte[]> ExportReportAsync(string reportType, string format)
         {
@@ -131,34 +109,23 @@ namespace EcoRoute.UI.Services.ReportsServices
             try
             {
                 var response = await _httpClient.GetAsync($"services/reports/export/{reportType}?format={format}");
+
                 if (response.IsSuccessStatusCode)
                 {
                     return await response.Content.ReadAsByteArrayAsync();
                 }
 
+                var errorContent = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Export error: {StatusCode} - {Error}",
+                    (int)response.StatusCode, errorContent);
+
                 return Array.Empty<byte>();
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Rapor dışa aktarılamadı: {ex.Message}");
+                _logger.LogError(ex, "Error exporting report: {Message}", ex.Message);
                 return Array.Empty<byte>();
             }
         }
-
-        public async Task<WasteBinStatsDto> GetWasteBinStatsAsync()
-        {
-            await SetAuthorizationHeader();
-            try
-            {
-                var response = await _httpClient.GetFromJsonAsync<WasteBinStatsDto>("services/reports/wastebins/stats");
-                return response ?? new WasteBinStatsDto();
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Atık kutusu istatistikleri alınamadı: {ex.Message}");
-                return new WasteBinStatsDto();
-            }
-        }
-
     }
 }

@@ -320,6 +320,7 @@ namespace EcoRoute.RouteOptimization.Services
                 EstimatedCO2Kg = Math.Round(Math.Round(totalDistance / 1000, 2) * FUEL_CONSUMPTION_PER_KM * CO2_PER_LITER_DIESEL, 2),
                 EstimatedDurationMin = totalDuration / 60,
                 Notes = dto.Notes,
+                RouteName=dto.RouteName,
                 CreatedAt = DateTime.UtcNow,
                 OverviewPolyline = overviewPolyline // Ensure this is stored
             };

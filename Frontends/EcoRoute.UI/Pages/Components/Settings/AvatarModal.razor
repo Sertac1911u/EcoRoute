@@ -4,46 +4,74 @@
 @if (Show)
 {
     <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full shadow-xl relative p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl max-w-lg w-full shadow-xl p-6 relative animate-fade-in-up">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Profil Avatarını Değiştir</h3>
-                <button @onclick="() => OnCancel.InvokeAsync()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                <button @onclick="Close" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
 
             <div class="mb-6">
                 <div class="flex items-center justify-center mb-4">
-                    <img src="@SelectedUrl" alt="Mevcut Avatar"
-                         class="w-24 h-24 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700" />
+                    <div class="w-24 h-24 rounded-full overflow-hidden border-2 border-primary-200 dark:border-primary-800">
+                        <img src="@SelectedUrl" alt="Seçilen Avatar" class="w-full h-full object-cover" />
+                    </div>
                 </div>
 
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Yeni Avatar Seçin</label>
-                <div class="grid grid-cols-3 gap-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Yeni Avatar Seçin</label>
+                <div class="grid grid-cols-3 sm:grid-cols-4 gap-4 max-h-64 overflow-y-auto p-1 pr-2">
                     @foreach (var avatar in Avatars)
                     {
-                        <div class="relative">
-                            <img src="@avatar.Url" alt="@avatar.Name"
-                                 class="w-full h-24 object-cover rounded-lg cursor-pointer border-2 @(SelectedUrl == avatar.Url ? "border-primary-500" : "border-transparent hover:border-gray-300")"
-                                 @onclick="() => SelectedUrl = avatar.Url" />
+                        <div class="relative group">
+                            <div class="w-full overflow-hidden rounded-lg transition-all duration-200 @(SelectedUrl == avatar.Url ? "ring-4 ring-primary-500 ring-offset-2 dark:ring-offset-gray-800" : "hover:opacity-90")"
+                                 style="aspect-ratio: 1 / 1;">
+                                <img src="@avatar.Url" alt="@avatar.Name"
+                                     class="w-full h-full object-cover cursor-pointer"
+                                     @onclick="() => SelectedUrl = avatar.Url" />
+                            </div>
+                            @if (SelectedUrl == avatar.Url)
+                            {
+                                <div class="absolute top-2 right-2 bg-primary-500 text-white rounded-full p-1 shadow">
+                                    <i class="fas fa-check text-xs"></i>
+                                </div>
+                            }
                         </div>
                     }
                 </div>
             </div>
 
             <div class="mt-6 flex justify-end space-x-3">
-                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors"
-                        @onclick="() => OnCancel.InvokeAsync()">
+                <button class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 rounded-lg text-gray-800 dark:text-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                        @onclick="Close">
                     İptal
                 </button>
-                <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors"
+                <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                         @onclick="Save">
-                    Kaydet
+                    Değişiklikleri Kaydet
                 </button>
             </div>
         </div>
     </div>
 }
+
+<style>
+    .animate-fade-in-up {
+        animation: fadeInUp 0.3s ease-out forwards;
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
 
 @code {
     [Parameter] public bool Show { get; set; }
@@ -65,10 +93,20 @@
         if (!string.IsNullOrEmpty(SelectedUrl))
         {
             await OnSave.InvokeAsync(SelectedUrl);
-            Show = false; // Opsiyonel
+            await CloseModal();
         }
     }
+
     private async Task Close()
+    {
+        if (OnCancel.HasDelegate)
+        {
+            await OnCancel.InvokeAsync();
+        }
+        await CloseModal();
+    }
+
+    private async Task CloseModal()
     {
         Show = false;
         await ShowChanged.InvokeAsync(false);

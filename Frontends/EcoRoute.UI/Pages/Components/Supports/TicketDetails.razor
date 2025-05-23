@@ -71,8 +71,20 @@
                                     </div>
                                     <div>
                                         <div class="font-medium text-gray-800 dark:text-white">
-                                            @(response.IsStaff ? "Destek Ekibi" : (string.IsNullOrEmpty(response.UserName) ? "Kullanıcı" : response.UserName))
+                                            @if (!string.IsNullOrEmpty(response.UserName))
+                                            {
+                                                @response.UserName
+                                                @if (response.IsStaff)
+                                                {
+                                                    <span class="ml-1 text-xs text-blue-400">(Destek Ekibi)</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                @(response.IsStaff ? "Destek Ekibi" : "Kullanıcı")
+                                            }
                                         </div>
+
                                         <div class="text-sm text-gray-500 dark:text-gray-400">@response.ResponseDate.ToString("dd.MM.yyyy HH:mm")</div>
                                     </div>
                                 </div>
@@ -265,6 +277,9 @@
     private bool isSubmittingReply = false;
     private string userId;
     private string userName;
+    private string firstName;
+    private string lastName;
+    private string role;
 
     protected override async Task OnInitializedAsync()
     {
@@ -273,6 +288,9 @@
 
         userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         userName = user.Identity.Name;
+        firstName = user.FindFirst("given_name")?.Value ?? "";
+        lastName = user.FindFirst("family_name")?.Value ?? "";
+        role = user.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
     }
 
     private bool CanReply()
@@ -404,6 +422,9 @@
             // Add user details
             content.Add(new StringContent(userId ?? ""), "UserId");
             content.Add(new StringContent(userName ?? ""), "UserName");
+            content.Add(new StringContent(firstName ?? ""), "FirstName");
+            content.Add(new StringContent(lastName ?? ""), "LastName");
+            content.Add(new StringContent(role ?? ""), "Role");
 
             // Add file if present
             if (uploadedFile != null)

@@ -1,161 +1,254 @@
 ﻿@using EcoRoute.DtoLayer.IdentityDtos
 
-<div class="overflow-x-auto shadow-md rounded-lg">
-    <table class="w-full text-sm">
-        <thead class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
-            <tr class="grid grid-cols-12 gap-2 text-left">
-                <th @onclick='async () => await OnSort.InvokeAsync("Id")' class="col-span-1 px-6 py-4 font-medium cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                    <div class="flex items-center">
-                        # @GetSortIcon("Id")
-                    </div>
-                </th>
-                <th @onclick='async () => await OnSort.InvokeAsync("Name")' class="col-span-4 px-6 py-4 font-medium cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                    <div class="flex items-center">
-                        Ad Soyad @GetSortIcon("Name")
-                    </div>
-                </th>
-                <th @onclick='async () => await OnSort.InvokeAsync("Email")' class="col-span-3 px-6 py-4 font-medium cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                    <div class="flex items-center">
-                        E-posta @GetSortIcon("Email")
-                    </div>
-                </th>
-                <th @onclick='async () => await OnSort.InvokeAsync("Role")' class="col-span-2 px-6 py-4 font-medium cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-                    <div class="flex items-center">
-                        Yetki @GetSortIcon("Role")
-                    </div>
-                </th>
-                <th class="col-span-2 px-6 py-4 font-medium text-center">İşlemler</th>
-            </tr>
-        </thead>
-        <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-            @if (Users == null)
-            {
-                <tr class="grid grid-cols-12 gap-2">
-                    <td colspan="5" class="col-span-12 text-center p-6 text-gray-500 dark:text-gray-400">
-                        <div class="flex justify-center items-center">
-                            <i class="fas fa-circle-notch fa-spin mr-2"></i> Yükleniyor...
-                        </div>
-                    </td>
-                </tr>
-            }
-            else if (Users.Count == 0)
-            {
-                <tr class="grid grid-cols-12 gap-2">
-                    <td colspan="5" class="col-span-12 text-center p-6 text-gray-500 dark:text-gray-400">
-                        <div class="flex flex-col justify-center items-center">
-                            <i class="fas fa-users-slash text-4xl mb-2 text-gray-400"></i>
-                            <p>Henüz kullanıcı bulunmamaktadır.</p>
-                        </div>
-                    </td>
-                </tr>
-            }
-            else
-            {
-                @foreach (var user in SortedUsers.Select((u, i) => new { Index = i + 1, User = u }))
-                {
-                    <tr class="grid grid-cols-12 gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition duration-200">
-                        <td class="col-span-1 px-6 py-4 flex items-center text-gray-700 dark:text-gray-300">@user.Index</td>
-                        <td class="col-span-4 px-6 py-4 flex items-center">
-                            <div class="relative">
-                                <img class="h-10 w-10 rounded-full mr-3 object-cover border-2 border-gray-200 dark:border-gray-700"
-                                     src="https://picsum.photos/200?random=@user.User.Id" alt="@user.User.Name's profile" />
-                                <div class="absolute bottom-0 right-3 w-3 h-3 rounded-full bg-green-500 border-2 border-white dark:border-gray-900"></div>
+<div class="w-full">
+    @if (Users == null)
+    {
+        <!-- Loading State -->
+        <div class="flex justify-center items-center py-12">
+            <div class="relative">
+                <div class="animate-spin rounded-full h-16 w-16 border-4 border-primary-200 border-t-primary-600"></div>
+                <div class="absolute inset-0 flex items-center justify-center">
+                    <i class="fas fa-users text-primary-600"></i>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Users.Count == 0)
+    {
+        <!-- Empty State -->
+        <div class="text-center py-16">
+            <div class="inline-flex items-center justify-center w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+                <i class="fas fa-users-slash text-4xl text-gray-400 dark:text-gray-500"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Henüz kullanıcı yok</h3>
+            <p class="text-gray-500 dark:text-gray-400">Yeni kullanıcı ekleyerek başlayabilirsiniz.</p>
+        </div>
+    }
+    else
+    {
+        <!-- Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+                    <tr>
+                        <th @onclick='async () => await OnSort.InvokeAsync("Id")'
+                            class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                            <div class="flex items-center gap-2">
+                                <span>#</span>
+                                @GetSortIcon("Id")
                             </div>
-                            <div>
-                                <p class="font-medium text-gray-800 dark:text-gray-200">@user.User.Name @user.User.Surname</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">@user.User.UserName</p>
+                        </th>
+                        <th @onclick='async () => await OnSort.InvokeAsync("Name")'
+                            class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                            <div class="flex items-center gap-2">
+                                <span>Kullanıcı</span>
+                                @GetSortIcon("Name")
                             </div>
-                        </td>
-                        <td class="col-span-3 px-6 py-4 flex items-center text-gray-600 dark:text-gray-400 truncate">
-                            @user.User.Email
-                        </td>
-                        <td class="col-span-2 px-6 py-4 flex items-center flex-wrap gap-1">
-                            @foreach (var role in user.User.Roles)
-                            {
-                                <span class="@GetRoleBadgeClass(role) px-2 py-1 text-xs rounded-full">@role</span>
-                            }
-                        </td>
-                        <td class="col-span-2 px-6 py-4 flex justify-center items-center space-x-2">
-                            <button class="p-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-lg transition-colors duration-200 tooltip-container"
-                                    @onclick="async () => await OnShowDetails.InvokeAsync(user.User)">
-                                <i class="fas fa-info-circle"></i>
-                                <span class="tooltip">Kullanıcı Bilgileri</span>
-                            </button>
-                            <button class="p-2 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:hover:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-lg transition-colors duration-200 tooltip-container"
-                                    @onclick="async () => await OnEditUser.InvokeAsync(user.User)">
-                                <i class="fas fa-edit"></i>
-                                <span class="tooltip">Düzenle</span>
-                            </button>
-                            <button class="p-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 text-red-600 dark:text-red-400 rounded-lg transition-colors duration-200 tooltip-container"
-                                    @onclick="async () => await OnDeleteUser.InvokeAsync(user.User.Id)">
-                                <i class="fas fa-trash-alt"></i>
-                                <span class="tooltip">Sil</span>
-                            </button>
-                        </td>
+                        </th>
+                        <th @onclick='async () => await OnSort.InvokeAsync("Email")'
+                            class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                            <div class="flex items-center gap-2">
+                                <span>E-posta</span>
+                                @GetSortIcon("Email")
+                            </div>
+                        </th>
+                        <th @onclick='async () => await OnSort.InvokeAsync("Role")'
+                            class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                            <div class="flex items-center gap-2">
+                                <span>Rol</span>
+                                @GetSortIcon("Role")
+                            </div>
+                        </th>
+                        <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            Durum
+                        </th>
+                        <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            İşlemler
+                        </th>
                     </tr>
-                }
-            }
-        </tbody>
-    </table>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    @foreach (var user in SortedUsers.Select((u, i) => new { Index = i + 1, User = u }))
+                    {
+                        <!-- Main Row -->
+                        <tr class="group cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200"
+                            @onclick="() => ToggleExpand(user.User.Id)">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                @user.Index
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="relative flex-shrink-0 h-10 w-10">
+                                        <img class="h-10 w-10 rounded-full object-cover ring-2 ring-white dark:ring-gray-800"
+                                             src="https://picsum.photos/200?random=@user.User.Id"
+                                             alt="@user.User.Name" />
+                                        @if (user.User.IsActive)
+                                        {
+                                            <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-400 ring-2 ring-white dark:ring-gray-800"></span>
+                                        }
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                            @user.User.Name @user.User.Surname
+                                        </div>
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">
+                                            @@@user.User.UserName
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center text-sm text-gray-900 dark:text-white">
+                                    <i class="fas fa-envelope mr-2 text-gray-400"></i>
+                                    @user.User.Email
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach (var role in user.User.Roles)
+                                    {
+                                        <span class="@GetRoleBadgeClass(role)">
+                                            @GetRoleIcon(role)
+                                            @role
+                                        </span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if (user.User.IsActive)
+                                {
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                        <span class="w-1.5 h-1.5 mr-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                                        Aktif
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-400">
+                                        <span class="w-1.5 h-1.5 mr-1.5 bg-gray-500 rounded-full"></span>
+                                        Pasif
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div class="flex items-center justify-end gap-2" @onclick:stopPropagation="true">
+                                    <button class="group/btn relative inline-flex items-center justify-center w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-all duration-200 overflow-hidden"
+                                            @onclick="async () => await OnEditUser.InvokeAsync(user.User)">
+                                        <span class="absolute inset-0 bg-gradient-to-r from-amber-400 to-amber-600 opacity-0 group-hover/btn:opacity-20 transition-opacity duration-200"></span>
+                                        <i class="fas fa-edit relative z-10"></i>
+                                    </button>
+                                    <button class="group/btn relative inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all duration-200 overflow-hidden"
+                                            @onclick="async () => await OnDeleteUser.InvokeAsync(user.User.Id)">
+                                        <span class="absolute inset-0 bg-gradient-to-r from-red-400 to-red-600 opacity-0 group-hover/btn:opacity-20 transition-opacity duration-200"></span>
+                                        <i class="fas fa-trash relative z-10"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- Expanded Details Row -->
+                        @if (expandedRows.Contains(user.User.Id))
+                        {
+                            <tr class="bg-gray-50 dark:bg-gray-900/50 animate-fadeIn">
+                                <td colspan="6" class="px-6 py-4">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                                            <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">İletişim Bilgileri</h4>
+                                            <div class="space-y-2">
+                                                <div class="flex items-center text-sm">
+                                                    <i class="fas fa-phone w-4 text-gray-400 mr-2"></i>
+                                                    <span class="text-gray-900 dark:text-white">@(user.User.PhoneNumber ?? "Belirtilmemiş")</span>
+                                                </div>
+                                                <div class="flex items-center text-sm">
+                                                    <i class="fas fa-envelope w-4 text-gray-400 mr-2"></i>
+                                                    <span class="text-gray-900 dark:text-white">@user.User.Email</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                                            <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Hesap Bilgileri</h4>
+                                            <div class="space-y-2">
+                                                <div class="flex items-center text-sm">
+                                                    <i class="fas fa-user-circle w-4 text-gray-400 mr-2"></i>
+                                                    <span class="text-gray-900 dark:text-white">@@@user.User.UserName</span>
+                                                </div>
+                                                <div class="flex items-center text-sm">
+                                                    <i class="fas fa-id-badge w-4 text-gray-400 mr-2"></i>
+                                                    <span class="text-gray-900 dark:text-white">ID: @user.User.Id</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                                            <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Tarih Bilgileri</h4>
+                                            <div class="space-y-2">
+                                                <div class="flex items-center text-sm">
+                                                    <i class="fas fa-calendar-plus w-4 text-gray-400 mr-2"></i>
+                                                    <span class="text-gray-900 dark:text-white">
+                                                        Kayıt: @(user.User.RegistrationDate?.ToString("dd.MM.yyyy") ?? "Bilinmiyor")
+                                                    </span>
+                                                </div>
+                                                <div class="flex items-center text-sm">
+                                                    <i class="fas fa-sign-in-alt w-4 text-gray-400 mr-2"></i>
+                                                    <span class="text-gray-900 dark:text-white">
+                                                        Son Giriş: @(user.User.LastLoginDate?.ToString("dd.MM.yyyy HH:mm") ?? "Henüz giriş yapmamış")
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
-<style>
-    /* Table header hover effect */
-    th[class*="cursor-pointer"]:hover {
-        background-color: rgba(0,0,0,0.05);
-    }
-</style>
-
 @code {
-    [Parameter]
-    public List<ResultUserDto> Users { get; set; }
+    [Parameter] public List<ResultUserDto> Users { get; set; }
+    [Parameter] public string SortColumn { get; set; } = "Id";
+    [Parameter] public bool Ascending { get; set; } = true;
+    [Parameter] public EventCallback<string> OnSort { get; set; }
+    [Parameter] public EventCallback<ResultUserDto> OnEditUser { get; set; }
+    [Parameter] public EventCallback<string> OnDeleteUser { get; set; }
 
-    [Parameter]
-    public string SortColumn { get; set; } = "Id";
-
-    [Parameter]
-    public bool Ascending { get; set; } = true;
-
-    [Parameter]
-    public EventCallback<string> OnSort { get; set; }
-
-    [Parameter]
-    public EventCallback<ResultUserDto> OnShowDetails { get; set; }
-
-    [Parameter]
-    public EventCallback<ResultUserDto> OnEditUser { get; set; }
-
-    [Parameter]
-    public EventCallback<string> OnDeleteUser { get; set; }
+    private HashSet<string> expandedRows = new HashSet<string>();
 
     private List<ResultUserDto> SortedUsers => SortUsers();
+
+    private void ToggleExpand(string userId)
+    {
+        if (expandedRows.Contains(userId))
+            expandedRows.Remove(userId);
+        else
+            expandedRows.Add(userId);
+    }
 
     private List<ResultUserDto> SortUsers()
     {
         if (Users == null)
             return new List<ResultUserDto>();
 
-        switch (SortColumn)
+        return SortColumn switch
         {
-            case "Id":
-                return Ascending
-                    ? Users.OrderBy(u => u.Id).ToList()
-                    : Users.OrderByDescending(u => u.Id).ToList();
-            case "Name":
-                return Ascending
-                    ? Users.OrderBy(u => u.Name).ThenBy(u => u.Surname).ToList()
-                    : Users.OrderByDescending(u => u.Name).ThenByDescending(u => u.Surname).ToList();
-            case "Email":
-                return Ascending
-                    ? Users.OrderBy(u => u.Email).ToList()
-                    : Users.OrderByDescending(u => u.Email).ToList();
-            case "Role":
-                return Ascending
-                    ? Users.OrderBy(u => u.Roles.FirstOrDefault()).ToList()
-                    : Users.OrderByDescending(u => u.Roles.FirstOrDefault()).ToList();
-            default:
-                return Users;
-        }
+            "Id" => Ascending
+                ? Users.OrderBy(u => u.Id).ToList()
+                : Users.OrderByDescending(u => u.Id).ToList(),
+            "Name" => Ascending
+                ? Users.OrderBy(u => u.Name).ThenBy(u => u.Surname).ToList()
+                : Users.OrderByDescending(u => u.Name).ThenByDescending(u => u.Surname).ToList(),
+            "Email" => Ascending
+                ? Users.OrderBy(u => u.Email).ToList()
+                : Users.OrderByDescending(u => u.Email).ToList(),
+            "Role" => Ascending
+                ? Users.OrderBy(u => u.Roles.FirstOrDefault()).ToList()
+                : Users.OrderByDescending(u => u.Roles.FirstOrDefault()).ToList(),
+            _ => Users
+        };
     }
 
     private RenderFragment GetSortIcon(string column)
@@ -165,19 +258,19 @@
             if (SortColumn != column)
             {
                 builder.OpenElement(0, "i");
-                builder.AddAttribute(1, "class", "fas fa-sort ml-1 text-gray-400");
+                builder.AddAttribute(1, "class", "fas fa-sort text-gray-400");
                 builder.CloseElement();
             }
             else if (Ascending)
             {
                 builder.OpenElement(0, "i");
-                builder.AddAttribute(1, "class", "fas fa-sort-up ml-1 text-primary-500");
+                builder.AddAttribute(1, "class", "fas fa-sort-up text-primary-500");
                 builder.CloseElement();
             }
             else
             {
                 builder.OpenElement(0, "i");
-                builder.AddAttribute(1, "class", "fas fa-sort-down ml-1 text-primary-500");
+                builder.AddAttribute(1, "class", "fas fa-sort-down text-primary-500");
                 builder.CloseElement();
             }
         };
@@ -187,10 +280,28 @@
     {
         return role switch
         {
-            "SuperAdmin" => "px-2 py-1 inline-flex text-xs rounded-full bg-red-100 text-red-800",
-            "Manager" => "px-2 py-1 inline-flex text-xs rounded-full bg-blue-100 text-blue-800",
-            "Driver" => "px-2 py-1 inline-flex text-xs rounded-full bg-yellow-100 text-yellow-800",
-            _ => "px-2 py-1 inline-flex text-xs rounded-full bg-gray-100 text-gray-800"
+            "SuperAdmin" => "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-red-50 to-pink-50 text-red-700 dark:from-red-900/20 dark:to-pink-900/20 dark:text-red-400 border border-red-200 dark:border-red-800",
+            "Manager" => "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 dark:from-blue-900/20 dark:to-indigo-900/20 dark:text-blue-400 border border-blue-200 dark:border-blue-800",
+            "Driver" => "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-50 to-amber-50 text-yellow-700 dark:from-yellow-900/20 dark:to-amber-900/20 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800",
+            _ => "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400"
+        };
+    }
+
+    private RenderFragment GetRoleIcon(string role)
+    {
+        return builder =>
+        {
+            var iconClass = role switch
+            {
+                "SuperAdmin" => "fas fa-crown",
+                "Manager" => "fas fa-user-tie",
+                "Driver" => "fas fa-truck",
+                _ => "fas fa-user"
+            };
+
+            builder.OpenElement(0, "i");
+            builder.AddAttribute(1, "class", $"{iconClass} mr-1 text-xs");
+            builder.CloseElement();
         };
     }
 }

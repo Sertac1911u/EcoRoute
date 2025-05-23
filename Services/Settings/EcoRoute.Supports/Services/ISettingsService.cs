@@ -17,5 +17,10 @@ namespace EcoRoute.Settings.Services
         Task<List<ThemeColorDto>> GetThemeColorsAsync();
         Task<List<AvatarDto>> GetAvatarsAsync();
         Task<bool> TestGoogleMapsApiAsync(string apiKey);
+
+
+        Task<List<FontTypeDto>> GetFontTypesAsync();
+        Task<List<LanguageDto>> GetLanguagesAsync();
+        Task<List<DateFormatDto>> GetDateFormatsAsync();
     }
 }

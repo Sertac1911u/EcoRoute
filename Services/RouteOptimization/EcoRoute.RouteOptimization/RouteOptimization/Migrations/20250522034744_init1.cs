@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace EcoRoute.RouteOptimization.Migrations
 {
     /// <inheritdoc />
-    public partial class initialCreate : Migration
+    public partial class init1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,9 +16,10 @@ namespace EcoRoute.RouteOptimization.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    RouteName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DriverId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     VehicleId = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    WasteType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    WasteType = table.Column<int>(type: "int", nullable: false),
                     OptimizationType = table.Column<int>(type: "int", nullable: false),
                     StartTime = table.Column<DateTime>(type: "datetime2", nullable: false),
                     TotalDistanceKm = table.Column<double>(type: "float", nullable: false),

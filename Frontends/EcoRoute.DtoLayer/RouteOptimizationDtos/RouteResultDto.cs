@@ -21,9 +21,10 @@ namespace EcoRoute.DtoLayer.RouteOptimizationDtos
     public class RouteResultDto
     {
         public Guid Id { get; set; }
+        public string RouteName { get; set; }
         public string DriverId { get; set; }
         public string VehicleId { get; set; }
-        public string WasteType { get; set; }
+        public WasteType WasteType { get; set; }
         public OptimizationType OptimizationType { get; set; }
         public DateTime StartTime { get; set; }
         public RouteStatus Status { get; set; }
@@ -41,6 +42,16 @@ namespace EcoRoute.DtoLayer.RouteOptimizationDtos
         Scheduled,
         Active,
         Completed
+    }
+    public enum WasteType
+    {
+        Cop = 1,           // Çöp
+        GeriDonusum = 2,   // Geri Dönüşüm
+        Organik = 3,       // Organik Atık
+        Cam = 4,           // Cam
+        Metal = 5,         // Metal
+        Elektronik = 6,    // Elektronik Atık
+        Tehlikeli = 7      // Tehlikeli Atık
     }
 
     public enum OptimizationType

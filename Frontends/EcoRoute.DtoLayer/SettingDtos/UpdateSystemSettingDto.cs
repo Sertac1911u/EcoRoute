@@ -11,18 +11,22 @@ namespace EcoRoute.DtoLayer.SettingDtos
 
         public bool DarkMode { get; set; }
         public string ThemeColor { get; set; }
-        public int FontSize { get; set; }
+        public bool LocationTracking { get; set; }
         public bool EnableAnimations { get; set; }
+        public bool TwoFactorEnabled { get; set; }
+        public int SessionTimeout { get; set; }
+        public int ActiveSessionLimit { get; set; }
 
-        // Profil Avatarı
         public string AvatarUrl { get; set; }
-
-        // Bildirim Tercihleri
         public bool EmailNotifications { get; set; }
         public bool SmsNotifications { get; set; }
         public bool PushNotifications { get; set; }
-
-        // Sistem Entegrasyonları
         public string GoogleMapsApiKey { get; set; }
+
+        // Sadece ID'ler
+        public Guid? FontTypeId { get; set; }
+        public Guid? LanguageId { get; set; }
+        public Guid? DateFormatId { get; set; }
+
     }
 }

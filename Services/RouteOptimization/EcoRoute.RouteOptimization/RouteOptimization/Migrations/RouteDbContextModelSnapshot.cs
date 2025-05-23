@@ -89,6 +89,10 @@ namespace EcoRoute.RouteOptimization.Migrations
                     b.Property<string>("OverviewPolyline")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("RouteName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("StartTime")
                         .HasColumnType("datetime2");
 
@@ -102,9 +106,8 @@ namespace EcoRoute.RouteOptimization.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("WasteType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("WasteType")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 

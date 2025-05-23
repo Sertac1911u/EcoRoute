@@ -8,58 +8,91 @@
 @inject ILocalStorageService localStorage
 @inject NavigationManager NavigationManager
 
-<div class="transition-all duration-500 opacity-100 animate-fadeIn">
+<div class="transition-all duration-500 opacity-100 animate-fadeIn" style="opacity: @(isLoading ? "0.6" : "1")">
     <div class="text-center mb-8">
-        <h1 class="text-2xl font-bold text-primary-600 dark:text-primary-400 mb-2">Hoş Geldin</h1>
+        <h1 class="text-3xl font-bold text-black dark:text-white mb-2">Hoş Geldiniz</h1>
     </div>
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded shadow-md animate-shake">
-            <div class="flex items-center">
-                <i class="fas fa-exclamation-circle mr-2"></i>
-                <p>@errorMessage</p>
-            </div>
-        </div>
-    }
+
     <div class="space-y-6">
         <div class="relative">
             <input type="text"
                    id="username"
-                   class="block px-2.5 pb-2.5 pt-4 w-full text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
+                   class="block px-2.5 pb-2.5 pt-4 w-full text-gray-900 bg-transparent rounded-lg border @(string.IsNullOrEmpty(usernameError) ? "border-gray-300 dark:border-gray-600" : "border-red-500 dark:border-red-400") appearance-none dark:text-white dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
                    @bind="username"
-                   placeholder=" " />
+                   @oninput="ClearUsernameError"
+                   placeholder=" "
+                   disabled="@isLoading" />
             <label for="username"
                    class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">
                 Kullanıcı adı
             </label>
+            @if (!string.IsNullOrEmpty(usernameError))
+            {
+                <div class="text-red-600 dark:text-red-400 text-xs mt-1 flex items-center">
+                    <i class="fas fa-exclamation-circle mr-1"></i>
+                    <span>@usernameError</span>
+                </div>
+            }
         </div>
+
         <div class="relative">
             <input type="@(showPassword ? "text" : "password")"
                    id="password"
-                   class="block px-2.5 pb-2.5 pt-4 w-full text-gray-900 bg-transparent rounded-lg border border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer pr-10"
+                   class="block px-2.5 pb-2.5 pt-4 w-full text-gray-900 bg-transparent rounded-lg border @(string.IsNullOrEmpty(passwordError) ? "border-gray-300 dark:border-gray-600" : "border-red-500 dark:border-red-400") appearance-none dark:text-white dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer pr-10"
                    @bind="password"
-                   placeholder=" " />
+                   @oninput="ClearPasswordError"
+                   @onkeypress="OnKeyPress"
+                   placeholder=" "
+                   disabled="@isLoading" />
             <label for="password"
                    class="absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-primary-600 peer-focus:dark:text-primary-400 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 left-1">
                 Şifre
             </label>
             <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <button type="button" @onclick="TogglePasswordVisibility" class="focus:outline-none text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors">
+                <button type="button" @onclick="TogglePasswordVisibility" class="focus:outline-none text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors" disabled="@isLoading">
                     <i class="@(showPassword ? "fas fa-eye-slash" : "fas fa-eye")"></i>
                 </button>
             </div>
+            @if (!string.IsNullOrEmpty(passwordError))
+            {
+                <div class="text-red-600 dark:text-red-400 text-xs mt-1 flex items-center">
+                    <i class="fas fa-exclamation-circle mr-1"></i>
+                    <span>@passwordError</span>
+                </div>
+            }
         </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="text-red-600 dark:text-red-400 text-sm mt-2">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle mr-2"></i>
+                    <p>@errorMessage</p>
+                </div>
+            </div>
+        }
+
         <div class="flex items-center">
-            <input id="remember-me" type="checkbox" class="h-4 w-4 accent-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+            <input id="remember-me" type="checkbox" class="h-4 w-4 accent-primary-600 focus:ring-primary-500 border-gray-300 rounded" disabled="@isLoading">
             <label for="remember-me" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
                 Beni hatırla
             </label>
         </div>
-        <button class="w-full py-3 px-4 rounded-lg text-white bg-primary-600 hover:bg-primary-700
-                     transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2
-                     focus:ring-primary-500 flex items-center justify-center"
-                @onclick="LoginUser">
-            Giriş Yap
+
+        <button class="w-full py-3 px-4 rounded-lg text-white bg-primary-500 hover:bg-primary-600
+                     active:bg-primary-300 transition-colors duration-300 focus:outline-none
+                     flex items-center justify-center disabled:cursor-not-allowed"
+                @onclick="LoginUser"
+                disabled="@isLoading">
+            @if (isLoading)
+            {
+                <i class="fas fa-spinner fa-spin mr-2"></i>
+                <span>Giriş yapılıyor...</span>
+            }
+            else
+            {
+                <span>Giriş Yap</span>
+            }
         </button>
     </div>
 </div>
@@ -68,16 +101,89 @@
     private string username;
     private string password;
     private string errorMessage;
+    private string usernameError;
+    private string passwordError;
     private bool showPassword = false;
+    private bool isLoading = false;
 
     private void TogglePasswordVisibility()
     {
         showPassword = !showPassword;
     }
 
+    private void ClearUsernameError()
+    {
+        usernameError = string.Empty;
+    }
+
+    private void ClearPasswordError()
+    {
+        passwordError = string.Empty;
+    }
+
+    private bool ValidateForm()
+    {
+        bool isValid = true;
+
+        // Username validation
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            usernameError = "Kullanıcı adı gereklidir";
+            isValid = false;
+        }
+        else if (username.Length < 3)
+        {
+            usernameError = "Kullanıcı adı en az 3 karakter olmalıdır";
+            isValid = false;
+        }
+        else
+        {
+            usernameError = string.Empty;
+        }
+
+        // Password validation
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            passwordError = "Şifre gereklidir";
+            isValid = false;
+        }
+        else if (password.Length < 6)
+        {
+            passwordError = "Şifre en az 6 karakter olmalıdır";
+            isValid = false;
+        }
+        else
+        {
+            passwordError = string.Empty;
+        }
+
+        return isValid;
+    }
+
+    private async Task OnKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !isLoading)
+        {
+            await LoginUser();
+        }
+    }
+
     private async Task LoginUser()
     {
+        if (isLoading) return;
+
         errorMessage = string.Empty;
+
+        // Form validation
+        if (!ValidateForm())
+        {
+            StateHasChanged();
+            return;
+        }
+
+        isLoading = true;
+        StateHasChanged();
+
         try
         {
             var token = await AuthService.LoginAsync(username, password);
@@ -95,6 +201,11 @@
         catch (Exception ex)
         {
             errorMessage = $"Bir hata oluştu: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
         }
     }
 }

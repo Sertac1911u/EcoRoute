@@ -8,11 +8,11 @@ namespace EcoRoute.DtoLayer.RouteOptimizationDtos
 {
     public class CreateRouteDto
     {
-        public string Name { get; set; } = string.Empty;
+        public string RouteName { get; set; }
         public string VehicleId { get; set; } = string.Empty; // Changed from Guid to string
         public string DriverId { get; set; } = string.Empty; // Changed from Guid to string
-        public OptimizationType OptimizationType { get; set; } 
-        public string WasteType { get; set; } = "Genel Çöp";
+        public OptimizationType OptimizationType { get; set; }
+        public WasteType WasteType { get; set; }
         public DateTime ScheduledStart { get; set; } = DateTime.Now;
         public double StartLatitude { get; set; } = 41.181;  // Çorlu
         public double StartLongitude { get; set; } = 27.82;

@@ -76,7 +76,7 @@ namespace EcoRoute.Supports.Controllers
 
                 if (string.IsNullOrEmpty(updateDto.AvatarUrl))
                 {
-                    updateDto.AvatarUrl = "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton";
+                    updateDto.AvatarUrl = "https://ui-avatars.com/api/?name=Sertaç+Kara\r\n";
                 }
 
                 var updatedSettings = await _settingsService.UpdateSettingsAsync(updateDto, userId);
@@ -126,5 +126,27 @@ namespace EcoRoute.Supports.Controllers
             var result = await _settingsService.TestGoogleMapsApiAsync(apiKey);
             return Ok(result);
         }
+
+        [HttpGet("font-types")]
+        public async Task<ActionResult<List<FontTypeDto>>> GetFontTypes()
+        {
+            var fonts = await _settingsService.GetFontTypesAsync();
+            return Ok(fonts);
+        }
+
+        [HttpGet("languages")]
+        public async Task<ActionResult<List<LanguageDto>>> GetLanguages()
+        {
+            var langs = await _settingsService.GetLanguagesAsync();
+            return Ok(langs);
+        }
+
+        [HttpGet("date-formats")]
+        public async Task<ActionResult<List<DateFormatDto>>> GetDateFormats()
+        {
+            var formats = await _settingsService.GetDateFormatsAsync();
+            return Ok(formats);
+        }
+
     }
 }

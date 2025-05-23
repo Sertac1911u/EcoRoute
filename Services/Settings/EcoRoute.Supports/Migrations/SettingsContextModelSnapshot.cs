@@ -43,39 +43,162 @@ namespace EcoRoute.Settings.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("dcd3c63f-48c4-4d31-a416-0c9b969b60dd"),
+                            Id = new Guid("0b704c12-8810-4234-a4c3-e5f00cc71b68"),
                             Name = "Avatar 1",
                             Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Luis"
                         },
                         new
                         {
-                            Id = new Guid("25e28709-b062-4ccf-8f4a-a3f0e1c8035a"),
+                            Id = new Guid("54933f2c-1782-4903-9859-5ea4661d529b"),
                             Name = "Avatar 2",
                             Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Avery"
                         },
                         new
                         {
-                            Id = new Guid("5f9fe6f1-a0d0-49be-ad79-f3164841a31f"),
+                            Id = new Guid("d8d2a28e-5195-4bd3-95b7-5755107425de"),
                             Name = "Avatar 3",
                             Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Jude"
                         },
                         new
                         {
-                            Id = new Guid("925370be-4902-48b9-a3ea-8ae41ca19232"),
+                            Id = new Guid("1fbdddce-43e9-4d0e-94dc-d6d8281ec861"),
                             Name = "Avatar 4",
                             Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Jack"
                         },
                         new
                         {
-                            Id = new Guid("e6898c3d-b58e-4da5-9114-7cb6c76cf790"),
+                            Id = new Guid("71d4bab1-e22c-45c6-a37f-80ef2d587689"),
                             Name = "Avatar 5",
                             Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Jocelyn"
                         },
                         new
                         {
-                            Id = new Guid("ab7890a6-0e94-4dc7-8a3f-74f85f80353d"),
+                            Id = new Guid("b372e881-9971-4135-abe1-2d7391268d1a"),
                             Name = "Avatar 6",
                             Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton"
+                        });
+                });
+
+            modelBuilder.Entity("EcoRoute.Settings.Entities.DateFormat", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("FormatString")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Sample")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DateFormats");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            FormatString = "DD/MM/YYYY",
+                            Sample = "31/12/2025"
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-3333-3333-3333-333333333334"),
+                            FormatString = "MM/DD/YYYY",
+                            Sample = "12/31/2025"
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-3333-3333-3333-333333333335"),
+                            FormatString = "YYYY-MM-DD",
+                            Sample = "2025-12-31"
+                        });
+                });
+
+            modelBuilder.Entity("EcoRoute.Settings.Entities.FontType", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CssValue")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("FontTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            CssValue = "'Open Sans', sans-serif",
+                            Name = "Open Sans"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111112"),
+                            CssValue = "Georgia, serif",
+                            Name = "Georgia"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111113"),
+                            CssValue = "'Montserrat', sans-serif",
+                            Name = "Montserrat"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111114"),
+                            CssValue = "'Playfair Display', serif",
+                            Name = "Playfair Display"
+                        });
+                });
+
+            modelBuilder.Entity("EcoRoute.Settings.Entities.Language", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CultureCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Languages");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            CultureCode = "tr-TR",
+                            Name = "Türkçe"
+                        },
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222223"),
+                            CultureCode = "en-US",
+                            Name = "English"
+                        },
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222224"),
+                            CultureCode = "de-DE",
+                            Name = "Deutsch"
                         });
                 });
 
@@ -85,6 +208,9 @@ namespace EcoRoute.Settings.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("ActiveSessionLimit")
+                        .HasColumnType("int");
+
                     b.Property<string>("AvatarUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -92,21 +218,33 @@ namespace EcoRoute.Settings.Migrations
                     b.Property<bool>("DarkMode")
                         .HasColumnType("bit");
 
+                    b.Property<Guid?>("DateFormatId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<bool>("EmailNotifications")
                         .HasColumnType("bit");
 
                     b.Property<bool>("EnableAnimations")
                         .HasColumnType("bit");
 
-                    b.Property<int>("FontSize")
-                        .HasColumnType("int");
+                    b.Property<Guid?>("FontTypeId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("GoogleMapsApiKey")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid?>("LanguageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("LocationTracking")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("PushNotifications")
                         .HasColumnType("bit");
+
+                    b.Property<int>("SessionTimeout")
+                        .HasColumnType("int");
 
                     b.Property<bool>("SmsNotifications")
                         .HasColumnType("bit");
@@ -115,26 +253,41 @@ namespace EcoRoute.Settings.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
                     b.Property<string>("UserId")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("DateFormatId");
+
+                    b.HasIndex("FontTypeId");
+
+                    b.HasIndex("LanguageId");
 
                     b.ToTable("SystemSettings");
 
                     b.HasData(
                         new
                         {
-                            Id = new Guid("ae0443f1-917c-44db-9ecb-265f03c5b4ed"),
+                            Id = new Guid("44444444-4444-4444-4444-444444444444"),
+                            ActiveSessionLimit = 0,
                             AvatarUrl = "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton",
                             DarkMode = false,
+                            DateFormatId = new Guid("33333333-3333-3333-3333-333333333333"),
                             EmailNotifications = true,
                             EnableAnimations = true,
-                            FontSize = 14,
+                            FontTypeId = new Guid("11111111-1111-1111-1111-111111111111"),
                             GoogleMapsApiKey = "",
+                            LanguageId = new Guid("22222222-2222-2222-2222-222222222222"),
+                            LocationTracking = false,
                             PushNotifications = true,
+                            SessionTimeout = 0,
                             SmsNotifications = false,
-                            ThemeColor = "#2ba86d"
+                            ThemeColor = "#2ba86d",
+                            TwoFactorEnabled = false
                         });
                 });
 
@@ -159,76 +312,97 @@ namespace EcoRoute.Settings.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("2d356529-28bb-45bb-80b5-b25da1073d6e"),
+                            Id = new Guid("43a7f0bc-223b-431e-be0a-0907d56d6cc2"),
                             Name = "Orijinal",
                             Value = "#2ba86d"
                         },
                         new
                         {
-                            Id = new Guid("d3aefb83-49b3-4497-835b-919b5754cebe"),
+                            Id = new Guid("0e950196-27ed-4e8f-b3d6-5cfd40d78f5a"),
                             Name = "Mavi",
                             Value = "#3B82F6"
                         },
                         new
                         {
-                            Id = new Guid("5408af70-b683-4c54-83ef-e7cec5c3d18a"),
+                            Id = new Guid("4c4ac672-af36-4ee1-bc40-dd212e667e8a"),
                             Name = "Kırmızı",
                             Value = "#EF4444"
                         },
                         new
                         {
-                            Id = new Guid("11b56dde-e8e5-4e87-b43b-4c58acf8b996"),
+                            Id = new Guid("9abae893-5e6b-4ac9-8f0f-0daa0131b333"),
                             Name = "Mor",
                             Value = "#8B5CF6"
                         },
                         new
                         {
-                            Id = new Guid("04a59f81-2372-413b-8760-2150acdeba1e"),
+                            Id = new Guid("518f3f89-f40c-4236-857d-e968eff6533c"),
                             Name = "Pembe",
                             Value = "#EC4899"
                         },
                         new
                         {
-                            Id = new Guid("c7a4da28-f770-478d-8ae0-84563fa558ea"),
+                            Id = new Guid("f056eda2-b1af-408b-84f4-0b80e916d563"),
                             Name = "Sarı",
                             Value = "#F59E0B"
                         },
                         new
                         {
-                            Id = new Guid("7f5c0536-f408-4f83-b19d-a76892df23ea"),
+                            Id = new Guid("4296db02-aa9e-4f0f-ba05-0e3af04f9b53"),
                             Name = "Turkuaz",
                             Value = "#06B6D4"
                         },
                         new
                         {
-                            Id = new Guid("1dccb679-b3b3-4039-be89-58259c01df5e"),
+                            Id = new Guid("9191de29-2671-46a6-a6b3-e59d259ff8af"),
                             Name = "Indigo",
                             Value = "#6366F1"
                         },
                         new
                         {
-                            Id = new Guid("fef03528-4ac0-49a6-adca-7ad7888dcd6a"),
+                            Id = new Guid("3bf0fe1d-6bfb-4ba3-a2b0-4b81dc7bb6c5"),
                             Name = "Lime",
                             Value = "#84CC16"
                         },
                         new
                         {
-                            Id = new Guid("f649b485-4de1-4197-9212-b077cd729789"),
+                            Id = new Guid("98843576-420d-4edd-87b9-c50a5e07d8df"),
                             Name = "Gri",
                             Value = "#6B7280"
                         },
                         new
                         {
-                            Id = new Guid("fac9cdaf-beeb-49a4-9efb-84395499096b"),
+                            Id = new Guid("40c63795-23bd-436c-b2f1-3869def0d946"),
                             Name = "Turuncu",
                             Value = "#F97316"
                         },
                         new
                         {
-                            Id = new Guid("fa62d005-3ad7-4919-a2c2-e3f058405160"),
+                            Id = new Guid("5c30bf77-976f-4fd5-9a52-e960d3627381"),
                             Name = "Teal",
                             Value = "#14B8A6"
                         });
+                });
+
+            modelBuilder.Entity("EcoRoute.Settings.Entities.SystemSetting", b =>
+                {
+                    b.HasOne("EcoRoute.Settings.Entities.DateFormat", "DateFormat")
+                        .WithMany()
+                        .HasForeignKey("DateFormatId");
+
+                    b.HasOne("EcoRoute.Settings.Entities.FontType", "FontType")
+                        .WithMany()
+                        .HasForeignKey("FontTypeId");
+
+                    b.HasOne("EcoRoute.Settings.Entities.Language", "Language")
+                        .WithMany()
+                        .HasForeignKey("LanguageId");
+
+                    b.Navigation("DateFormat");
+
+                    b.Navigation("FontType");
+
+                    b.Navigation("Language");
                 });
 #pragma warning restore 612, 618
         }

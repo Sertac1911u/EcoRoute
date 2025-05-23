@@ -72,9 +72,12 @@ namespace EcoRoute.Settings.Services
                 // Reset to default values but keep the user ID
                 settings.DarkMode = false;
                 settings.ThemeColor = "#3B82F6"; // default blue
-                settings.FontSize = 14;
+                settings.TwoFactorEnabled = false;
+                settings.LocationTracking = false;
+                settings.SessionTimeout = 0;
+                settings.ActiveSessionLimit = 0;
                 settings.EnableAnimations = true;
-                settings.AvatarUrl = "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton"; // default avatar
+                settings.AvatarUrl = "https://ui-avatars.com/api/?name=Sertaç+Kara\r\n"; // default avatar
                 settings.EmailNotifications = true;
                 settings.SmsNotifications = false;
                 settings.PushNotifications = true;
@@ -136,9 +139,12 @@ namespace EcoRoute.Settings.Services
                 UserId = userId,
                 DarkMode = false,
                 ThemeColor = "#3B82F6", // default blue
-                FontSize = 14,
                 EnableAnimations = true,
-                AvatarUrl = "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton", // default avatar
+                LocationTracking=false,
+                SessionTimeout=0,
+                ActiveSessionLimit=0,
+                TwoFactorEnabled=false,
+                AvatarUrl = "https://ui-avatars.com/api/?name=Sertaç+Kara\r\n", // default avatar
                 EmailNotifications = true,
                 SmsNotifications = false,
                 PushNotifications = true,
@@ -151,6 +157,25 @@ namespace EcoRoute.Settings.Services
 
             return defaultSettings;
         }
+
+        public async Task<List<FontTypeDto>> GetFontTypesAsync()
+        {
+            var fontTypes = await _context.FontTypes.ToListAsync();
+            return _mapper.Map<List<FontTypeDto>>(fontTypes);
+        }
+
+        public async Task<List<LanguageDto>> GetLanguagesAsync()
+        {
+            var languages = await _context.Languages.ToListAsync();
+            return _mapper.Map<List<LanguageDto>>(languages);
+        }
+
+        public async Task<List<DateFormatDto>> GetDateFormatsAsync()
+        {
+            var formats = await _context.DateFormats.ToListAsync();
+            return _mapper.Map<List<DateFormatDto>>(formats);
+        }
+
     }
 
 }

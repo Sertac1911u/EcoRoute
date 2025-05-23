@@ -16,14 +16,10 @@
 <div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden">
     <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
         <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Sistem Ayarları</h2>
-        <div class="flex space-x-2">
+        <div>
             <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-md transition duration-300"
                     @onclick="ResetToDefaults">
                 <i class="fas fa-undo mr-2"></i> Varsayılan Ayarlara Dön
-            </button>
-            <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-md transition duration-300"
-                    @onclick="SaveSettings">
-                <i class="fas fa-save mr-2"></i> Kaydet
             </button>
         </div>
     </div>
@@ -41,18 +37,19 @@
             <SettingsAppearance Settings="@settings"
                                 ThemeColors="@themeColors"
                                 SelectedShades="@selectedColorShades"
-                                OnColorSelect="SelectThemeColor" />
-
+                                FontTypes="@fontTypes"
+                                OnColorSelect="SelectAndSaveThemeColor"
+                                OnSettingChanged="SaveSettingsOnChange" />
 
             <SettingsProfileAndNotifications Settings="@settings"
-                                             OnAvatarClick="@(() => showAvatarModal = true)" />
+                                             OnAvatarClick="@(() => showAvatarModal = true)"
+                                             OnSettingChanged="SaveSettingsOnChange" />
 
-
-            @if (IsAdmin)
-            {
-                <SettingsIntegrations Settings="@settings"
-                                      OnTestApi="TestGoogleMapsApi" />
-            }
+            <SettingsIntegrations Settings="@settings"
+                                  Languages="@languages"
+                                  DateFormats="@dateFormats"
+                                  OnTestApi="TestGoogleMapsApi"
+                                  OnSettingsChange="SaveSettingsOnChange" />
         </div>
     }
 </div>
@@ -88,7 +85,21 @@
 
     private string currentUserId = string.Empty;
     private bool IsAdmin = false;
-
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !isLoading)
+        {
+            // Apply the current font if available
+            if (settings.FontTypeId != null)
+            {
+                var selectedFont = fontTypes.FirstOrDefault(f => f.Id == settings.FontTypeId);
+                if (selectedFont != null)
+                {
+                    await JS.InvokeVoidAsync("fontManager.applyFont", selectedFont.CssValue);
+                }
+            }
+        }
+    }
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
@@ -99,6 +110,10 @@
 
         themeColors = await SettingsService.GetThemeColorsAsync();
         avatars = await SettingsService.GetAvatarsAsync();
+        fontTypes = await SettingsService.GetFontTypesAsync();
+        languages = await SettingsService.GetLanguagesAsync();
+        dateFormats = await SettingsService.GetDateFormatsAsync();
+        
         await LoadUserSettings();
         SetSelectedColorShades();
 
@@ -110,46 +125,59 @@
         selectedColorShades = themeColors.FirstOrDefault(c => c.Value == settings.ThemeColor)?.Shades;
     }
 
-    private async Task SelectThemeColor(ThemeColorDto color)
+    private async Task SelectAndSaveThemeColor(ThemeColorDto color)
     {
         settings.ThemeColor = color.Value;
         selectedColorShades = color.Shades;
         await JS.InvokeVoidAsync("themeManager.applyTheme", color.Value, color.Shades);
+        
+        // Auto-save when color is selected
+        await SaveSettingsOnChange();
     }
+    
+    // Lists for font types, languages, and date formats
+    private List<FontTypeDto> fontTypes = new();
+    private List<LanguageDto> languages = new();
+    private List<DateFormatDto> dateFormats = new();
 
     private async Task OnAvatarChanged(string url)
     {
         settings.AvatarUrl = url;
-        showAvatarModal = false; // Bu satır zaten var, kalsın
+        showAvatarModal = false;
 
         await localStorage.SetItemAsync("avatarUrl", url);
-        toastService.ShowSuccess("Profil avatarı başarıyla güncellendi");
+        
+        // Auto-save when avatar is changed
+        await SaveSettingsOnChange();
     }
 
-
-    private async Task SaveSettings()
+    private async Task SaveSettingsOnChange()
     {
         var dto = new UpdateSystemSettingDto
-            {
-                DarkMode = settings.DarkMode,
-                ThemeColor = settings.ThemeColor,
-                FontSize = settings.FontSize,
-                EnableAnimations = settings.EnableAnimations,
-                AvatarUrl = settings.AvatarUrl,
-                EmailNotifications = settings.EmailNotifications,
-                SmsNotifications = settings.SmsNotifications,
-                PushNotifications = settings.PushNotifications,
-                GoogleMapsApiKey = settings.GoogleMapsApiKey
-            };
+        {
+            DarkMode = settings.DarkMode,
+            ThemeColor = settings.ThemeColor,
+            EnableAnimations = settings.EnableAnimations,
+            AvatarUrl = settings.AvatarUrl,
+            EmailNotifications = settings.EmailNotifications,
+            SmsNotifications = settings.SmsNotifications,
+            PushNotifications = settings.PushNotifications,
+            GoogleMapsApiKey = settings.GoogleMapsApiKey,
+            FontTypeId = settings.FontTypeId,
+            LanguageId = settings.LanguageId,
+            DateFormatId = settings.DateFormatId
+        };
 
         if (await SettingsService.UpdateSettingsAsync(dto))
         {
             await localStorage.SetItemAsync("darkMode", settings.DarkMode.ToString().ToLower());
             await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(settings.DarkMode ? "add" : "remove")}('dark')");
             await localStorage.SetItemAsync("avatarUrl", settings.AvatarUrl);
+            
+            // Show toast notification briefly
             showSavedToast = true;
-                StateHasChanged(); 
-            await Task.Delay(3000);
+            StateHasChanged();
+            await Task.Delay(1500);
             showSavedToast = false;
         }
         else
@@ -164,17 +192,29 @@
         if (dto is null) return;
 
         settings = new SettingsViewModel
-            {
-                DarkMode = dto.DarkMode,
-                ThemeColor = dto.ThemeColor ?? "#3B82F6",
-                FontSize = dto.FontSize,
-                EnableAnimations = dto.EnableAnimations,
-                AvatarUrl = dto.AvatarUrl ?? "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton",
-                EmailNotifications = dto.EmailNotifications,
-                SmsNotifications = dto.SmsNotifications,
-                PushNotifications = dto.PushNotifications,
-                GoogleMapsApiKey = dto.GoogleMapsApiKey ?? ""
-            };
+        {
+            DarkMode = dto.DarkMode,
+            ThemeColor = dto.ThemeColor ?? "#3B82F6",
+            EnableAnimations = dto.EnableAnimations,
+            TwoFactorEnabled = dto.TwoFactorEnabled,
+            LocationTracking = dto.LocationTracking,
+            SessionTimeout = dto.SessionTimeout,
+            ActiveSessionLimit = dto.ActiveSessionLimit,
+            AvatarUrl = dto.AvatarUrl ?? "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton",
+            EmailNotifications = dto.EmailNotifications,
+            SmsNotifications = dto.SmsNotifications,
+            PushNotifications = dto.PushNotifications,
+            GoogleMapsApiKey = dto.GoogleMapsApiKey ?? "",
+            FontTypeId = dto.FontTypeId,
+            LanguageId = dto.LanguageId,
+            DateFormatId = dto.DateFormatId,
+            FontTypeName = dto.FontTypeName,
+            FontTypeCss = dto.FontTypeCss,
+            LanguageName = dto.LanguageName,
+            LanguageCode = dto.LanguageCode,
+            DateFormatString = dto.DateFormatString,
+            DateFormatSample = dto.DateFormatSample
+        };
 
         await localStorage.SetItemAsync("darkMode", settings.DarkMode.ToString().ToLower());
         await localStorage.SetItemAsync("avatarUrl", settings.AvatarUrl);
@@ -194,12 +234,16 @@
             selectedColorShades = defaultColor?.Shades;
 
             settings.DarkMode = false;
-            settings.FontSize = 14;
             settings.EnableAnimations = true;
+            settings.LocationTracking = true;
+            settings.TwoFactorEnabled = false;
 
             await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.remove('dark')");
             await localStorage.SetItemAsync("darkMode", "false");
             toastService.ShowSuccess("Ayarlar varsayılan değerlere döndürüldü.");
+            
+            // Reload settings after reset
+            await LoadUserSettings();
         }
         else
         {
@@ -226,12 +270,28 @@
     {
         public bool DarkMode { get; set; }
         public string ThemeColor { get; set; }
-        public int FontSize { get; set; }
         public bool EnableAnimations { get; set; }
+        public bool TwoFactorEnabled { get; set; }
+        public bool LocationTracking { get; set; } = true;
+        public int SessionTimeout { get; set; } = 30;
+        public int ActiveSessionLimit { get; set; } = 1;
         public string AvatarUrl { get; set; }
         public bool EmailNotifications { get; set; }
         public bool SmsNotifications { get; set; }
         public bool PushNotifications { get; set; }
         public string GoogleMapsApiKey { get; set; }
+        public string MapboxToken { get; set; }
+        public string WeatherApiKey { get; set; }
+        
+        // Additional properties to match API model
+        public Guid? FontTypeId { get; set; }
+        public string FontTypeName { get; set; }
+        public string FontTypeCss { get; set; }
+        public Guid? LanguageId { get; set; }
+        public string LanguageName { get; set; }
+        public string LanguageCode { get; set; }
+        public Guid? DateFormatId { get; set; }
+        public string DateFormatString { get; set; }
+        public string DateFormatSample { get; set; }
     }
 }

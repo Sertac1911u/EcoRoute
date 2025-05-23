@@ -743,12 +743,20 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rota Adı</label>
-                                <InputText class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" @bind-Value="newRoute.Name" placeholder="Örn: Sabah Rotası" />
+                                <InputText class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" @bind-Value="newRoute.RouteName" placeholder="Örn: Sabah Rotası" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Atık Türü</label>
-                                <InputText class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" @bind-Value="newRoute.WasteType" placeholder="Örn: Genel Çöp" />
+                                <InputSelect class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                                             @bind-Value="newRoute.WasteType">
+                                    <option value="">Seçiniz</option>
+                                    @foreach (WasteType wt in Enum.GetValues(typeof(WasteType)))
+                                    {
+                                        <option value="@wt">@GetWasteTypeText(wt)</option>
+                                    }
+                                </InputSelect>
                             </div>
+
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Başlangıç Zamanı</label>
                                 <InputDate class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" @bind-Value="newRoute.ScheduledStart" />
@@ -1110,447 +1118,733 @@
 
 
 <script>
-    // Initialize module to contain maps and related objects
-    window.ecoRouteMapModule = window.ecoRouteMapModule || {};
+    // Global variables
+    let mainMap;
+    let locationPickerMap;
+    let markers = [];
+    let routePolylines = [];
+    let truckMarkers = [];
+    let wasteBinMarkers = [];
+    let markerCluster = null;
+    let currentInfoWindow = null;
+    let sidebarOpen = false;
+    let dotNetRef = null;
+    let selectedRouteId = null;
+    let userLocationMarker = null;
+    let isDarkMode = false;
+    let simulationVehicleMarker = null;
+    let simulationNotificationSent = false;
+    let alreadyNotifiedSteps = [];
 
-    (function(module) {
-        // Maps and other variables at module level
-        module.maps = module.maps || {};
-        module.markers = module.markers || [];
-        module.routePolylines = module.routePolylines || [];
-        module.truckMarkers = module.truckMarkers || [];
-        module.wasteBinMarkers = module.wasteBinMarkers || [];
-        module.currentInfoWindow = null;
-        module.dotNetRef = null;
-        module.simulationVehicleMarker = null;
-        module.simulationNotificationSent = false;
-        module.alreadyNotifiedSteps = [];
-        let markerClusterer = null;
+    // Constants
+    const DEFAULT_CENTER = { lat: 41.1634, lng: 27.7951 }; // Çorlu merkez
+    const DEFAULT_ZOOM = 13;
+    const FOCUS_ZOOM = 15;
+    const DETAIL_ZOOM = 14;
+    const DEFAULT_TILT = 67.7;
+    const MAP_ID = '8b70db4a26fb9f4cd11929e3';
+    const PRIMARY_COLOR = '#3B82F6';
+    const RECYCLING_GREEN = "#10B981";
 
-        // Constants
-        const DEFAULT_CENTER = { lat: 41.1634, lng: 27.7951 }; // Çorlu center
-        const DEFAULT_ZOOM = 13;
-        const FOCUS_ZOOM = 15;
-        const DETAIL_ZOOM = 14;
-        const RECYCLING_GREEN = "#10B981"; // Theme color for recycling
+    // Add the missing scrollToRouteMap function
+    window.scrollToRouteMap = function() {
+        const mapElement = document.getElementById('route-map');
+        if (mapElement) {
+            mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    };
 
-        // Initialize Google Maps - this needs to be in global scope
-        window.initializeGoogleMaps = function (reference) {
-            module.dotNetRef = reference;
-            console.log("Google Maps initialization started");
-        };
+    // Dark mode detection
+    function detectDarkMode() {
+        isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ||
+                   document.documentElement.classList.contains('dark');
+        return isDarkMode;
+    }
 
-        // Google Maps Interop
-        window.googleMapsInterop = {
-            // Generate warehouse SVG icon with theme-aware coloring
-            getWarehouseIcon: function(isDarkMode = false) {
-                // Theme-aware colors
-    const fillColor   = isDarkMode ? '#6B7280' : '#3B82F6';
-    const strokeColor = isDarkMode ? '#9CA3AF' : '#2563EB';
+    // Watch for dark mode changes
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+            isDarkMode = e.matches || document.documentElement.classList.contains('dark');
+            updateMapTheme();
+        });
+    }
 
-
-                  // Warehouse SVG from Material Icons
-                const svg = `
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48">
-      <path fill="${fillColor}" stroke="${strokeColor}" stroke-width="1"
-            d="M12 3L2 9v2h20V9l-10-6zm0 2.18L18.4 9H5.6L12 5.18zM4 11v8h3v-6h2v6h2v-6h2v6h2v-6h2v6h3v-8H4z"/>
-    </svg>
-                `;
-                
-                // Convert SVG to base64 data URL
-                return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-            },
-
-            // Generate shipping truck SVG icon with theme-aware coloring
-            getShippingIcon: function(isDarkMode = false) {
-                // Theme-aware colors
-                const fillColor = isDarkMode ? '#4B5563' : '#3B82F6'; // Dark gray in dark mode, blue in light mode
-                const strokeColor = isDarkMode ? '#6B7280' : '#2563EB';
-                
-                // Local Shipping SVG from Material Icons
-                const svg = `
-                    <svg xmlns="http://www.w3.org/2000/svg" height="48" width="48" viewBox="0 0 48 48">
-                        <path fill="${fillColor}" stroke="${strokeColor}" stroke-width="1" d="M11 42q-1.25 0-2.125-.875T8 39V14q0-1.25.875-2.125T11 11h18q1.25 0 2.125.875T32 14v3h5q.75 0 1.525.425.775.425 1.225 1.075l5.6 8.35q.35.55.5 1.225.15.675.15 1.425V39q0 1.25-.875 2.125T42 42h-1.5q0 2.1-1.45 3.55Q37.6 47 35.5 47q-2.1 0-3.55-1.45Q30.5 44.1 30.5 42h-13q0 2.1-1.45 3.55Q14.6 47 12.5 47q-2.1 0-3.55-1.45Q7.5 44.1 7.5 42Zm1.5-3h23V14H12.5Zm23 0H39v-9h-2.5Zm-23-6v-13 13Zm-1 6q.85 0 1.425-.575Q13 37.85 13 37q0-.85-.575-1.425Q11.85 35 11 35q-.85 0-1.425.575Q9 36.15 9 37q0 .85.575 1.425Q10.15 39 12 39Zm24 0q.85 0 1.425-.575Q38 37.85 38 37q0-.85-.575-1.425Q36.85 35 36 35q-.85 0-1.425.575Q34 36.15 34 37q0 .85.575 1.425Q35.15 39 36 39Zm3-12h3.5l-5-7.5H39Z"/>
-                    </svg>
-                `;
-                
-                // Convert SVG to base64 data URL
-                return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-            },
-            
-            // Generate trash bin SVG icon based on fill level
-            getDeleteIcon: function(isCompleted = false, fillLevel = 0, isDarkMode = false) {
-                // Determine colors based on fill level
-                let fillColor, strokeColor;
-
-                // Determine colors based on fill level
-                if (fillLevel >= 90) {
-                    fillColor = '#EF4444'; // Red for 90-100%
-                    strokeColor = '#B91C1C';
-                } else if (fillLevel >= 70) {
-                    fillColor = '#F97316'; // Orange for 70-90%
-                    strokeColor = '#C2410C';
-                } else if (fillLevel >= 50) {
-                    fillColor = '#F59E0B'; // Amber for 50-70%
-                    strokeColor = '#B45309';
-                } else if (fillLevel >= 30) {
-                    fillColor = '#3B82F6'; // Blue for 30-50%
-                    strokeColor = '#1D4ED8';
-                } else {
-                    fillColor = '#10B981'; // Green for 0-30%
-                    strokeColor = '#059669';
+    // Observer for dark class changes
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const newDarkMode = document.documentElement.classList.contains('dark');
+                if (newDarkMode !== isDarkMode) {
+                    isDarkMode = newDarkMode;
+                    updateMapTheme();
                 }
+            }
+        });
+    });
 
-                // Adjust for completion status
-                if (isCompleted) {
-                    fillColor = '#10B981'; // Green for completed
-                    strokeColor = '#059669';
+    observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+
+    function updateMapTheme() {
+        if (mainMap) {
+            mainMap.setOptions({
+                styles: getMapStyles()
+            });
+        }
+        if (locationPickerMap) {
+            locationPickerMap.setOptions({
+                styles: getMapStyles()
+            });
+        }
+    }
+
+    function getMapStyles() {
+        detectDarkMode();
+
+        if (isDarkMode) {
+            return [
+                { elementType: "geometry", stylers: [{ color: "#0f0f0f" }] },
+                { elementType: "labels.text.stroke", stylers: [{ color: "#0f0f0f" }] },
+                { elementType: "labels.text.fill", stylers: [{ color: "#757575" }] },
+                {
+                    featureType: "administrative.locality",
+                    elementType: "labels.text.fill",
+                    stylers: [{ color: "#c4c4c4" }]
+                },
+                {
+                    featureType: "administrative.country",
+                    elementType: "geometry.stroke",
+                    stylers: [{ color: "#4e5c6e" }]
+                },
+                {
+                    featureType: "poi",
+                    elementType: "labels.text.fill",
+                    stylers: [{ color: "#6b7280" }]
+                },
+                {
+                    featureType: "poi.park",
+                    elementType: "geometry.fill",
+                    stylers: [{ color: "#1a2e1a" }]
+                },
+                {
+                    featureType: "poi.business",
+                    stylers: [{ visibility: "off" }]
+                },
+                {
+                    featureType: "road",
+                    elementType: "geometry",
+                    stylers: [{ color: "#1f1f1f" }]
+                },
+                {
+                    featureType: "road",
+                    elementType: "geometry.stroke",
+                    stylers: [{ color: "#0a0a0a" }]
+                },
+                {
+                    featureType: "road.highway",
+                    elementType: "geometry",
+                    stylers: [{ color: "#2d2d2d" }]
+                },
+                {
+                    featureType: "road.highway",
+                    elementType: "geometry.stroke",
+                    stylers: [{ color: "#1a1a1a" }]
+                },
+                {
+                    featureType: "road.arterial",
+                    elementType: "geometry",
+                    stylers: [{ color: "#262626" }]
+                },
+                {
+                    featureType: "road.local",
+                    elementType: "geometry",
+                    stylers: [{ color: "#1a1a1a" }]
+                },
+                {
+                    featureType: "water",
+                    elementType: "geometry.fill",
+                    stylers: [{ color: "#0a1a2a" }]
+                },
+                {
+                    featureType: "water",
+                    elementType: "labels.text.fill",
+                    stylers: [{ color: "#4a90a4" }]
+                },
+                {
+                    featureType: "transit",
+                    elementType: "geometry",
+                    stylers: [{ color: "#1e1e1e" }]
+                },
+                {
+                    featureType: "transit.station",
+                    elementType: "labels.text.fill",
+                    stylers: [{ color: "#757575" }]
+                },
+                {
+                    featureType: "landscape.man_made",
+                    elementType: "geometry.fill",
+                    stylers: [{ color: "#1a1a1a" }]
+                },
+                {
+                    featureType: "landscape.natural",
+                    elementType: "geometry.fill",
+                    stylers: [{ color: "#0d0d0d" }]
                 }
-                
-                // Calculate fill height based on the fill level percentage
-                const fillHeight = Math.max(0, Math.min(20, fillLevel / 5));
-                
-                // Delete icon SVG from Material Icons with fill level
-                const svg = `
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="36">
-                        <!-- Pin -->
-                        <path d="M12,0 C5.5,0 0,5.5 0,12 C0,18.5 12,36 12,36 C12,36 24,18.5 24,12 C24,5.5 18.5,0 12,0 Z" fill="${fillColor}" stroke="${strokeColor}" stroke-width="1" />
-                        
-                        <!-- Delete icon from Material Design -->
-                        <g transform="translate(5, 6) scale(0.6)">
-                            <path fill="white" d="M9,3V4H4V6H5V19A2,2 0 0,0 7,21H17A2,2 0 0,0 19,19V6H20V4H15V3H9M7,6H17V19H7V6M9,8V17H11V8H9M13,8V17H15V8H13Z" />
-                            
-                            <!-- Fill level indicator -->
-                            <rect x="7" y="${21 - fillHeight}" width="10" height="${fillHeight}" fill="${fillColor}" opacity="0.8" />
-                        </g>
-                    </svg>
-                `;
-                
-                // Convert SVG to base64 data URL
-                return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
-            },
-
-            // Initialize main map with improved error handling
-            initializeMainMap: function () {
-                const mapElement = document.getElementById("admin-observer-map");
-                console.log("Initializing main map in element:", mapElement?.id);
-
-                // Map element yok ise hata ver ve çık
-                if (!mapElement) {
-                    console.error("Map element not found. Make sure 'admin-observer-map' exists in the DOM");
-                    if (module.dotNetRef) {
-                        module.dotNetRef.invokeMethodAsync('ShowToastFromJs', 'Harita yüklenemedi: HTML element bulunamadı. Sayfayı yenileyin veya daha sonra tekrar deneyin.');
-                    }
-                    return false; // Return false to indicate initialization failed
+            ];
+        } else {
+            return [
+                {
+                    "featureType": "all",
+                    "elementType": "geometry",
+                    "stylers": [{"color": "#f5f5f5"}]
+                },
+                {
+                    "featureType": "landscape.man_made",
+                    "elementType": "geometry.fill",
+                    "stylers": [{"color": "#e8f0e4"}]
+                },
+                {
+                    "featureType": "poi.park",
+                    "elementType": "geometry.fill",
+                    "stylers": [{"color": "#c8e6c9"}]
+                },
+                {
+                    "featureType": "water",
+                    "elementType": "geometry.fill",
+                    "stylers": [{"color": "#bbdefb"}]
+                },
+                {
+                    "featureType": "road",
+                    "elementType": "geometry.fill",
+                    "stylers": [{"color": "#ffffff"}]
+                },
+                {
+                    "featureType": "road",
+                    "elementType": "geometry.stroke",
+                    "stylers": [{"color": "#e0e0e0"}]
                 }
+            ];
+        }
+    }
 
-                // Hide loading indicator when map is fully loaded
-                const hideLoading = () => {
-                    const loadingIndicator = document.getElementById('map-loading-indicator');
-                    if (loadingIndicator) {
-                        loadingIndicator.style.opacity = '0';
-                        setTimeout(() => {
-                            loadingIndicator.style.display = 'none';
-                        }, 500);
-                    }
-                };
+       // Enhanced icon creation functions - Updated depot icon with larger building icon
+       function getDepotIcon(scale = 1.5) {
+        const size = 45 * scale;
+        const color = isDarkMode ? '#F59E0B' : '#D97706';
+        const strokeColor = isDarkMode ? '#FBBF24' : '#B45309';
 
-                try {
-                    // Eğer harita zaten varsa temizle
-                    if (module.maps.mainMap) {
-                        console.log("Map already exists, clearing existing data");
-                        this.clearMarkers();
-                        this.clearPolylines();
-                        this.clearWasteBinMarkers();
-                        hideLoading();
+        const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size + 16} ${size + 20}" width="${size + 16}" height="${size + 20}">
+                <defs>
+                    <filter id="shadow-depot" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.5"/>
+                    </filter>
+                    <radialGradient id="grad-depot" cx="30%" cy="30%" r="70%">
+                        <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:${strokeColor};stop-opacity:1" />
+                    </radialGradient>
+                </defs>
 
-                        if (module.dotNetRef) {
-                            module.dotNetRef.invokeMethodAsync('OnMapInitialized');
-                        }
-                        return true;
-                    }
+                <!-- Main pin circle -->
+                <circle cx="${(size + 16) / 2}" cy="${size / 2 + 8}" r="${size / 2}"
+                        fill="url(#grad-depot)"
+                        stroke="white"
+                        stroke-width="4"
+                        opacity="0.95"
+                        filter="url(#shadow-depot)"/>
 
-                    // Haritayı oluştur
-                    module.maps.mainMap = new google.maps.Map(mapElement, {
-                        center: DEFAULT_CENTER,
-                        zoom: DEFAULT_ZOOM,
-                        mapTypeId: 'roadmap',
-                        streetViewControl: false,
-                        mapTypeControl: false,
-                        fullscreenControl: true,
-                    });
+                <!-- Pin point -->
+                <path d="M${(size + 16) / 2},${size + 8} L${(size + 16) / 2 + 8},${size + 20} L${(size + 16) / 2 - 8},${size + 20} Z"
+                      fill="url(#grad-depot)"
+                      stroke="white"
+                      stroke-width="3"/>
 
-                    // Add location button
-                    this.addLocationButton(module.maps.mainMap);
+                <!-- Updated municipal building icon - Perfectly centered within circle -->
+                <g transform="translate(${(size + 16) / 2}, ${size / 2 + 8}) scale(1.9) translate(-12,-12)">
+                    <!-- Main building -->
+                    <rect x="3" y="12" width="18" height="10" fill="white" opacity="0.95" rx="1"/>
+                    <!-- Roof -->
+                    <polygon points="12,4 3,10 21,10" fill="white" opacity="0.95"/>
+                    <!-- Columns -->
+                    <rect x="5" y="13" width="2" height="8" fill="${color}" opacity="0.8"/>
+                    <rect x="9" y="13" width="2" height="8" fill="${color}" opacity="0.8"/>
+                    <rect x="13" y="13" width="2" height="8" fill="${color}" opacity="0.8"/>
+                    <rect x="17" y="13" width="2" height="8" fill="${color}" opacity="0.8"/>
+                    <!-- Flag pole -->
+                    <rect x="11" y="4" width="1.5" height="6" fill="white" opacity="0.9"/>
+                    <!-- Flag -->
+                    <polygon points="12.5,4 12.5,7 18,6 12.5,5" fill="#DC2626" opacity="0.9"/>
+                    <!-- Door -->
+                    <rect x="10" y="17" width="4" height="4" fill="${color}" opacity="0.9" rx="0.5"/>
+                    <!-- Windows -->
+                    <rect x="6" y="14" width="1.5" height="1.5" fill="${color}" opacity="0.6"/>
+                    <rect x="16" y="14" width="1.5" height="1.5" fill="${color}" opacity="0.6"/>
+                </g>
+            </svg>
+        `;
 
-                    // Hide loading indicator
-                    google.maps.event.addListenerOnce(module.maps.mainMap, 'tilesloaded', () => {
-                        hideLoading();
-                        if (module.dotNetRef) {
-                            module.dotNetRef.invokeMethodAsync('OnMapInitialized');
-                        }
-                    });
+        return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+    }
+    function getTruckIcon(routeColor = '#4285F4', scale = 1.5) {
+        const size = 36 * scale;
+        const strokeColor = darkenColor(routeColor, 20);
 
-                    // Add marker for Çorlu Belediyesi (depot)
-                    const isDarkMode = document.documentElement.classList.contains('dark');
-                    new google.maps.Marker({
-                        position: DEFAULT_CENTER,
-                        map: module.maps.mainMap,
-                        icon: {
-                            url: this.getWarehouseIcon(isDarkMode),
-                            scaledSize: new google.maps.Size(40, 40),
-                            anchor: new google.maps.Point(20, 20)
-                        },
-                        title: 'Çorlu Belediyesi (Araç Deposu)',
-                        zIndex: 1000
-                    });
+        const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size + 16} ${size + 20}" width="${size + 16}" height="${size + 20}">
+                <defs>
+                    <filter id="shadow-truck" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity="0.4"/>
+                    </filter>
+                    <radialGradient id="grad-truck" cx="30%" cy="30%" r="70%">
+                        <stop offset="0%" style="stop-color:${routeColor};stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:${strokeColor};stop-opacity:1" />
+                    </radialGradient>
+                </defs>
 
-                    return true; // Return true to indicate initialization succeeded
+                <!-- Main pin circle -->
+                <circle cx="${(size + 16) / 2}" cy="${size / 2 + 8}" r="${size / 2}"
+                        fill="url(#grad-truck)"
+                        stroke="white"
+                        stroke-width="3"
+                        opacity="0.95"
+                        filter="url(#shadow-truck)"/>
 
-                } catch (error) {
-                    console.error("Error initializing main map:", error);
+                <!-- Pin point -->
+                <path d="M${(size + 16) / 2},${size + 8} L${(size + 16) / 2 + 6},${size + 18} L${(size + 16) / 2 - 6},${size + 18} Z"
+                      fill="url(#grad-truck)"
+                      stroke="white"
+                      stroke-width="2"/>
+
+                <!-- Truck icon -->
+                <g transform="translate(${(size + 16) / 2 - 10}, ${size / 2 + 8 - 10}) scale(1.2)">
+                    <!-- Truck body -->
+                    <rect x="2" y="8" width="12" height="8" fill="white" opacity="0.9" rx="1"/>
+                    <!-- Truck cab -->
+                    <rect x="14" y="10" width="6" height="6" fill="white" opacity="0.9" rx="1"/>
+                    <!-- Windows -->
+                    <rect x="3" y="9" width="4" height="3" fill="${routeColor}" opacity="0.7"/>
+                    <rect x="15" y="11" width="3" height="3" fill="${routeColor}" opacity="0.7"/>
+                    <!-- Wheels -->
+                    <circle cx="5" cy="17" r="1.5" fill="white" opacity="0.9"/>
+                    <circle cx="11" cy="17" r="1.5" fill="white" opacity="0.9"/>
+                    <circle cx="17" cy="17" r="1.5" fill="white" opacity="0.9"/>
+                </g>
+            </svg>
+        `;
+
+        return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+    }
+
+    // Updated waste bin icon with larger size
+    function getWasteBinIcon(status, fillLevel, opacity = 1, scale = 1.8) { // Increased default scale from 1.0 to 1.4
+        let fillColor, strokeColor;
+
+        if (fillLevel >= 90) {
+            fillColor = '#EF4444';
+            strokeColor = '#B91C1C';
+        } else if (fillLevel >= 70) {
+            fillColor = '#F97316';
+            strokeColor = '#C2410C';
+        } else if (fillLevel >= 50) {
+            fillColor = '#F59E0B';
+            strokeColor = '#B45309';
+        } else if (fillLevel >= 30) {
+            fillColor = PRIMARY_COLOR;
+            strokeColor = '#1D4ED8';
+        } else {
+            fillColor = '#10B981';
+            strokeColor = '#059669';
+        }
+
+        if (status === 'Inactive') {
+            fillColor = '#9CA3AF';
+            strokeColor = '#6B7280';
+        } else if (status === 'Maintenance') {
+            fillColor = '#FBBF24';
+            strokeColor = '#D97706';
+        } else if (status === 'Faulty') {
+            fillColor = '#F87171';
+            strokeColor = '#DC2626';
+        }
+
+        const size = 32 * scale; // Increased base size from 28 to 32
+        const iconSize = 16 * scale; // Increased icon size from 14 to 16
+
+        const svg = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size + 12} ${size + 16}" width="${size + 12}" height="${size + 16}">
+                <defs>
+                    <filter id="shadow-bin" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="3" stdDeviation="4" flood-opacity="0.4"/>
+                    </filter>
+                    <radialGradient id="grad-bin" cx="50%" cy="30%" r="70%">
+                        <stop offset="0%" style="stop-color:${fillColor};stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:${strokeColor};stop-opacity:1" />
+                    </radialGradient>
+                </defs>
+
+                <!-- Main pin circle -->
+                <circle cx="${(size + 12) / 2}" cy="${size / 2 + 6}" r="${size / 2}"
+                        fill="url(#grad-bin)"
+                        stroke="white"
+                        stroke-width="3"
+                        opacity="${opacity}"
+                        filter="url(#shadow-bin)"/>
+
+                <!-- Pin point -->
+                <path d="M${(size + 12) / 2},${size + 6} L${(size + 12) / 2 + 6},${size + 16} L${(size + 12) / 2 - 6},${size + 16} Z"
+                      fill="url(#grad-bin)"
+                      stroke="white"
+                      stroke-width="2"/>
+
+                <!-- Trash bin icon -->
+                <g transform="translate(${(size + 12) / 2 - iconSize / 2}, ${size / 2 + 6 - iconSize / 2}) scale(${iconSize / 16})">
+                    <rect x="2" y="5" width="12" height="9" rx="1" fill="white" opacity="0.9"/>
+                    <rect x="1" y="4" width="14" height="2" rx="1" fill="white" opacity="0.9"/>
+                    <rect x="6" y="2" width="4" height="3" rx="1" fill="white" opacity="0.7"/>
+                    <rect x="3" y="${14 - (fillLevel / 100) * 8}" width="10" height="${(fillLevel / 100) * 8}"
+                          fill="${fillColor}" opacity="0.3" rx="0.5"/>
+                    <!-- Lid handle -->
+                    <ellipse cx="8" cy="3" rx="1" ry="0.5" fill="white" opacity="0.8"/>
+                    <!-- Waste level indicator lines -->
+                    <line x1="4" y1="7" x2="12" y2="7" stroke="${fillColor}" stroke-width="0.3" opacity="0.6"/>
+                    <line x1="4" y1="9" x2="12" y2="9" stroke="${fillColor}" stroke-width="0.3" opacity="0.6"/>
+                    <line x1="4" y1="11" x2="12" y2="11" stroke="${fillColor}" stroke-width="0.3" opacity="0.6"/>
+                </g>
+            </svg>
+        `;
+
+        return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+    }
+
+    // Helper function to darken colors
+    function darkenColor(color, percent) {
+        const hex = color.replace('#', '');
+        const num = parseInt(hex, 16);
+        const amt = Math.round(2.55 * percent);
+        const R = Math.max(0, Math.min(255, (num >> 16) - amt));
+        const G = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) - amt));
+        const B = Math.max(0, Math.min(255, (num & 0x0000FF) - amt));
+        return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+    }
+
+    // Initialize Google Maps integration
+    window.initializeGoogleMaps = function (reference) {
+        dotNetRef = reference;
+        detectDarkMode();
+        console.log("Google Maps initialization started");
+    };
+
+    // Main object containing all Google Maps related functions
+    window.googleMapsInterop = {
+        initializeMainMap: function () {
+            const mapElementId = "admin-observer-map";
+            console.log("Initializing main map in element:", mapElementId);
+
+            const mapElement = document.getElementById(mapElementId);
+            if (!mapElement) {
+                console.error("Main map element not found:", mapElementId);
+                return false;
+            }
+
+            const hideLoading = () => {
+                const loadingIndicator = document.getElementById('map-loading-indicator');
+                if (loadingIndicator) {
+                    loadingIndicator.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingIndicator.style.display = 'none';
+                    }, 500);
+                }
+            };
+
+            try {
+                mainMap = new google.maps.Map(mapElement, {
+                    center: DEFAULT_CENTER,
+                    zoom: DEFAULT_ZOOM,
+                    tilt: DEFAULT_TILT,
+                    heading: 0,
+                    mapTypeId: 'roadmap',
+                    mapId: MAP_ID,
+                    streetViewControl: false,
+                    mapTypeControl: false,
+                    rotateControl: true,
+                    zoomControl: true,
+                    fullscreenControl: true,
+                    styles: getMapStyles()
+                });
+
+                this.add3DToggle(mainMap);
+                this.addUserLocationButton(mainMap);
+
+                google.maps.event.addListenerOnce(mainMap, 'tilesloaded', () => {
                     hideLoading();
-                    if (module.dotNetRef) {
-                        module.dotNetRef.invokeMethodAsync('ShowToastFromJs', 'Harita yüklenirken hata oluştu: ' + error.message);
-                    }
-                    return false; // Return false to indicate initialization failed
-                }
-            },
-
-            // Add location button to map
-            addLocationButton: function (map) {
-                const locationButton = document.createElement('button');
-                locationButton.className = 'custom-map-control-button';
-                locationButton.innerHTML = '<i class="fas fa-location-arrow"></i>';
-                locationButton.title = 'Konumumu göster';
-                locationButton.style.backgroundColor = '#fff';
-                locationButton.style.border = 'none';
-                locationButton.style.borderRadius = '2px';
-                locationButton.style.boxShadow = '0 1px 4px rgba(0,0,0,0.3)';
-                locationButton.style.cursor = 'pointer';
-                locationButton.style.margin = '10px';
-                locationButton.style.padding = '8px';
-                locationButton.style.textAlign = 'center';
-                locationButton.style.width = '40px';
-                locationButton.style.height = '40px';
-
-                locationButton.addEventListener('click', () => {
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(
-                            (position) => {
-                                const pos = {
-                                    lat: position.coords.latitude,
-                                    lng: position.coords.longitude,
-                                };
-
-                                const userMarker = new google.maps.Marker({
-                                    position: pos,
-                                    map: map,
-                                    icon: {
-                                        path: google.maps.SymbolPath.CIRCLE,
-                                        fillColor: '#4285F4',
-                                        fillOpacity: 1,
-                                        strokeColor: '#FFFFFF',
-                                        strokeWeight: 2,
-                                        scale: 8,
-                                    },
-                                    title: 'Konumunuz',
-                                });
-
-                                map.setCenter(pos);
-                                map.setZoom(15);
-
-                                setTimeout(() => {
-                                    userMarker.setMap(null);
-                                }, 5000);
-                            },
-                            () => {
-                                alert('Konumunuz alınamadı.');
-                            }
-                        );
-                    } else {
-                        alert('Tarayıcınız konum özelliğini desteklemiyor.');
+                    if (dotNetRef) {
+                        dotNetRef.invokeMethodAsync('OnMapInitialized');
                     }
                 });
 
-                map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(locationButton);
-            },
+                return true;
+            } catch (error) {
+                console.error("Error initializing main map:", error);
+                hideLoading();
+                return false;
+            }
+        },
 
-            // Initialize start point mini map
-            initializeStartPointMap: function() {
-                const mapElement = document.getElementById("start-point-mini-map");
-                if (!mapElement) {
-                    console.log("Start point mini map element not found");
-                    return false;
+        add3DToggle: function (map) {
+            const toggleButton = document.createElement('button');
+            toggleButton.className = 'custom-map-control-button toggle-view-button';
+            toggleButton.innerHTML = '<i class="fas fa-cube"></i> 3D';
+            toggleButton.title = 'Toggle 2D/3D view';
+
+            let is3DMode = true;
+
+            toggleButton.addEventListener('click', () => {
+                if (is3DMode) {
+                    map.setTilt(0);
+                    toggleButton.innerHTML = '<i class="fas fa-map"></i> 2D';
+                } else {
+                    map.setTilt(DEFAULT_TILT);
+                    toggleButton.innerHTML = '<i class="fas fa-cube"></i> 3D';
                 }
+                is3DMode = !is3DMode;
+            });
 
-                // Eğer harita zaten varsa yenisini oluşturma
-                if (module.maps.startPointMap) {
-                    return true;
+            map.controls[google.maps.ControlPosition.TOP_RIGHT].push(toggleButton);
+
+            const style = document.createElement('style');
+            style.textContent = `
+                .toggle-view-button {
+                    background-color: ${isDarkMode ? '#1F2937' : '#fff'};
+                    border: 2px solid ${isDarkMode ? '#374151' : '#fff'};
+                    border-radius: 6px;
+                    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+                    color: ${isDarkMode ? '#E5E7EB' : '#555'};
+                    cursor: pointer;
+                    font-family: 'Inter', -apple-system, sans-serif;
+                    font-size: 14px;
+                    font-weight: 500;
+                    margin: 10px;
+                    padding: 10px 16px;
+                    text-align: center;
+                    transition: all 0.3s ease;
                 }
-
-                try {
-                    module.maps.startPointMap = new google.maps.Map(mapElement, {
-                        center: DEFAULT_CENTER,
-                        zoom: 14,
-                        mapTypeId: 'roadmap',
-                        disableDefaultUI: true,
-                        draggable: false,
-                        scrollwheel: false,
-                        disableDoubleClickZoom: true
-                    });
-
-                    // Add marker for depot
-                    const isDarkMode = document.documentElement.classList.contains('dark');
-                    new google.maps.Marker({
-                        position: DEFAULT_CENTER,
-                        map: module.maps.startPointMap,
-                        icon: {
-                            url: this.getWarehouseIcon(isDarkMode),
-                            scaledSize: new google.maps.Size(32, 32),
-                            anchor: new google.maps.Point(16, 16)
-                        },
-                        title: 'Çorlu Belediyesi (Başlangıç Noktası)'
-                    });
-
-                    return true;
-                } catch (error) {
-                    console.error("Error initializing start point map:", error);
-                    return false;
+                .toggle-view-button:hover {
+                    background-color: ${isDarkMode ? '#374151' : '#f8f9fa'};
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,.25);
                 }
-            },
-
-            // Initialize detail map
-            initializeDetailMap: function(routeJson) {
-                const mapElement = document.getElementById("route-map");
-                if (!mapElement) {
-                    console.log("Route map element not found");
-                    return false;
+                .toggle-view-button i {
+                    margin-right: 6px;
                 }
+            `;
+            document.head.appendChild(style);
+        },
 
-                // Clear any existing detail map
-                if (module.maps.detailMap) {
-                    module.maps.detailMap = null;
-                }
+        addUserLocationButton: function (map) {
+            const locationButton = document.createElement('button');
+            locationButton.className = 'custom-map-control-button location-button';
+            locationButton.innerHTML = '<i class="fas fa-location-arrow"></i>';
+            locationButton.title = 'Show my location';
 
-                try {
-                    const routeData = JSON.parse(routeJson);
-                    const routeSteps = routeData.steps;
-                    const polyline = routeData.overviewPolyline;
-                    const isDarkMode = document.documentElement.classList.contains('dark');
+            locationButton.addEventListener('click', () => {
+                if (navigator.geolocation) {
+                    locationButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-                    module.maps.detailMap = new google.maps.Map(mapElement, {
-                        center: DEFAULT_CENTER,
-                        zoom: DETAIL_ZOOM,
-                        mapTypeId: 'roadmap',
-                        streetViewControl: false,
-                        mapTypeControl: false,
-                        fullscreenControl: true
-                    });
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const pos = {
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude,
+                            };
 
-                    // Add marker for depot
-                    new google.maps.Marker({
-                        position: DEFAULT_CENTER,
-                        map: module.maps.detailMap,
-                        icon: {
-                            url: this.getWarehouseIcon(isDarkMode),
-                            scaledSize: new google.maps.Size(32, 32),
-                            anchor: new google.maps.Point(16, 16)
-                        },
-                        title: 'Çorlu Belediyesi (Başlangıç/Bitiş Noktası)',
-                        zIndex: 1000
-                    });
-
-                    // If we have steps but no polyline, create a polyline connecting the steps
-                    if (routeSteps && routeSteps.length > 0) {
-                        // Create bounds to fit all steps
-                        const bounds = new google.maps.LatLngBounds();
-
-                        // Add markers for each step
-                        routeSteps.forEach((step, index) => {
-                            if (!step.latitude || !step.longitude ||
-                                !isFinite(step.latitude) || !isFinite(step.longitude)) {
-                                console.warn(`Invalid coordinates for step ${index}:`, step);
-                                return; // Skip this step
+                            if (userLocationMarker) {
+                                userLocationMarker.setMap(null);
                             }
 
-                            const position = { lat: step.latitude, lng: step.longitude };
-                            bounds.extend(position);
-
-                            // Create marker
-                            const marker = new google.maps.Marker({
-                                position: position,
-                                map: module.maps.detailMap,
-                                label: {
-                                    text: `${index + 1}`,
-                                    color: 'white',
-                                    fontSize: '12px',
-                                    fontWeight: 'bold'
-                                },
+                            userLocationMarker = new google.maps.Marker({
+                                position: pos,
+                                map: map,
                                 icon: {
-                                    url: this.getDeleteIcon(step.isCompleted, 70, isDarkMode),
-                                    labelOrigin: new google.maps.Point(12, 15),
-                                    scaledSize: new google.maps.Size(30, 30)
+                                    path: google.maps.SymbolPath.CIRCLE,
+                                    fillColor: PRIMARY_COLOR,
+                                    fillOpacity: 1,
+                                    strokeColor: '#FFFFFF',
+                                    strokeWeight: 3,
+                                    scale: 10,
                                 },
-                                title: step.address
+                                title: 'Your Location',
+                                animation: google.maps.Animation.DROP
                             });
 
-                            // Create info window
-                            const infoWindow = new google.maps.InfoWindow({
-                                content: `
-                                    <div style="padding: 10px; max-width: 250px;">
-                                        <div style="font-weight: bold; margin-bottom: 5px;">Adım ${index + 1}</div>
-                                        <div style="margin-bottom: 5px;">${step.address}</div>
-                                        <div style="font-size: 12px; color: #666;">${step.latitude.toFixed(6)}, ${step.longitude.toFixed(6)}</div>
-                                        <div style="margin-top: 5px; font-weight: bold; color: ${step.isCompleted ? 'green' : 'orange'};">
-                                            ${step.isCompleted ? 'Tamamlandı' : 'Beklemede'}
-                                        </div>
-                                    </div>
-                                `
-                            });
+                            this.smoothPanTo(map, pos);
+                            locationButton.innerHTML = '<i class="fas fa-location-arrow"></i>';
+                        },
+                        () => {
+                            alert('Error: The Geolocation service failed.');
+                            locationButton.innerHTML = '<i class="fas fa-location-arrow"></i>';
+                        }
+                    );
+                } else {
+                    alert('Error: Your browser doesn\'t support geolocation.');
+                }
+            });
 
-                            // Add click listener
-                            marker.addListener('click', () => {
-                                if (module.currentInfoWindow) {
-                                    module.currentInfoWindow.close();
-                                }
-                                infoWindow.open(module.maps.detailMap, marker);
-                                module.currentInfoWindow = infoWindow;
-                            });
+            map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(locationButton);
+
+            const style = document.createElement('style');
+            style.textContent = `
+                .location-button {
+                    background-color: ${isDarkMode ? '#1F2937' : '#fff'};
+                    border: 2px solid ${isDarkMode ? '#374151' : '#fff'};
+                    border-radius: 50%;
+                    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+                    color: ${isDarkMode ? '#E5E7EB' : '#666'};
+                    cursor: pointer;
+                    height: 44px;
+                    width: 44px;
+                    margin: 10px;
+                    padding: 0;
+                    text-align: center;
+                    transition: all 0.3s ease;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .location-button:hover {
+                    background-color: ${isDarkMode ? '#374151' : '#f8f9fa'};
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+                }
+                .location-button i {
+                    font-size: 16px;
+                }
+            `;
+            document.head.appendChild(style);
+        },
+
+        initializeStartPointMap: function() {
+            const mapElement = document.getElementById("start-point-mini-map");
+            if (!mapElement) {
+                console.log("Start point mini map element not found");
+                return false;
+            }
+
+            try {
+                const startPointMap = new google.maps.Map(mapElement, {
+                    center: DEFAULT_CENTER,
+                    zoom: 14,
+                    mapTypeId: 'roadmap',
+                    disableDefaultUI: true,
+                    draggable: false,
+                    scrollwheel: false,
+                    disableDoubleClickZoom: true,
+                    styles: getMapStyles()
+                });
+
+                // Add marker for depot with updated icon
+                new google.maps.Marker({
+                    position: DEFAULT_CENTER,
+                    map: startPointMap,
+                    icon: {
+                        url: getDepotIcon(1.0),
+                        scaledSize: new google.maps.Size(50, 60), // Increased size
+                        anchor: new google.maps.Point(25, 56)
+                    },
+                    title: 'Çorlu Belediyesi (Başlangıç Noktası)'
+                });
+
+                return true;
+            } catch (error) {
+                console.error("Error initializing start point map:", error);
+                return false;
+            }
+        },
+
+        initializeDetailMap: function(routeJson) {
+            const mapElement = document.getElementById("route-map");
+            if (!mapElement) {
+                console.log("Route map element not found");
+                return false;
+            }
+
+            try {
+                const routeData = JSON.parse(routeJson);
+                const routeSteps = routeData.steps;
+                const polyline = routeData.overviewPolyline;
+
+                const detailMap = new google.maps.Map(mapElement, {
+                    center: DEFAULT_CENTER,
+                    zoom: DETAIL_ZOOM,
+                    mapTypeId: 'roadmap',
+                    streetViewControl: false,
+                    mapTypeControl: false,
+                    fullscreenControl: true,
+                    styles: getMapStyles()
+                });
+
+                // Add depot marker with updated icon
+                new google.maps.Marker({
+                    position: DEFAULT_CENTER,
+                    map: detailMap,
+                    icon: {
+                        url: getDepotIcon(1.2),
+                        scaledSize: new google.maps.Size(60, 72), // Increased size
+                        anchor: new google.maps.Point(30, 68)
+                    },
+                    title: 'Çorlu Belediyesi (Başlangıç/Bitiş Noktası)',
+                    zIndex: 1000
+                });
+
+                if (routeSteps && routeSteps.length > 0) {
+                    const bounds = new google.maps.LatLngBounds();
+
+                    routeSteps.forEach((step, index) => {
+                        if (!step.latitude || !step.longitude ||
+                            !isFinite(step.latitude) || !isFinite(step.longitude)) {
+                            return;
+                        }
+
+                        const position = { lat: step.latitude, lng: step.longitude };
+                        bounds.extend(position);
+
+                        const marker = new google.maps.Marker({
+                            position: position,
+                            map: detailMap,
+                            icon: {
+        url: getWasteBinIcon('Active', 70, 1, 1.4), // Using updated larger waste bin icon
+        scaledSize: new google.maps.Size(50, 58), // Increased size from 45x52 to 50x58
+        anchor: new google.maps.Point(25, 54), // Updated anchor point
+        labelOrigin: new google.maps.Point(25, 29) // Updated label position
+                            },
+                            label: {
+                                text: `${index + 1}`,
+                                color: 'white',
+                                fontSize: '14px', // Increased font size
+                                fontWeight: 'bold'
+                            },
+                            title: step.address
                         });
 
-                        // If we have polyline data, use it
-                        if (polyline) {
-                            try {
-                                const path = google.maps.geometry.encoding.decodePath(polyline);
-                                if (path && path.length > 0) {
-                                    const routePolyline = new google.maps.Polyline({
-                                        path: path,
-                                        geodesic: true,
-                                        strokeColor: '#4285F4',
-                                        strokeOpacity: 0.8,
-                                        strokeWeight: 4
-                                    });
-                                    routePolyline.setMap(module.maps.detailMap);
+                        const infoWindow = new google.maps.InfoWindow({
+                            content: this.createStepInfoContent(step, index + 1)
+                        });
 
-                                    // Extend bounds to include all polyline points
-                                    path.forEach(point => bounds.extend(point));
-                                }
-                            } catch (error) {
-                                console.error("Error decoding polyline:", error);
+                        marker.addListener('click', () => {
+                            if (currentInfoWindow) {
+                                currentInfoWindow.close();
                             }
-                        } else {
-                            // Create a simple polyline connecting the steps
-                            const path = routeSteps
-                                .filter(step => step.latitude && step.longitude &&
-                                       isFinite(step.latitude) && isFinite(step.longitude))
-                                .map(step => ({ lat: step.latitude, lng: step.longitude }));
+                            infoWindow.open(detailMap, marker);
+                            currentInfoWindow = infoWindow;
+                        });
+                    });
 
-                            // Add depot as first and last point if we have valid steps
-                            if (path.length > 0) {
-                                path.unshift(DEFAULT_CENTER);
-                                path.push(DEFAULT_CENTER);
-
+                    // Handle polyline
+                    if (polyline) {
+                        try {
+                            const path = google.maps.geometry.encoding.decodePath(polyline);
+                            if (path && path.length > 0) {
                                 const routePolyline = new google.maps.Polyline({
                                     path: path,
                                     geodesic: true,
@@ -1558,1084 +1852,1006 @@
                                     strokeOpacity: 0.8,
                                     strokeWeight: 4
                                 });
-                                routePolyline.setMap(module.maps.detailMap);
+                                routePolyline.setMap(detailMap);
+                                path.forEach(point => bounds.extend(point));
+                            }
+                        } catch (error) {
+                            console.error("Error decoding polyline:", error);
+                        }
+                    } else {
+                        const path = routeSteps
+                            .filter(step => step.latitude && step.longitude &&
+                                   isFinite(step.latitude) && isFinite(step.longitude))
+                            .map(step => ({ lat: step.latitude, lng: step.longitude }));
+
+                        if (path.length > 0) {
+                            path.unshift(DEFAULT_CENTER);
+                            path.push(DEFAULT_CENTER);
+
+                            const routePolyline = new google.maps.Polyline({
+                                path: path,
+                                geodesic: true,
+                                strokeColor: '#4285F4',
+                                strokeOpacity: 0.8,
+                                strokeWeight: 4
+                            });
+                            routePolyline.setMap(detailMap);
+                        }
+                    }
+
+                    if (!bounds.isEmpty()) {
+                        detailMap.fitBounds(bounds);
+                        google.maps.event.addListenerOnce(detailMap, 'bounds_changed', function() {
+                            if (detailMap.getZoom() > 15) {
+                                detailMap.setZoom(15);
+                            }
+                        });
+                    }
+                }
+
+                this.initializeSimulation(routeData, detailMap);
+                return true;
+            } catch (error) {
+                console.error("Error initializing detail map:", error);
+                return false;
+            }
+        },
+
+        initializeSimulation: function(routeData, map) {
+            if (!map || !routeData || !routeData.steps || routeData.steps.length === 0) {
+                return false;
+            }
+
+            try {
+                simulationNotificationSent = false;
+                alreadyNotifiedSteps = [];
+
+                const steps = routeData.steps;
+                const polyline = routeData.overviewPolyline;
+
+                let path;
+                if (polyline) {
+                    try {
+                        path = google.maps.geometry.encoding.decodePath(polyline);
+                        if (!path || path.length === 0) {
+                            path = null;
+                        }
+                    } catch (error) {
+                        path = null;
+                    }
+                }
+
+                if (!path || path.length === 0) {
+                    path = [];
+                    steps.forEach(step => {
+                        if (step.latitude && step.longitude &&
+                            isFinite(step.latitude) && isFinite(step.longitude)) {
+                            path.push({ lat: step.latitude, lng: step.longitude });
+                        }
+                    });
+
+                    if (path.length > 0) {
+                        path.unshift(DEFAULT_CENTER);
+                        path.push(DEFAULT_CENTER);
+                    } else {
+                        path = [DEFAULT_CENTER];
+                    }
+                }
+
+                const truckIcon = {
+                    url: getTruckIcon('#4285F4', 1.2),
+                    scaledSize: new google.maps.Size(43, 52),
+                    anchor: new google.maps.Point(21.5, 48)
+                };
+
+                simulationVehicleMarker = new google.maps.Marker({
+                    position: path[0],
+                    map: map,
+                    icon: truckIcon,
+                    title: 'Çöp Kamyonu',
+                    zIndex: 1000
+                });
+
+                const traveledPath = new google.maps.Polyline({
+                    path: [],
+                    geodesic: true,
+                    strokeColor: '#28a745',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 5
+                });
+                traveledPath.setMap(map);
+
+                const remainingPath = new google.maps.Polyline({
+                    path: path,
+                    geodesic: true,
+                    strokeColor: '#3B82F6',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 5
+                });
+                remainingPath.setMap(map);
+
+                // Setup simulation controls
+                this.setupSimulationControls(path, traveledPath, remainingPath, map, routeData);
+
+                return true;
+            } catch (error) {
+                console.error("Error initializing simulation:", error);
+                return false;
+            }
+        },
+
+        setupSimulationControls: function(path, traveledPath, remainingPath, map, routeData) {
+            let simulationIndex = 0;
+            let simulationRunning = false;
+            let simulationComplete = false;
+            let simulationInterval = null;
+            let simulationSpeed = 1;
+
+            const startButton = document.getElementById('start-simulation');
+            const pauseButton = document.getElementById('pause-simulation');
+            const stopButton = document.getElementById('stop-simulation');
+            const speedSlider = document.getElementById('speed-slider');
+            const speedValue = document.getElementById('speed-value');
+            const progressBar = document.getElementById('progress-bar');
+            const progressPercentage = document.getElementById('progress-percentage');
+
+            if (speedSlider) {
+                speedSlider.addEventListener('input', function() {
+                    simulationSpeed = parseInt(this.value);
+                    if (speedValue) {
+                        speedValue.textContent = simulationSpeed + 'x';
+                    }
+                });
+            }
+
+            function startSimulation() {
+                if (simulationInterval) {
+                    clearInterval(simulationInterval);
+                }
+
+                simulationInterval = setInterval(() => {
+                    if (!simulationRunning) return;
+
+                    if (simulationIndex >= path.length) {
+                        clearInterval(simulationInterval);
+                        simulationRunning = false;
+                        simulationComplete = true;
+
+                        if (!simulationNotificationSent) {
+                            simulationNotificationSent = true;
+                            if (dotNetRef) {
+                                dotNetRef.invokeMethodAsync('ShowToastFromJs', '🚚 Rota simülasyonu tamamlandı!');
                             }
                         }
+                        return;
+                    }
 
-                        // Fit bounds to show all markers if we have any
-                        if (!bounds.isEmpty()) {
-                            module.maps.detailMap.fitBounds(bounds);
+                    const pos = path[simulationIndex];
 
-                            // Add some padding
-                            google.maps.event.addListenerOnce(module.maps.detailMap, 'bounds_changed', function() {
-                                if (module.maps.detailMap.getZoom() > 15) {
-                                    module.maps.detailMap.setZoom(15);
-                                }
-                            });
+                    if (simulationVehicleMarker) {
+                        simulationVehicleMarker.setPosition(pos);
+                    }
+
+                    map.panTo(pos);
+
+                    traveledPath.setPath(path.slice(0, simulationIndex + 1));
+                    remainingPath.setPath(path.slice(simulationIndex));
+
+                    if (progressBar && progressPercentage) {
+                        const pct = Math.floor(simulationIndex / path.length * 100);
+                        progressBar.style.width = pct + '%';
+                        progressPercentage.textContent = pct + '%';
+                    }
+
+                    simulationIndex += simulationSpeed;
+                }, 200);
+
+                simulationRunning = true;
+            }
+
+            if (startButton) {
+                startButton.addEventListener('click', () => {
+                    if (simulationComplete) {
+                        simulationIndex = 0;
+                        simulationComplete = false;
+                        simulationNotificationSent = false;
+                        traveledPath.setPath([]);
+                        remainingPath.setPath(path);
+
+                        if (simulationVehicleMarker) {
+                            simulationVehicleMarker.setPosition(path[0]);
                         }
                     }
 
-                    // Initialize simulation vehicle
-                    this.initializeSimulation(routeData);
+                    simulationRunning = true;
+                    startSimulation();
+                });
+            }
 
-                    return true;
+            if (pauseButton) {
+                pauseButton.addEventListener('click', () => {
+                    simulationRunning = false;
+                });
+            }
 
-                } catch (error) {
-                    console.error("Error initializing detail map:", error);
-                    if (module.dotNetRef) {
-                        module.dotNetRef.invokeMethodAsync('ShowToastFromJs', 'Rota haritası yüklenirken hata oluştu: ' + error.message);
+            if (stopButton) {
+                stopButton.addEventListener('click', () => {
+                    simulationRunning = false;
+                    simulationIndex = 0;
+                    simulationComplete = false;
+                    simulationNotificationSent = false;
+
+                    if (simulationVehicleMarker) {
+                        simulationVehicleMarker.setPosition(path[0]);
                     }
-                    return false;
-                }
-            },
 
-            // Add this function to show a message when no steps are available
-            showNoStepsMessage: function() {
-                const mapElement = document.getElementById("route-map");
-                if (!mapElement) return;
+                    traveledPath.setPath([]);
+                    remainingPath.setPath(path);
 
-                mapElement.innerHTML = `
-                    <div class="flex flex-col items-center justify-center h-full bg-gray-100 dark:bg-gray-800 p-4">
-                        <i class="fas fa-exclamation-triangle text-3xl text-yellow-500 mb-3"></i>
-                        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">Rota Adımları Bulunamadı</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 text-center mt-2">
-                            Bu rota için adımlar bulunamadı. Sayfayı yenileyip tekrar deneyebilirsiniz.
-                        </p>
-                        <button id="reload-route-btn" class="mt-4 px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors">
-                            <i class="fas fa-sync-alt mr-2"></i> Rotayı Yenile
-                        </button>
-                    </div>
-                `;
+                    if (progressBar && progressPercentage) {
+                        progressBar.style.width = '0%';
+                        progressPercentage.textContent = '0%';
+                    }
+                });
+            }
+        },
 
-                // Add click handler to reload button
-                const reloadBtn = document.getElementById("reload-route-btn");
-                if (reloadBtn && module.dotNetRef) {
-                    reloadBtn.addEventListener("click", () => {
-                        module.dotNetRef.invokeMethodAsync('RefreshRouteDetails');
-                    });
-                }
-            },
+        showAllRoutes: function(routesJson, wasteBinsJson) {
+            if (!mainMap) {
+                console.error("Main map not initialized");
+                return false;
+            }
 
-            // Initialize route simulation
-            initializeSimulation: function(routeData) {
-                if (!module.maps.detailMap || !routeData || !routeData.steps || routeData.steps.length === 0) {
-                    return false;
+            this.clearMarkers();
+            this.clearPolylines();
+            this.clearWasteBinMarkers();
+
+            try {
+                const routes = JSON.parse(routesJson);
+                const wasteBins = wasteBinsJson ? JSON.parse(wasteBinsJson) : null;
+
+                console.log(`Showing ${routes.length} routes on map`);
+
+                if (wasteBins && wasteBins.length > 0) {
+                    this.showWasteBins(wasteBins);
                 }
 
-                try {
-                    // Reset simulation notification flag
-                    module.simulationNotificationSent = false;
-                    // Reset notified steps array
-                    module.alreadyNotifiedSteps = [];
+                const bounds = new google.maps.LatLngBounds();
+                bounds.extend(DEFAULT_CENTER);
 
-                    const steps = routeData.steps;
-                    const polyline = routeData.overviewPolyline;
-                    const isDarkMode = document.documentElement.classList.contains('dark');
+                const colors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8E24AA', '#16A085', '#E67E22', '#E74C3C', '#2980B9', '#27AE60'];
 
-                    // Get path coordinates
-                    let path;
-                    if (polyline) {
+                routes.forEach((route, routeIndex) => {
+                    if (route.status === 'Completed' || route.Status === 'Completed' ||
+                        route.status === 2 || route.Status === 2) return;
+
+                    if (!route.steps || route.steps.length === 0) return;
+
+                    const color = colors[routeIndex % colors.length];
+                    let path = null;
+
+                    if (route.overviewPolyline) {
                         try {
-                            path = google.maps.geometry.encoding.decodePath(polyline);
-                            // Validate path
-                            if (!path || path.length === 0 || !path.every(point =>
-                                point && typeof point.lat === 'function' && typeof point.lng === 'function' &&
-                                isFinite(point.lat()) && isFinite(point.lng()))) {
-                                console.warn("Invalid polyline path, will create from steps instead");
+                            path = google.maps.geometry.encoding.decodePath(route.overviewPolyline);
+                            if (!path || path.length === 0) {
                                 path = null;
                             }
                         } catch (error) {
-                            console.error("Error decoding polyline for simulation:", error);
                             path = null;
                         }
                     }
 
-                    // If no valid polyline path, create one from steps
                     if (!path || path.length === 0) {
-                        path = [];
-                        steps.forEach(step => {
-                            if (step.latitude && step.longitude &&
-                                isFinite(step.latitude) && isFinite(step.longitude)) {
-                                path.push({ lat: step.latitude, lng: step.longitude });
-                            }
-                        });
+                        if (route.steps && route.steps.length > 0) {
+                            path = route.steps.filter(step =>
+                                step.latitude && step.longitude &&
+                                isFinite(step.latitude) && isFinite(step.longitude)
+                            ).map(step => ({
+                                lat: step.latitude,
+                                lng: step.longitude
+                            }));
 
-                        // Add depot as first and last point if we have any valid steps
-                        if (path.length > 0) {
-                            path.unshift(DEFAULT_CENTER);
-                            path.push(DEFAULT_CENTER);
-                        } else {
-                            // If no valid steps, just use the center
-                            path = [DEFAULT_CENTER];
-                            console.error("No valid steps with coordinates found for simulation");
-                        }
-                    }
-
-                    // Create a truck icon for the vehicle
-                    const truckIcon = {
-                        url: this.getShippingIcon(isDarkMode),
-                        scaledSize: new google.maps.Size(40, 40),
-                        anchor: new google.maps.Point(20, 20)
-                    };
-
-                    // Create vehicle marker
-                    module.simulationVehicleMarker = new google.maps.Marker({
-                        position: path[0],
-                        map: module.maps.detailMap,
-                        icon: truckIcon,
-                        title: 'Çöp Kamyonu',
-                        zIndex: 1000
-                    });
-
-                    // Add traveledPath and remainingPath polylines
-                    const traveledPath = new google.maps.Polyline({
-                        path: [],
-                        geodesic: true,
-                        strokeColor: '#28a745',
-                        strokeOpacity: 0.8,
-                        strokeWeight: 5
-                    });
-                    traveledPath.setMap(module.maps.detailMap);
-
-                    const remainingPath = new google.maps.Polyline({
-                        path: path,
-                        geodesic: true,
-                        strokeColor: '#3B82F6',
-                        strokeOpacity: 0.8,
-                        strokeWeight: 5
-                    });
-                    remainingPath.setMap(module.maps.detailMap);
-
-                    // Simulation variables
-                    let simulationIndex = 0;
-                    let simulationRunning = false;
-                    let simulationComplete = false;
-                    let simulationInterval = null;
-                    let simulationSpeed = 1;
-                    let lastStepNotif = -1;
-
-                    // UI elements
-                    const startButton = document.getElementById('start-simulation');
-                    const pauseButton = document.getElementById('pause-simulation');
-                    const stopButton = document.getElementById('stop-simulation');
-                    const speedSlider = document.getElementById('speed-slider');
-                    const speedValue = document.getElementById('speed-value');
-                    const speedMin = document.getElementById('speed-min');
-                    const speedMax = document.getElementById('speed-max');
-                    const progressBar = document.getElementById('progress-bar');
-                    const progressPercentage = document.getElementById('progress-percentage');
-                    const remainingTime = document.getElementById('remaining-time');
-                    const stepsTable = document.getElementById('route-steps-table');
-
-                    // Slider event listeners
-                    if (speedSlider) {
-                        speedSlider.addEventListener('input', function() {
-                            simulationSpeed = parseInt(this.value);
-                            if (speedValue) {
-                                speedValue.textContent = simulationSpeed + 'x';
-                            }
-                        });
-                    }
-
-                    if (speedMin) {
-                        speedMin.addEventListener('click', function() {
-                            if (speedSlider) {
-                                speedSlider.value = 1;
-                                simulationSpeed = 1;
-                                if (speedValue) {
-                                    speedValue.textContent = '1x';
-                                }
-                            }
-                        });
-                    }
-
-                    if (speedMax) {
-                        speedMax.addEventListener('click', function() {
-                            if (speedSlider) {
-                                speedSlider.value = 10;
-                                simulationSpeed = 10;
-                                if (speedValue) {
-                                    speedValue.textContent = '10x';
-                                }
-                            }
-                        });
-                    }
-
-                    // Total duration (minutes)
-                    const totalDuration = routeData.estimatedDurationMin || steps.length * 5;
-
-                    // Start simulation function
-                    function startSimulation() {
-                        if (simulationInterval) {
-                            clearInterval(simulationInterval);
-                        }
-
-                        simulationInterval = setInterval(() => {
-                            if (!simulationRunning) return;
-
-                            if (simulationIndex >= path.length) {
-                                // End of simulation
-                                clearInterval(simulationInterval);
-                                simulationRunning = false;
-                                simulationComplete = true;
-
-                                // Only show completion notification once
-                                if (!module.simulationNotificationSent) {
-                                    module.simulationNotificationSent = true;
-                                    if (module.dotNetRef) {
-                                        module.dotNetRef.invokeMethodAsync('ShowToastFromJs', '🚚 Rota simülasyonu tamamlandı!');
-                                    }
-                                }
-                                return;
-                            }
-
-                            // Get the current position
-                            const pos = path[simulationIndex];
-
-                            // Move vehicle
-                            if (module.simulationVehicleMarker) {
-                                module.simulationVehicleMarker.setPosition(pos);
-
-                                // Calculate heading for vehicle rotation if we have previous position
-                                if (simulationIndex > 0) {
-                                    const prevPos = path[simulationIndex - 1];
-                                    if (prevPos) {
-                                        try {
-                                            const heading = google.maps.geometry.spherical.computeHeading(
-                                                new google.maps.LatLng(
-                                                    typeof prevPos.lat === 'function' ? prevPos.lat() : prevPos.lat,
-                                                    typeof prevPos.lng === 'function' ? prevPos.lng() : prevPos.lng
-                                                ),
-                                                new google.maps.LatLng(
-                                                    typeof pos.lat === 'function' ? pos.lat() : pos.lat,
-                                                    typeof pos.lng === 'function' ? pos.lng() : pos.lng
-                                                )
-                                            );
-
-                                            // Update vehicle icon with rotation
-                                            const icon = Object.assign({}, module.simulationVehicleMarker.getIcon());
-                                            icon.rotation = heading;
-                                            module.simulationVehicleMarker.setIcon(icon);
-                                        } catch (e) {
-                                            console.warn("Error computing heading:", e);
-                                        }
-                                    }
-                                }
-                            }
-
-                            // Pan map to follow vehicle
-                            module.maps.detailMap.panTo(pos);
-
-                            // Update path visuals
-                            traveledPath.setPath(path.slice(0, simulationIndex + 1));
-                            remainingPath.setPath(path.slice(simulationIndex));
-
-                            // Update progress indicators
-                            if (progressBar && progressPercentage) {
-                                const pct = Math.floor(simulationIndex / path.length * 100);
-                                progressBar.style.width = pct + '%';
-                                progressPercentage.textContent = pct + '%';
-                            }
-
-                            // Calculate remaining time
-                            if (remainingTime) {
-                                const rem = Math.ceil(totalDuration * (1 - simulationIndex / path.length));
-                                remainingTime.textContent = rem + ' dk';
-                            }
-
-                            // Check if we're at a step - only recognize waypoints at specific intervals
-                            // to avoid duplicate notifications
-                            const stepIdx = Math.floor(simulationIndex / path.length * steps.length);
-                            if (stepIdx !== lastStepNotif && stepIdx < steps.length) {
-                                lastStepNotif = stepIdx;
-                                if (stepsTable) {
-                                    // Highlight current step in table
-                                    const rows = stepsTable.querySelectorAll('tr');
-                                    rows.forEach(row => row.classList.remove('bg-blue-50', 'dark:bg-blue-900/20'));
-
-                                    // Find the row with the current step and highlight it
-                                    const stepId = steps[stepIdx].id;
-                                    const stepRow = stepsTable.querySelector(`tr[data-step-id="${stepId}"]`);
-                                    if (stepRow) {
-                                        stepRow.classList.add('bg-blue-50', 'dark:bg-blue-900/20');
-                                        stepRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    }
-
-                                    // Show notification only if not already notified for this step
-                                    if (module.dotNetRef && !module.alreadyNotifiedSteps.includes(stepIdx)) {
-                                        module.alreadyNotifiedSteps.push(stepIdx);
-                                        module.dotNetRef.invokeMethodAsync('ShowToastFromJs',
-                                            `📍 Durak ${stepIdx + 1}: ${steps[stepIdx].address}`);
-                                    }
-                                }
-                            }
-
-                            // Increment based on speed setting
-                            simulationIndex += simulationSpeed;
-                        }, 200); // Set to 200ms for smoother animation
-
-                        simulationRunning = true;
-                    }
-
-                    // Event listeners for simulation controls
-                    if (startButton) {
-                        startButton.addEventListener('click', () => {
-                            if (simulationComplete) {
-                                // Restart simulation
-                                simulationIndex = 0;
-                                simulationComplete = false;
-                                module.simulationNotificationSent = false; // Reset notification flag
-                                traveledPath.setPath([]);
-                                remainingPath.setPath(path);
-                                module.alreadyNotifiedSteps = []; // Reset notified steps
-
-                                // Reset progress indicators
-                                if (progressBar && progressPercentage) {
-                                    progressBar.style.width = '0%';
-                                    progressPercentage.textContent = '0%';
-                                }
-
-                                if (remainingTime) {
-                                    remainingTime.textContent = totalDuration + ' dk';
-                                }
-
-                                // Move vehicle to start
-                                if (module.simulationVehicleMarker) {
-                                    module.simulationVehicleMarker.setPosition(path[0]);
-                                }
-
-                                // Reset step highlighting
-                                if (stepsTable) {
-                                    const rows = stepsTable.querySelectorAll('tr');
-                                    rows.forEach(row => row.classList.remove('bg-blue-50', 'dark:bg-blue-900/20'));
-                                }
-
-                                lastStepNotif = -1;
-                            }
-                            if (module.simulationVehicleMarker) {
-                                module.maps.detailMap.setCenter(module.simulationVehicleMarker.getPosition());
-                                module.maps.detailMap.setZoom(13);
-                            }
-
-                            simulationRunning = true;
-                            startSimulation();
-                        });
-                    }
-
-                    if (pauseButton) {
-                        pauseButton.addEventListener('click', () => {
-                            simulationRunning = false;
-                        });
-                    }
-
-                    if (stopButton) {
-                        stopButton.addEventListener('click', () => {
-                            simulationRunning = false;
-                            simulationIndex = 0;
-                            simulationComplete = false;
-                            module.simulationNotificationSent = false; // Reset notification flag
-                            module.alreadyNotifiedSteps = []; // Reset notifications
-
-                            // Reset vehicle position
-                            if (module.simulationVehicleMarker) {
-                                module.simulationVehicleMarker.setPosition(path[0]);
-                            }
-
-                            // Reset path visuals
-                            traveledPath.setPath([]);
-                            remainingPath.setPath(path);
-
-                            // Reset progress indicators
-                            if (progressBar && progressPercentage) {
-                                progressBar.style.width = '0%';
-                                progressPercentage.textContent = '0%';
-                            }
-
-                            if (remainingTime) {
-                                remainingTime.textContent = totalDuration + ' dk';
-                            }
-
-                            // Reset step highlighting
-                            if (stepsTable) {
-                                const rows = stepsTable.querySelectorAll('tr');
-                                rows.forEach(row => row.classList.remove('bg-blue-50', 'dark:bg-blue-900/20'));
-                            }
-
-                            lastStepNotif = -1;
-                        });
-                    }
-
-                    return true;
-                } catch (error) {
-                    console.error("Error initializing simulation:", error);
-                    return false;
-                }
-            },
-
-            // Show all routes on main map
-            showAllRoutes: function(routesJson, wasteBinsJson) {
-                if (!module.maps.mainMap) {
-                    console.error("Main map not initialized");
-                    return false;
-                }
-
-                // Clear existing markers and polylines
-                this.clearMarkers();
-                this.clearPolylines();
-                this.clearWasteBinMarkers();
-
-                try {
-                    const routes = JSON.parse(routesJson);
-                    const wasteBins = wasteBinsJson ? JSON.parse(wasteBinsJson) : null;
-                    const isDarkMode = document.documentElement.classList.contains('dark');
-
-                    console.log(`Showing ${routes.length} routes on map`);
-
-                    // First, show all waste bins on the map with smaller icons
-                    if (wasteBins && wasteBins.length > 0) {
-                        this.showWasteBins(wasteBins);
-                    }
-
-                    // Create bounds to fit all markers
-                    const bounds = new google.maps.LatLngBounds();
-
-                    // Add the depot to bounds
-                    bounds.extend(DEFAULT_CENTER);
-
-                    // Show each route with different colors
-                    const colors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8E24AA', '#16A085', '#E67E22', '#E74C3C', '#2980B9', '#27AE60'];
-
-                    // Check if google.maps.geometry exists before trying to use it
-                    if (!google.maps.geometry) {
-                        console.error("Google Maps Geometry library not loaded");
-                        if (module.dotNetRef) {
-                            module.dotNetRef.invokeMethodAsync('ShowToastFromJs', 'Harita bileşenleri yüklenemedi. Sayfa yenilendikten sonra tekrar deneyin.');
-                        }
-                        return false;
-                    }
-
-                    routes.forEach((route, routeIndex) => {
-                        // FIX 1: Check for both Status and status properties, and also numeric values (0, 1, 2)
-                        if (route.status === 'Completed' || route.Status === 'Completed' ||
-                            route.status === 2 || route.Status === 2) return;
-
-                        // Skip routes with no steps
-                        if (!route.steps || route.steps.length === 0) return;
-
-                        const color = colors[routeIndex % colors.length];
-
-                        // Create a path for the route
-                        let path = null;
-
-                        // Try to use overview polyline if available
-                        if (route.overviewPolyline) {
-                            try {
-                                path = google.maps.geometry.encoding.decodePath(route.overviewPolyline);
-
-                                // Validate the path has points
-                                if (!path || path.length === 0) {
-                                    console.error("Decoded polyline has no points:", route.overviewPolyline);
-                                    path = null;
-                                }
-                            } catch (error) {
-                                console.error("Error decoding polyline:", error, route.overviewPolyline);
-                                path = null;
-                            }
-                        }
-
-                        if (!path || path.length === 0) {
-                            // Create path from steps if no valid polyline
-                            console.log("Creating path from steps for route:", route.id);
-
-                            if (route.steps && route.steps.length > 0) {
-                                path = route.steps.filter(step =>
-                                    step.latitude && step.longitude &&
-                                    isFinite(step.latitude) && isFinite(step.longitude)
-                                ).map(step => ({
-                                    lat: step.latitude,
-                                    lng: step.longitude
-                                }));
-
-                                // Add depot as first and last point
-                                if (path.length > 0) {
-                                    path.unshift(DEFAULT_CENTER);
-                                    path.push(DEFAULT_CENTER);
-                                } else {
-                                    path = [DEFAULT_CENTER]; // Fallback if no valid steps
-                                }
+                            if (path.length > 0) {
+                                path.unshift(DEFAULT_CENTER);
+                                path.push(DEFAULT_CENTER);
                             } else {
-                                console.error("Route has no valid steps or polyline:", route.id);
-                                return; // Skip this route
+                                path = [DEFAULT_CENTER];
                             }
+                        } else {
+                            return;
                         }
-
-                        // Create polyline for route
-                        try {
-                            const routePolyline = new google.maps.Polyline({
-                                path: path,
-                                geodesic: true,
-                                strokeColor: color,
-                                strokeOpacity: 0.7,
-                                strokeWeight: 4
-                            });
-                            routePolyline.setMap(module.maps.mainMap);
-                            module.routePolylines.push(routePolyline);
-
-                            // Create markers for vehicle position (at start point)
-                            if (path && path.length > 0) {
-                                const vehicleMarker = new google.maps.Marker({
-                                    position: path[0],
-                                    map: module.maps.mainMap,
-                                    icon: {
-                                        url: this.getShippingIcon(isDarkMode),
-                                        scaledSize: new google.maps.Size(32, 32),
-                                        anchor: new google.maps.Point(16, 16)
-                                    },
-                                    title: `Route ${route.id} - ${route.wasteType}`,
-                                    routeId: route.id
-                                });
-                                module.truckMarkers.push(vehicleMarker);
-
-                                // Add click listener with async function to handle the Promise
-                                vehicleMarker.addListener('click', async () => {
-                                    if (module.currentInfoWindow) {
-                                        module.currentInfoWindow.close();
-                                    }
-
-                                    try {
-                                        // Get driver and vehicle info with await
-                                        const driverName = await this.getDriverName(route.driverId);
-                                        const vehiclePlate = await this.getVehiclePlate(route.vehicleId);
-
-                                        // Create info window with resolved values
-                                        const infoWindow = new google.maps.InfoWindow({
-                                            content: `
-                                                <div style="padding: 12px; max-width: 280px; font-family: Arial, sans-serif;">
-                                                    <div style="font-weight: bold; font-size: 16px; margin-bottom: 10px; color: ${color}; border-bottom: 1px solid #eee; padding-bottom: 5px;">
-                                                        Rota Bilgisi
-                                                    </div>
-                                                    <div style="display: flex; margin-bottom: 6px; align-items: center;">
-                                                        <i class="fas fa-user-hard-hat" style="color: #3B82F6; min-width: 20px; margin-right: 5px;"></i>
-                                                        <span style="min-width: 70px; color: #666;">Sürücü:</span>
-                                                        <span style="font-weight: 500;">${driverName || 'Atanmamış'}</span>
-                                                    </div>
-                                                    <div style="display: flex; margin-bottom: 6px; align-items: center;">
-                                                        <i class="fas fa-truck" style="color: #10B981; min-width: 20px; margin-right: 5px;"></i>
-                                                        <span style="min-width: 70px; color: #666;">Araç:</span>
-                                                        <span style="font-weight: 500;">${vehiclePlate || 'Atanmamış'}</span>
-                                                    </div>
-                                                    <div style="display: flex; margin-bottom: 6px; align-items: center;">
-                                                        <i class="fas fa-trash-alt" style="color: #F59E0B; min-width: 20px; margin-right: 5px;"></i>
-                                                        <span style="min-width: 70px; color: #666;">Atık Tipi:</span>
-                                                        <span style="font-weight: 500;">${route.wasteType || 'Belirtilmemiş'}</span>
-                                                    </div>
-                                                    <div style="display: flex; margin-bottom: 6px; align-items: center;">
-                                                        <i class="fas fa-calendar" style="color: #6366F1; min-width: 20px; margin-right: 5px;"></i>
-                                                        <span style="min-width: 70px; color: #666;">Başlangıç:</span>
-                                                        <span style="font-weight: 500;">${new Date(route.startTime).toLocaleString('tr-TR')}</span>
-                                                    </div>
-                                                    <div style="display: flex; margin-bottom: 6px; align-items: center;">
-                                                        <i class="fas fa-road" style="color: #8B5CF6; min-width: 20px; margin-right: 5px;"></i>
-                                                        <span style="min-width: 70px; color: #666;">Mesafe:</span>
-                                                        <span style="font-weight: 500;">${route.totalDistanceKm.toFixed(1)} km</span>
-                                                    </div>
-                                                    <div style="display: flex; margin-bottom: 6px; align-items: center;">
-                                                        <i class="fas fa-info-circle" style="color: #EC4899; min-width: 20px; margin-right: 5px;"></i>
-                                                        <span style="min-width: 70px; color: #666;">Durum:</span>
-                                                        <span style="font-weight: 500; color: ${this.getStatusColor(route.status)}">${this.getStatusText(route.status)}</span>
-                                                    </div>
-                                                    <div style="margin-top: 12px; text-align: center;">
-                                                        <button onclick="window.ecoRouteMapModule.googleMapsInterop.focusRouteOnMap('${route.id}')"
-                                                            style="background-color: #3B82F6; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; justify-content: center;">
-                                                            <i class="fas fa-info-circle" style="margin-right: 5px;"></i> Detayları Göster
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            `
-                                        });
-
-                                        infoWindow.open(module.maps.mainMap, vehicleMarker);
-                                        module.currentInfoWindow = infoWindow;
-
-                                        // Notify Blazor
-                                        if (module.dotNetRef) {
-                                            module.dotNetRef.invokeMethodAsync('FocusRouteOnMap', route.id);
-                                        }
-                                    } catch (error) {
-                                        console.error("Error creating info window:", error);
-                                        // Fallback info window if the async calls fail
-                                        const fallbackInfoWindow = new google.maps.InfoWindow({
-                                            content: `
-                                                <div style="padding: 10px; max-width: 250px;">
-                                                    <div style="font-weight: bold; margin-bottom: 5px;">Rota Bilgisi</div>
-                                                    <div>Atık Tipi: ${route.wasteType || 'Belirtilmemiş'}</div>
-                                                    <div>Başlangıç: ${new Date(route.startTime).toLocaleString('tr-TR')}</div>
-                                                    <div>Durum: ${this.getStatusText(route.status)}</div>
-                                                    <div style="margin-top: 8px;">
-                                                        <button onclick="window.ecoRouteMapModule.googleMapsInterop.focusRouteOnMap('${route.id}')"
-                                                            style="background-color: #3B82F6; color: white; padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 13px;">
-                                                            Detayları Göster
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            `
-                                        });
-                                        fallbackInfoWindow.open(module.maps.mainMap, vehicleMarker);
-                                        module.currentInfoWindow = fallbackInfoWindow;
-                                    }
-                                });
-                            }
-
-                            // Extend bounds to include all steps
-                            path.forEach(point => {
-                                if (point && point.lat && point.lng &&
-                                    isFinite(point.lat) && isFinite(point.lng)) {
-                                    bounds.extend(point);
-                                }
-                            });
-                        } catch (error) {
-                            console.error("Error creating polyline for route:", route.id, error);
-                        }
-                    });
-
-                    // Add depot marker if not already present
-                    const depotMarker = new google.maps.Marker({
-                        position: DEFAULT_CENTER,
-                        map: module.maps.mainMap,
-                        icon: {
-                            url: this.getWarehouseIcon(isDarkMode),
-                            scaledSize: new google.maps.Size(40, 40),
-                            anchor: new google.maps.Point(20, 20)
-                        },
-                        title: 'Çorlu Belediyesi (Araç Deposu)',
-                        zIndex: 1000
-                    });
-                    module.markers.push(depotMarker);
-
-                    // Fit bounds if there's at least one marker
-                    if (bounds.isEmpty()) {
-                        module.maps.mainMap.setCenter(DEFAULT_CENTER);
-                        module.maps.mainMap.setZoom(DEFAULT_ZOOM);
-                    } else {
-                        module.maps.mainMap.fitBounds(bounds);
-                        google.maps.event.addListenerOnce(module.maps.mainMap, 'bounds_changed', function() {
-                            if (module.maps.mainMap.getZoom() > 15) {
-                                module.maps.mainMap.setZoom(15);
-                            }
-                        });
                     }
 
-                    return true;
-
-                } catch (error) {
-                    console.error("Error showing routes on map:", error);
-                    if (module.dotNetRef) {
-                        module.dotNetRef.invokeMethodAsync('ShowToastFromJs', 'Rotalar haritada gösterilemedi: ' + error.message);
-                    }
-                    return false;
-                }
-            },
-
-            // Show waste bins on the map
-            showWasteBins: function(wasteBins) {
-                if (!module.maps.mainMap || !wasteBins || wasteBins.length === 0) return false;
-
-                console.log(`Showing ${wasteBins.length} bins on map`);
-                const isDarkMode = document.documentElement.classList.contains('dark');
-
-                // Önce tüm marker'ları oluştur
-                const markers = [];
-
-                wasteBins.forEach(bin => {
-                    if (bin.latitude && bin.longitude &&
-                        isFinite(bin.latitude) && isFinite(bin.longitude)) {
-                        const position = { lat: bin.latitude, lng: bin.longitude };
-
-                        // Create marker
-                        const marker = new google.maps.Marker({
-                            position: position,
-                            icon: {
-                                url: this.getDeleteIcon(false, bin.fillLevel, isDarkMode),
-                                scaledSize: new google.maps.Size(32, 32),
-                                anchor: new google.maps.Point(16, 32)
-                            },
-                            title: `${bin.label} - ${bin.fillLevel || 0}% dolu`,
-                            opacity: 0.9
+                    try {
+                        const routePolyline = new google.maps.Polyline({
+                            path: path,
+                            geodesic: true,
+                            strokeColor: color,
+                            strokeOpacity: 0.7,
+                            strokeWeight: 4
                         });
+                        routePolyline.setMap(mainMap);
+                        routePolylines.push(routePolyline);
 
-                        // Add info window
-                        const infoWindow = new google.maps.InfoWindow({
-                            content: `
-                                <div style="padding: 10px; max-width: 250px;">
-                                    <div style="font-weight: bold; margin-bottom: 5px;">${bin.label}</div>
-                                    <div>${bin.address}</div>
-                                    <div style="margin-top: 5px;">Doluluk: ${bin.fillLevel || 0}%</div>
-                                    <div style="margin-top: 5px; font-weight: bold; color: ${this.getFillLevelColor(bin.fillLevel)};">
-                                        ${this.getFillLevelText(bin.fillLevel)}
-                                    </div>
-                                </div>
-                            `
-                        });
+                        if (path && path.length > 0) {
+                            const vehicleMarker = new google.maps.Marker({
+                                position: path[0],
+                                map: mainMap,
+                                icon: {
+                                    url: getTruckIcon(color, 1.0),
+                                    scaledSize: new google.maps.Size(36, 43),
+                                    anchor: new google.maps.Point(18, 39)
+                                },
+                                title: `Route ${route.id} - ${route.wasteType}`,
+                                routeId: route.id,
+                                routeData: route
+                            });
 
-                        // Add click listener
-                        marker.addListener('click', () => {
-                            if (module.currentInfoWindow) {
-                                module.currentInfoWindow.close();
+                            truckMarkers.push(vehicleMarker);
+
+                            vehicleMarker.addListener('click', () => {
+                                this.onRouteMarkerClick(vehicleMarker, route);
+                            });
+                        }
+
+                        path.forEach(point => {
+                            if (point && point.lat && point.lng &&
+                                isFinite(point.lat) && isFinite(point.lng)) {
+                                bounds.extend(point);
                             }
-                            infoWindow.open(module.maps.mainMap, marker);
-                            module.currentInfoWindow = infoWindow;
                         });
-
-                        markers.push(marker);
-                        module.wasteBinMarkers.push(marker);
+                    } catch (error) {
+                        console.error("Error creating polyline for route:", route.id, error);
                     }
                 });
 
-                // Create marker clusterer with custom styles
-                try {
-                    // First clear any existing clusterer
-                    if (markerClusterer) {
-                        markerClusterer.clearMarkers();
-                        markerClusterer = null;
-                    }
+                // Add depot marker with updated icon
+                const depotMarker = new google.maps.Marker({
+                    position: DEFAULT_CENTER,
+                    map: mainMap,
+                    icon: {
+                        url: getDepotIcon(1.5),
+                        scaledSize: new google.maps.Size(75, 90), // Increased size
+                        anchor: new google.maps.Point(37.5, 84)
+                    },
+                    title: 'Çorlu Belediyesi (Araç Deposu)',
+                    zIndex: 1000
+                });
 
-                    if (markers.length > 0) {
-                        // Define cluster styles using recycling green color
-                        const clusterStyles = [
-                            {
-                                textColor: 'white',
-                                url: 'data:image/svg+xml;base64,' + btoa(`
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-                                        <circle cx="20" cy="20" r="18" fill="${RECYCLING_GREEN}" opacity="0.8" stroke="white" stroke-width="2" />
-                                    </svg>
-                                `),
-                                height: 40,
-                                width: 40
-                            },
-                            {
-                                textColor: 'white',
-                                url: 'data:image/svg+xml;base64,' + btoa(`
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50">
-                                        <circle cx="25" cy="25" r="23" fill="${RECYCLING_GREEN}" opacity="0.8" stroke="white" stroke-width="2" />
-                                    </svg>
-                                `),
-                                height: 50,
-                                width: 50
-                            },
-                            {
-                                textColor: 'white',
-                                url: 'data:image/svg+xml;base64,' + btoa(`
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60">
-                                        <circle cx="30" cy="30" r="28" fill="${RECYCLING_GREEN}" opacity="0.8" stroke="white" stroke-width="2" />
-                                    </svg>
-                                `),
-                                height: 60,
-                                width: 60
-                            }
-                        ];
+                depotMarker.addListener('click', () => {
+                    this.openDepotSidebar();
+                });
 
-                        // Try multiple approaches to find the MarkerClusterer
-                        if (window.markerClusterer) {
-                            console.log("Using window.markerClusterer");
-                            markerClusterer = new window.markerClusterer.MarkerClusterer({
-                                map: module.maps.mainMap,
-                                markers: markers,
-                                styles: clusterStyles
-                            });
+                markers.push(depotMarker);
+
+                if (bounds.isEmpty()) {
+                    mainMap.setCenter(DEFAULT_CENTER);
+                    mainMap.setZoom(DEFAULT_ZOOM);
+                } else {
+                    mainMap.fitBounds(bounds);
+                    google.maps.event.addListenerOnce(mainMap, 'bounds_changed', function() {
+                        if (mainMap.getZoom() > 15) {
+                            mainMap.setZoom(15);
                         }
-                        else if (typeof MarkerClusterer === 'function') {
-                            console.log("Using global MarkerClusterer constructor");
-                            markerClusterer = new MarkerClusterer(module.maps.mainMap, markers, {
-                                styles: clusterStyles
-                            });
-                        }
-                        else {
-                            console.warn("MarkerClusterer library not found, displaying individual markers");
-                            markers.forEach(marker => marker.setMap(module.maps.mainMap));
-                        }
-                    }
-                } catch (error) {
-                    console.warn("Error creating marker clusterer:", error);
-                    markers.forEach(marker => marker.setMap(module.maps.mainMap));
+                    });
                 }
+
                 return true;
-            },
+            } catch (error) {
+                console.error("Error showing routes on map:", error);
+                return false;
+            }
+        },
 
-            // Focus on a specific route on the map
-            focusRouteOnMap: function(routeId) {
-                try {
-                    // Find the route marker
-                    const marker = module.truckMarkers.find(m => m.routeId === routeId);
+        onRouteMarkerClick: function(marker, route) {
+            this.smoothPanTo(mainMap, marker.getPosition());
 
-                    if (marker) {
-                        // Center map on the marker
-                        module.maps.mainMap.setCenter(marker.getPosition());
-                        module.maps.mainMap.setZoom(FOCUS_ZOOM);
+            marker.setAnimation(google.maps.Animation.BOUNCE);
+            setTimeout(() => {
+                marker.setAnimation(null);
+            }, 1500);
 
-                        // Trigger click to show info window
-                        google.maps.event.trigger(marker, 'click');
+            this.openRouteSidebar(route);
+            selectedRouteId = route.id;
 
-                        // Add bounce animation to the marker
-                        marker.setAnimation(google.maps.Animation.BOUNCE);
-                        setTimeout(() => {
-                            marker.setAnimation(null);
-                        }, 1500);
-                        return true;
-                    }
-                    return false;
-                } catch (error) {
-                    console.error("Error focusing route on map:", error);
-                    return false;
-                }
-            },
+            if (dotNetRef) {
+                dotNetRef.invokeMethodAsync('FocusRouteOnMap', route.id);
+            }
+        },
 
-            // Clear all markers from the map
-            clearMarkers: function() {
-                module.markers.forEach(marker => marker.setMap(null));
-                module.markers = [];
+        openRouteSidebar: function(route) {
+            const sidebar = document.getElementById('route-sidebar');
+            if (!sidebar) {
+                this.createRouteSidebar();
+            }
 
-                module.truckMarkers.forEach(marker => marker.setMap(null));
-                module.truckMarkers = [];
-            },
+            const sidebarElement = document.getElementById('route-sidebar');
 
-            // Clear all polylines from the map
-            clearPolylines: function() {
-                module.routePolylines.forEach(polyline => polyline.setMap(null));
-                module.routePolylines = [];
-            },
-
-            // Clear waste bin markers
-            clearWasteBinMarkers: function() {
-                if (markerClusterer) {
-                    markerClusterer.clearMarkers();
-                    markerClusterer = null;
-                }
-
-                module.wasteBinMarkers.forEach(marker => marker.setMap(null));
-                module.wasteBinMarkers = [];
-            },
-
-            // Get status color
-            getStatusColor: function(status) {
+            const getStatusColor = (status) => {
                 switch (status) {
                     case 'Scheduled': return '#3B82F6';
                     case 'Active': return '#10B981';
                     case 'Completed': return '#6B7280';
                     default: return '#6B7280';
                 }
-            },
+            };
 
-            // Get status text
-            getStatusText: function(status) {
+            const getStatusText = (status) => {
                 switch (status) {
                     case 'Scheduled': return 'Planlanmış';
                     case 'Active': return 'Aktif';
                     case 'Completed': return 'Tamamlanmış';
                     default: return status;
                 }
-            },
+            };
 
-            // Get fill level color
-            getFillLevelColor: function(fillLevel) {
-                if (!fillLevel) return '#6B7280';
+            const progressPercentage = route.steps && route.steps.length > 0
+                ? (route.steps.filter(s => s.isCompleted).length / route.steps.length * 100)
+                : 0;
 
-                if (fillLevel >= 90) return '#EF4444';
-                if (fillLevel >= 70) return '#F97316';
-                if (fillLevel >= 50) return '#F59E0B';
-                return '#10B981';
-            },
+            sidebarElement.innerHTML = `
+                <div class="h-full flex flex-col">
+                    <div class="p-4 bg-primary-500 text-white flex justify-between items-center">
+                        <h2 class="text-xl font-bold flex items-center">
+                            <i class="fas fa-route mr-2"></i> Rota Detayı
+                        </h2>
+                        <button class="p-2 hover:bg-primary-600 rounded" onclick="googleMapsInterop.closeRouteSidebar()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
 
-            // Get fill level text
-            getFillLevelText: function(fillLevel) {
-                if (!fillLevel) return 'Durum Bilinmiyor';
+                    <div class="p-4 bg-white dark:bg-gray-800 shadow-md">
+                        <div class="bg-${getStatusColor(route.status).includes('10B981') ? 'green' : getStatusColor(route.status).includes('3B82F6') ? 'blue' : 'gray'}-100 text-${getStatusColor(route.status).includes('10B981') ? 'green' : getStatusColor(route.status).includes('3B82F6') ? 'blue' : 'gray'}-800 dark:bg-${getStatusColor(route.status).includes('10B981') ? 'green' : getStatusColor(route.status).includes('3B82F6') ? 'blue' : 'gray'}-900/20 dark:text-${getStatusColor(route.status).includes('10B981') ? 'green' : getStatusColor(route.status).includes('3B82F6') ? 'blue' : 'gray'}-300 px-3 py-1 inline-block rounded-full text-sm font-medium mb-2">
+                            ${getStatusText(route.status)}
+                        </div>
+                        <p class="text-gray-700 dark:text-gray-300 mb-2 flex items-start">
+                            <i class="fas fa-calendar-alt text-blue-500 mr-2 mt-1"></i>
+                            <span>${new Date(route.startTime).toLocaleString('tr-TR')}</span>
+                        </p>
+                        <p class="text-gray-700 dark:text-gray-300 mb-2 flex items-start">
+                            <i class="fas fa-trash-alt text-green-500 mr-2 mt-1"></i>
+                            <span>${route.wasteType}</span>
+                        </p>
+                    </div>
 
-                if (fillLevel >= 90) return 'Acil Boşaltılmalı';
-                if (fillLevel >= 70) return 'Yakında Boşaltılmalı';
-                if (fillLevel >= 50) return 'Orta Doluluk';
-                return 'Boşaltma Gerekmiyor';
-            },
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <!-- Rota Özeti -->
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 mb-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                                    <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                                    Rota Bilgileri
+                                </h3>
+                            </div>
 
-            // Get driver name
-            getDriverName: function(driverId) {
-                // This will be provided through Blazor interop
-                if (module.dotNetRef) {
-                    return module.dotNetRef.invokeMethodAsync('GetDriverNameFromJs', driverId);
-                }
-                return 'Bilinmeyen Sürücü';
-            },
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Toplam Mesafe:</span>
+                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">${route.totalDistanceKm?.toFixed(1) || 0} km</span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini Süre:</span>
+                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">${route.estimatedDurationMin || 0} dk</span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini Yakıt:</span>
+                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">${route.estimatedFuelL?.toFixed(2) || 0} L</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Toplam Adım:</span>
+                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">${route.steps?.length || 0} adet</span>
+                                </div>
+                            </div>
+                        </div>
 
-            // Get vehicle plate
-            getVehiclePlate: function(vehicleId) {
-                // This will be provided through Blazor interop
-                if (module.dotNetRef) {
-                    return module.dotNetRef.invokeMethodAsync('GetVehiclePlateFromJs', vehicleId);
-                }
-                return 'Bilinmeyen Araç';
-            },
+                        <!-- İlerleme Durumu -->
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 mb-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                                    <i class="fas fa-chart-line mr-2 text-green-500"></i>
+                                    İlerleme Durumu
+                                </h3>
+                                <button class="text-primary-500 hover:text-primary-700 px-2 py-1 rounded text-xs border border-primary-500"
+                                        onclick="googleMapsInterop.showRouteDetails('${route.id}')">
+                                    <i class="fas fa-info mr-1"></i> Detaylar
+                                </button>
+                            </div>
 
-            // Reset map state and clean up
-            resetMapState: function() {
-                console.log("Resetting map state");
+                            <div class="space-y-4">
+                                <div class="flex justify-center">
+                                    <div class="relative w-24 h-24">
+                                        <svg class="w-full h-full" viewBox="0 0 36 36">
+                                            <path class="stroke-current text-gray-200 dark:text-gray-700" fill="none" stroke-width="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                            <path class="stroke-current ${progressPercentage >= 100 ? 'text-green-500' : progressPercentage >= 75 ? 'text-blue-500' : progressPercentage >= 50 ? 'text-yellow-500' : 'text-red-500'}" fill="none" stroke-width="3.8" stroke-linecap="round"
+                                                  stroke-dasharray="${progressPercentage}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831">
+                                                <animate attributeName="stroke-dasharray"
+                                                         from="0, 100"
+                                                         to="${progressPercentage}, 100"
+                                                         dur="1s"
+                                                         fill="freeze"
+                                                         calcMode="spline"
+                                                         keyTimes="0; 1"
+                                                         keySplines="0.42 0 0.58 1" />
+                                            </path>
+                                            <text x="18" y="20.5" class="fill-current font-bold text-gray-700 dark:text-gray-200" text-anchor="middle" font-size="7">${progressPercentage.toFixed(0)}%</text>
+                                        </svg>
+                                    </div>
+                                </div>
 
-                // Close any open info windows
-                if (module.currentInfoWindow) {
-                    module.currentInfoWindow.close();
-                    module.currentInfoWindow = null;
-                }
+                                <div>
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
+                                        <div class="${progressPercentage >= 100 ? 'bg-green-500' : progressPercentage >= 75 ? 'bg-blue-500' : progressPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'} h-2.5 rounded-full transition-all duration-500" style="width: ${progressPercentage}%"></div>
+                                    </div>
+                                </div>
 
-                // Clear simulation marker
-                if (module.simulationVehicleMarker) {
-                    module.simulationVehicleMarker.setMap(null);
-                    module.simulationVehicleMarker = null;
-                }
+                                ${route.status !== 'Completed' ? `
+                                    <button class="w-full mt-2 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors flex items-center justify-center"
+                                            onclick="googleMapsInterop.completeRoute('${route.id}')">
+                                        <i class="fas fa-check-circle mr-2"></i> Rotayı Tamamla
+                                    </button>
+                                ` : `
+                                    <div class="w-full mt-2 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-md flex items-center justify-center">
+                                        <i class="fas fa-check-double mr-2"></i> Rota Tamamlandı
+                                    </div>
+                                `}
+                            </div>
+                        </div>
 
-                // Try to clean up maps
-                try {
-                    if (module.maps.detailMap) {
-                        module.maps.detailMap = null;
-                    }
-                } catch (e) {
-                    console.error("Error clearing detail map:", e);
-                }
-            },
+                        <!-- Adımlar -->
+                        ${route.steps && route.steps.length > 0 ? `
+                            <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center">
+                                    <i class="fas fa-list-check mr-2 text-purple-500"></i> Rota Adımları
+                                </h3>
 
-            // Dispose resources
-            disposeResources: function() {
-                // Close any open info windows
-                if (module.currentInfoWindow) {
-                    module.currentInfoWindow.close();
-                    module.currentInfoWindow = null;
-                }
+                                <div class="space-y-2 max-h-48 overflow-y-auto">
+                                    ${route.steps.slice(0, 5).map((step, index) => `
+                                        <div class="group flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer mb-2
+                                                   transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-md border border-gray-100 dark:border-gray-600 hover:border-gray-200 dark:hover:border-gray-500">
+                                            <div class="flex items-center min-w-0 flex-1">
+                                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm transition-transform duration-300 group-hover:scale-110"
+                                                     style="background: linear-gradient(135deg, ${step.isCompleted ? '#10B981' : '#F59E0B'}, ${step.isCompleted ? '#059669' : '#D97706'})">
+                                                    <span class="text-xs font-bold">${index + 1}</span>
+                                                </div>
+                                                <div class="ml-3 min-w-0 flex-1">
+                                                    <div class="font-semibold text-gray-900 dark:text-white truncate text-sm">
+                                                        Adım ${index + 1}
+                                                    </div>
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                                        ${step.address || 'Adres bilgisi yok'}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="flex items-center">
+                                                <span class="${step.isCompleted ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'} px-2 py-0.5 rounded-full text-xs">
+                                                    ${step.isCompleted ? 'Tamamlandı' : 'Beklemede'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                    ${route.steps.length > 5 ? `
+                                        <div class="text-center text-gray-500 dark:text-gray-400 text-sm pt-2">
+                                            ve ${route.steps.length - 5} adım daha...
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
 
-                // Clear all maps
-                this.clearMarkers();
-                this.clearPolylines();
-                this.clearWasteBinMarkers();
+            sidebarElement.classList.add('active');
+            document.body.classList.add('sidebar-active');
+        },
 
-                // Clear references
-                module.maps = {};
-                module.markers = [];
-                module.routePolylines = [];
-                module.truckMarkers = [];
-                module.wasteBinMarkers = [];
-                module.simulationVehicleMarker = null;
-
-                // Remove dotNetRef
-                if (module.dotNetRef) {
-                    module.dotNetRef = null;
-                }
-
-                console.log("All map resources disposed");
+        openDepotSidebar: function() {
+            const sidebar = document.getElementById('route-sidebar');
+            if (!sidebar) {
+                this.createRouteSidebar();
             }
-        };
-    })(window.ecoRouteMapModule);
 
-    // Keyboard shortcuts
-    document.addEventListener('keydown', function(e) {
-        // Don't process shortcuts if inside input or textarea
-        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            const sidebarElement = document.getElementById('route-sidebar');
 
-        // ESC to close open modals
-        if (e.key === 'Escape') {
-            const dotNetRef = window.ecoRouteMapModule.dotNetRef;
-            if (dotNetRef) {
-                dotNetRef.invokeMethodAsync('CloseModal');
-                dotNetRef.invokeMethodAsync('CloseCreateModal');
+            sidebarElement.innerHTML = `
+                <div class="h-full flex flex-col">
+                    <div class="p-4 bg-primary-500 text-white flex justify-between items-center">
+                        <h2 class="text-xl font-bold flex items-center">
+                            <i class="fas fa-warehouse mr-2"></i> Araç Deposu
+                        </h2>
+                        <button class="p-2 hover:bg-primary-600 rounded" onclick="googleMapsInterop.closeRouteSidebar()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-4 bg-white dark:bg-gray-800 shadow-md">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Çorlu Belediyesi</h3>
+                        <p class="text-gray-700 dark:text-gray-300 mb-2 flex items-start">
+                            <i class="fas fa-map-marker-alt text-red-500 mr-2 mt-1"></i>
+                            <span>Merkez Araç Deposu ve Başlangıç Noktası</span>
+                        </p>
+                        <p class="text-gray-700 dark:text-gray-300 mb-2 flex items-start">
+                            <i class="fas fa-globe text-blue-500 mr-2 mt-1"></i>
+                            <span>${DEFAULT_CENTER.lat.toFixed(6)}, ${DEFAULT_CENTER.lng.toFixed(6)}</span>
+                        </p>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 mb-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                                    <i class="fas fa-info-circle mr-2 text-blue-500"></i>
+                                    Depo Bilgileri
+                                </h3>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Tüm Rotaların Başlangıç Noktası</span>
+                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">Aktif</span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Tüm Rotaların Bitiş Noktası</span>
+                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">Aktif</span>
+                                </div>
+                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Koordinat:</span>
+                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">${DEFAULT_CENTER.lat.toFixed(4)}, ${DEFAULT_CENTER.lng.toFixed(4)}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400">Durum:</span>
+                                    <span class="text-sm font-medium text-green-600 dark:text-green-400">Operasyonel</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center">
+                                <i class="fas fa-route mr-2 text-green-500"></i> Operasyon Merkezi
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm">
+                                Bu konum tüm atık toplama rotalarının başlangıç ve bitiş noktasıdır.
+                                Araçlar buradan yola çıkar ve görevlerini tamamladıktan sonra buraya geri döner.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            sidebarElement.classList.add('active');
+            document.body.classList.add('sidebar-active');
+        },
+
+        createRouteSidebar: function() {
+            const sidebar = document.createElement('div');
+            sidebar.id = 'route-sidebar';
+            sidebar.className = 'fixed top-0 right-[-400px] h-full w-[400px] bg-white dark:bg-gray-800 shadow-lg z-50 overflow-y-auto transition-all duration-300 ease-in-out border-l-4 border-primary-500';
+
+            const style = document.createElement('style');
+            style.textContent = `
+                #route-sidebar.active {
+                    right: 0;
+                }
+                .sidebar-active #admin-observer-map {
+                    width: calc(100% - 400px);
+                    transition: width 0.4s ease;
+                }
+            `;
+            document.head.appendChild(style);
+
+            document.body.appendChild(sidebar);
+        },
+
+        closeRouteSidebar: function() {
+            const sidebar = document.getElementById('route-sidebar');
+            if (sidebar) {
+                sidebar.classList.remove('active');
+                document.body.classList.remove('sidebar-active');
             }
-        }
+        },
 
-        // R to refresh data
-        if (e.key === 'r' || e.key === 'R') {
-            const dotNetRef = window.ecoRouteMapModule.dotNetRef;
-            if (dotNetRef) {
-                dotNetRef.invokeMethodAsync('RefreshData');
-            }
-        }
+        showWasteBins: function(wasteBins) {
+            if (!mainMap || !wasteBins || wasteBins.length === 0) return false;
 
-        // F to toggle filter panel
-        if (e.key === 'f' || e.key === 'F') {
-            const filterPanel = document.querySelector('.filter-section');
-            if (filterPanel) {
-                filterPanel.classList.toggle('hidden');
-            }
-        }
+            const markers = [];
+            wasteBins.forEach(bin => {
+                if (bin.latitude && bin.longitude &&
+                    isFinite(bin.latitude) && isFinite(bin.longitude)) {
+                    const position = { lat: bin.latitude, lng: bin.longitude };
 
-        // N to create new route
-        if (e.key === 'n' || e.key === 'N') {
-            const dotNetRef = window.ecoRouteMapModule.dotNetRef;
-            if (dotNetRef) {
-                dotNetRef.invokeMethodAsync('OpenCreateModal');
-            }
-        }
-    });
+                    const marker = new google.maps.Marker({
+                        position: position,
+                        icon: {
+                            url: getWasteBinIcon(bin.deviceStatus || 'Active', bin.fillLevel || 0, 0.8, 1.0), // Increased scale
+                    scaledSize: new google.maps.Size(40, 46), // Increased size from 32x37 to 40x46
+                    anchor: new google.maps.Point(20, 44) // Updated anchor point
+                        },
+                        title: `${bin.label} - ${bin.fillLevel || 0}% dolu`,
+                        opacity: 0.8
+                    });
 
-    // Add help button to show keyboard shortcuts
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log("Page loaded, resetting map state");
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: this.createBinInfoContent(bin)
+                    });
 
-        // Reset global variables when page first loads
-        window.ecoRouteMapModule.maps = {};
-        window.ecoRouteMapModule.markers = [];
-        window.ecoRouteMapModule.routePolylines = [];
-        window.ecoRouteMapModule.truckMarkers = [];
-        window.ecoRouteMapModule.wasteBinMarkers = [];
-        window.ecoRouteMapModule.currentInfoWindow = null;
-        window.ecoRouteMapModule.simulationVehicleMarker = null;
-
-        // Add keyboard help button
-        const keyboardHelpButton = document.createElement('button');
-        keyboardHelpButton.className = 'fixed bottom-4 right-4 bg-gray-800 text-white p-2 rounded-full shadow-lg z-50';
-        keyboardHelpButton.innerHTML = '<i class="fas fa-keyboard"></i>';
-        keyboardHelpButton.title = 'Klavye Kısayolları';
-        keyboardHelpButton.onclick = function() {
-            alert('Klavye Kısayolları:\n\nR: Verileri Yenile\nEsc: Modalları Kapat\nF: Filtre Panelini Aç/Kapat\nN: Yeni Rota Oluştur');
-        };
-        document.body.appendChild(keyboardHelpButton);
-
-        // Add theme change detection
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.attributeName === 'class' && 
-                    mutation.target === document.documentElement && 
-                    window.ecoRouteMapModule.maps.mainMap) {
-                    // Theme change detected, refresh depot icons
-                    const isDarkMode = document.documentElement.classList.contains('dark');
-                    window.ecoRouteMapModule.markers.forEach(marker => {
-                        if (marker.getTitle()?.includes('Belediyesi')) {
-                            marker.setIcon({
-                                url: window.ecoRouteMapModule.googleMapsInterop.getWarehouseIcon(isDarkMode),
-                                scaledSize: new google.maps.Size(40, 40),
-                                anchor: new google.maps.Point(20, 20)
-                            });
+                    marker.addListener('click', () => {
+                        if (currentInfoWindow) {
+                            currentInfoWindow.close();
                         }
+                        infoWindow.open(mainMap, marker);
+                        currentInfoWindow = infoWindow;
                     });
-                    
-                    // Update truck markers
-                    window.ecoRouteMapModule.truckMarkers.forEach(marker => {
-                        marker.setIcon({
-                            url: window.ecoRouteMapModule.googleMapsInterop.getShippingIcon(isDarkMode),
-                            scaledSize: new google.maps.Size(32, 32),
-                            anchor: new google.maps.Point(16, 16)
-                        });
-                    });
+
+                    markers.push(marker);
+                    wasteBinMarkers.push(marker);
                 }
             });
-        });
 
-        observer.observe(document.documentElement, { attributes: true });
+            // Create marker clusterer
+            this.createMarkerClusterer(markers);
+            return true;
+        },
 
-        // Log when DOM is loaded for debugging
-        console.log("DOM fully loaded");
-    });
+        createMarkerClusterer: function(markers) {
+            try {
+                if (markerCluster) {
+                    markerCluster.clearMarkers();
+                    markerCluster = null;
+                }
 
-    // Helper function to scroll to route map
-    window.scrollToRouteMap = function() {
-        setTimeout(() => {
-            const mapElement = document.getElementById('route-map');
-            if (mapElement) {
-                mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                if (markers.length > 0) {
+                    const clusterStyles = [
+                        {
+                            textColor: 'white',
+                            url: this.createClusterIcon(35, RECYCLING_GREEN),
+                            height: 35,
+                            width: 35,
+                            textSize: 11
+                        },
+                        {
+                            textColor: 'white',
+                            url: this.createClusterIcon(45, '#F59E0B'),
+                            height: 45,
+                            width: 45,
+                            textSize: 13
+                        },
+                        {
+                            textColor: 'white',
+                            url: this.createClusterIcon(55, '#EF4444'),
+                            height: 55,
+                            width: 55,
+                            textSize: 15
+                        }
+                    ];
+
+                    if (window.markerClusterer && window.markerClusterer.MarkerClusterer) {
+                        markerCluster = new window.markerClusterer.MarkerClusterer({
+                            map: mainMap,
+                            markers: markers
+                        });
+                    } else if (window.MarkerClusterer) {
+                        markerCluster = new window.MarkerClusterer(mainMap, markers, {
+                            styles: clusterStyles
+                        });
+                    } else {
+                        markers.forEach(marker => marker.setMap(mainMap));
+                    }
+                }
+            } catch (error) {
+                console.warn("Error creating marker clusterer:", error);
+                markers.forEach(marker => marker.setMap(mainMap));
             }
-        }, 300); // Small delay to allow map to load
+        },
+
+        createClusterIcon: function(size, color) {
+            const svg = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+                    <defs>
+                        <filter id="shadow-${size}" x="-50%" y="-50%" width="200%" height="200%">
+                            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+                        </filter>
+                        <radialGradient id="grad-${size}" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:${this.darkenColor(color, 20)};stop-opacity:1" />
+                        </radialGradient>
+                    </defs>
+                    <circle cx="${size/2}" cy="${size/2}" r="${size/2-2}"
+                            fill="url(#grad-${size})"
+                            stroke="white"
+                            stroke-width="3"
+                            opacity="0.95"
+                            filter="url(#shadow-${size})"/>
+                </svg>
+            `;
+            return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
+        },
+
+        darkenColor: function(color, percent) {
+            const hex = color.replace('#', '');
+            const num = parseInt(hex, 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, Math.min(255, (num >> 16) - amt));
+            const G = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) - amt));
+            const B = Math.max(0, Math.min(255, (num & 0x0000FF) - amt));
+            return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        },
+
+        createBinInfoContent: function(bin) {
+            const getFillLevelColor = (level) => {
+                if (!level) return '#6B7280';
+                if (level >= 90) return '#EF4444';
+                if (level >= 70) return '#F97316';
+                if (level >= 50) return '#F59E0B';
+                return '#10B981';
+            };
+
+            return `
+                <div style="padding: 12px; max-width: 280px; font-family: Arial, sans-serif;">
+                    <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #1F2937;">
+                        ${bin.label}
+                    </div>
+                    <div style="margin-bottom: 6px; font-size: 14px; color: #6B7280;">
+                        ${bin.address}
+                    </div>
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <span style="margin-right: 8px; font-size: 14px; color: #6B7280;">Doluluk:</span>
+                        <span style="font-weight: bold; color: ${getFillLevelColor(bin.fillLevel)};">
+                            ${bin.fillLevel || 0}%
+                        </span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background-color: #E5E7EB; border-radius: 4px; overflow: hidden;">
+                        <div style="height: 100%; background-color: ${getFillLevelColor(bin.fillLevel)}; width: ${bin.fillLevel || 0}%; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>
+            `;
+        },
+
+        createStepInfoContent: function(step, stepNumber) {
+            return `
+                <div style="padding: 12px; max-width: 280px; font-family: Arial, sans-serif;">
+                    <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #1F2937; border-bottom: 1px solid #E5E7EB; padding-bottom: 4px;">
+                        Adım ${stepNumber}
+                    </div>
+                    <div style="margin-bottom: 6px; font-size: 14px; color: #6B7280;">
+                        ${step.address}
+                    </div>
+                    <div style="font-size: 12px; color: #9CA3AF; margin-bottom: 8px;">
+                        ${step.latitude.toFixed(6)}, ${step.longitude.toFixed(6)}
+                    </div>
+                    <div style="font-weight: bold; color: ${step.isCompleted ? '#10B981' : '#F59E0B'};">
+                        ${step.isCompleted ? '✓ Tamamlandı' : '⏳ Beklemede'}
+                    </div>
+                </div>
+            `;
+        },
+
+        smoothPanTo: function (map, position) {
+            if (!position || !isFinite(position.lat) || !isFinite(position.lng)) {
+                console.error("Invalid coordinates for smoothPanTo:", position);
+                return;
+            }
+
+            const currentCenter = map.getCenter();
+            const currentLat = currentCenter.lat();
+            const currentLng = currentCenter.lng();
+            const targetLat = position.lat;
+            const targetLng = position.lng;
+
+            const frames = 60;
+            let frame = 0;
+
+            const animate = () => {
+                if (frame >= frames) {
+                    try {
+                        map.panTo(position);
+                    } catch (e) {
+                        console.error("Error in final panTo:", e);
+                    }
+                    return;
+                }
+
+                const t = frame / frames;
+                const progress = t < 0.5 ?
+                    4 * t * t * t :
+                    1 - Math.pow(-2 * t + 2, 3) / 2;
+
+                const lat = currentLat + (targetLat - currentLat) * progress;
+                const lng = currentLng + (targetLng - currentLng) * progress;
+
+                try {
+                    map.panTo({ lat, lng });
+                } catch (e) {
+                    console.error("Error during animation panTo:", e);
+                    return;
+                }
+
+                frame++;
+                requestAnimationFrame(animate);
+            };
+
+            animate();
+        },
+
+        focusRouteOnMap: function(routeId) {
+            const marker = truckMarkers.find(m => m.routeId === routeId);
+            if (!marker) return false;
+
+            try {
+                const position = marker.getPosition();
+                mainMap.setCenter(position);
+                mainMap.setZoom(FOCUS_ZOOM);
+
+                google.maps.event.trigger(marker, 'click');
+
+                marker.setAnimation(google.maps.Animation.BOUNCE);
+                setTimeout(() => {
+                    marker.setAnimation(null);
+                }, 1500);
+
+                return true;
+            } catch (error) {
+                console.error("Error focusing route on map:", error);
+                return false;
+            }
+        },
+
+        clearMarkers: function() {
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+            truckMarkers.forEach(marker => marker.setMap(null));
+            truckMarkers = [];
+        },
+
+        clearPolylines: function() {
+            routePolylines.forEach(polyline => polyline.setMap(null));
+            routePolylines = [];
+        },
+
+        clearWasteBinMarkers: function() {
+            if (markerCluster) {
+                markerCluster.clearMarkers();
+                markerCluster = null;
+            }
+            wasteBinMarkers.forEach(marker => marker.setMap(null));
+            wasteBinMarkers = [];
+        },
+
+        resetMapState: function() {
+            console.log("Resetting map state");
+            if (currentInfoWindow) {
+                currentInfoWindow.close();
+                currentInfoWindow = null;
+            }
+
+            this.closeRouteSidebar();
+            selectedRouteId = null;
+
+            if (simulationVehicleMarker) {
+                simulationVehicleMarker.setMap(null);
+                simulationVehicleMarker = null;
+            }
+        },
+
+        // Add disposeResources method for cleanup
+        disposeResources: function() {
+            this.clearMarkers();
+            this.clearPolylines();
+            this.clearWasteBinMarkers();
+            this.resetMapState();
+        },
+
+        // Blazor interop methods
+        showRouteDetails: function(routeId) {
+            if (dotNetRef) {
+                dotNetRef.invokeMethodAsync('ShowDetails', routeId);
+            }
+        },
+
+        completeRoute: function(routeId) {
+            if (dotNetRef) {
+                dotNetRef.invokeMethodAsync('CompleteRoute', routeId);
+            }
+        }
     };
 </script>
 @code {
@@ -2971,7 +3187,7 @@
             query = query.Where(r =>
                 (GetDriverName(r.DriverId)?.ToLower().Contains(search) == true) ||
                 (GetVehiclePlate(r.VehicleId)?.ToLower().Contains(search) == true) ||
-                (r.WasteType?.ToLower().Contains(search) == true));
+                (r.WasteType.ToString().ToLower().Contains(search) == true));
         }
 
         // Apply sorting
@@ -3271,7 +3487,8 @@
                     OptimizationType = newRoute.OptimizationType,
                     StartTime = newRoute.ScheduledStart,
                     WasteBinIds = newRoute.WasteBinIds,
-                    Notes = newRoute.Notes
+                    Notes = newRoute.Notes,
+                    RouteName = newRoute.RouteName,
                 };
 
             var success = await RouteService.CreateRouteAsync(apiRoute);
@@ -3453,7 +3670,20 @@
             _ => type.ToString()
         };
     }
-
+    public string GetWasteTypeText(WasteType type)
+    {
+        return type switch
+        {
+            WasteType.Cop => "Çöp",
+            WasteType.GeriDonusum => "Geri Dönüşüm",
+            WasteType.Organik => "Organik Atık",
+            WasteType.Cam => "Cam",
+            WasteType.Metal => "Metal",
+            WasteType.Elektronik => "Elektronik Atık",
+            WasteType.Tehlikeli => "Tehlikeli Atık",
+            _ => type.ToString()
+        };
+    }
     private string GetProgressColor(double percentage)
     {
         return percentage switch
@@ -3545,7 +3775,7 @@
                 EndLatitude = fixedStartLat,
                 EndLongitude = fixedStartLng,
                 OptimizationType = OptimizationType.EnKisaMesafe,
-                WasteType = "Genel Çöp",
+                WasteType = WasteType.GeriDonusum,
                 WasteBinIds = new List<Guid>(),
                 AutoOptimize = true
             };
