@@ -8,12 +8,13 @@
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Text.Json
+@using Blazored.Toast.Services
 @inject IRouteService RouteService
 @inject WasteBinService WasteBinService
 @inject UserService UserService
 @inject VehicleService VehicleService
 @inject AuthenticationStateProvider AuthProvider
-@inject IToastService toastService
+@inject IToastService ToastService
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
@@ -36,6 +37,9 @@
         <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Rota Yönetimi</h2>
             <div class="flex space-x-2">
+                <button class="flex items-center bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-300" @onclick="SimulateAllRoutes">
+                    <i class="fas fa-play-circle mr-2"></i> Tüm Rotaları Simüle Et
+                </button>
                 <button class="flex items-center bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-300" @onclick="RefreshData">
                     <i class="fas fa-sync-alt mr-2"></i> Yenile
                 </button>
@@ -115,6 +119,7 @@
                 </div>
             </div>
         </div>
+
         <!-- Routes Table Section -->
         <div class="p-6">
             <div class="overflow-x-auto">
@@ -231,6 +236,7 @@
                             {
                                 var route = displayedRoutes[i];
                                 var rowIndex = ((currentPage - 1) * pageSize) + i + 1;
+                                var isSimulating = activeSimulations.ContainsKey(route.Id);
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer @(expandedRouteId == route.Id ? "bg-gray-50 dark:bg-gray-700" : "")"
                                     @onclick="@(() => ToggleExpand(route.Id))">
                                     <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">@FormatDateTime(route.StartTime)</td>
@@ -247,7 +253,11 @@
                                         </div>
                                     </td>
                                     <td class="px-4 py-4 whitespace-nowrap text-sm">
-                                        <span class="@GetStatusBadgeClass(route.Status) px-2 py-1 rounded-full text-xs">
+                                        <span class="@GetStatusBadgeClass(route.Status) px-2 py-1 rounded-full text-xs flex items-center">
+                                            @if (isSimulating)
+                                            {
+                                                <i class="fas fa-spinner fa-spin mr-1"></i>
+                                            }
                                             @GetStatusText(route.Status)
                                         </span>
                                     </td>
@@ -255,17 +265,13 @@
                                     <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@route.EstimatedDurationMin</td>
                                     <td class="px-4 py-4 whitespace-nowrap text-sm">
                                         <div class="flex space-x-3" @onclick:stopPropagation>
-                                            @if (route.Status != RouteStatus.Completed)
+                                            @if (route.Status != RouteStatus.Completed && !isSimulating)
                                             {
-                                                <button class="text-green-500 hover:text-green-700 text-lg tooltip-container" @onclick="() => CompleteRoute(route.Id)">
+                                                <button class="text-orange-500 hover:text-orange-700 text-lg tooltip-container" @onclick="() => CompleteRoute(route.Id)">
                                                     <i class="fas fa-check-circle"></i>
                                                     <span class="tooltip">Tamamla</span>
                                                 </button>
                                             }
-                                            <button class="text-blue-500 hover:text-blue-700 text-lg tooltip-container" @onclick="() => ShowDetails(route)">
-                                                <i class="fas fa-info-circle"></i>
-                                                <span class="tooltip">Detay</span>
-                                            </button>
                                             <button class="text-primary-500 hover:text-primary-700 text-lg tooltip-container" @onclick="() => FocusRouteOnMap(route.Id)">
                                                 <i class="fas fa-map-marker"></i>
                                                 <span class="tooltip">Haritada Göster</span>
@@ -333,15 +339,15 @@
                                                     <div class="space-y-3">
                                                         <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
                                                             <span class="text-sm text-gray-500 dark:text-gray-400">Toplam Adım Sayısı:</span>
-                                                            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">@route.Steps.Count() adet</span>
+                                                            <span class="text-sm font-medium text-gray-800 dark:text-gray-200" id="total-steps-@route.Id">@route.Steps.Count() adet</span>
                                                         </div>
                                                         <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
                                                             <span class="text-sm text-gray-500 dark:text-gray-400">Tamamlanan Adımlar:</span>
-                                                            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">@route.Steps.Count(s => s.IsCompleted) adet</span>
+                                                            <span class="text-sm font-medium text-gray-800 dark:text-gray-200" id="completed-steps-@route.Id">@route.Steps.Count(s => s.IsCompleted) adet</span>
                                                         </div>
                                                         <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
                                                             <span class="text-sm text-gray-500 dark:text-gray-400">Kalan Adımlar:</span>
-                                                            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">@route.Steps.Count(s => !s.IsCompleted) adet</span>
+                                                            <span class="text-sm font-medium text-gray-800 dark:text-gray-200" id="remaining-steps-@route.Id">@route.Steps.Count(s => !s.IsCompleted) adet</span>
                                                         </div>
                                                         <div class="flex justify-between items-center">
                                                             <span class="text-sm text-gray-500 dark:text-gray-400">Optimizasyon Tipi:</span>
@@ -352,18 +358,13 @@
                                                     </div>
                                                 </div>
 
-                                                <!-- İlerleme Durumu -->
+                                                <!-- İlerleme Durumu ve Simülasyon Kontrolleri -->
                                                 <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
                                                     <div class="flex justify-between items-center mb-4">
                                                         <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
                                                             <i class="fas fa-chart-line mr-2 text-green-500"></i>
                                                             İlerleme Durumu
                                                         </h3>
-                                                        <button class="text-primary-500 hover:text-primary-700 px-2 py-1 rounded text-xs border border-primary-500"
-                                                                @onclick:stopPropagation="true"
-                                                                @onclick="() => ShowDetails(route)">
-                                                            <i class="fas fa-play mr-1"></i> Simüle Et
-                                                        </button>
                                                     </div>
 
                                                     <div class="space-y-4">
@@ -378,8 +379,9 @@
                                                                 <svg class="w-full h-full" viewBox="0 0 36 36">
                                                                     <path class="stroke-current text-gray-200 dark:text-gray-700" fill="none" stroke-width="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                                                     <path class="@GetProgressColor(progressPercentage) stroke-current" fill="none" stroke-width="3.8" stroke-linecap="round"
-                                                                          stroke-dasharray="@(progressPercentage), 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                                                    <text x="18" y="20.5" class="fill-current font-bold text-gray-700 dark:text-gray-200" text-anchor="middle" font-size="7">@progressPercentage.ToString("F0")%</text>
+                                                                          stroke-dasharray="@(progressPercentage), 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                                                          id="progress-circle-@route.Id" />
+                                                                    <text x="18" y="20.5" class="fill-current font-bold text-gray-700 dark:text-gray-200" text-anchor="middle" font-size="7" id="progress-text-@route.Id">@progressPercentage.ToString("F0")%</text>
                                                                 </svg>
                                                             </div>
                                                         </div>
@@ -387,7 +389,7 @@
                                                         <!-- Progress Bar -->
                                                         <div>
                                                             <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
-                                                                <div class="@GetProgressColor(progressPercentage) h-2.5 rounded-full" style="width: @progressPercentage%"></div>
+                                                                <div class="@GetProgressColor(progressPercentage) h-2.5 rounded-full transition-all duration-500" style="width: @progressPercentage%" id="progress-bar-@route.Id"></div>
                                                             </div>
                                                             <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                                                                 <span>0%</span>
@@ -396,17 +398,76 @@
                                                             </div>
                                                         </div>
 
+                                                        <!-- Simülasyon Kontrolleri -->
                                                         @if (route.Status != RouteStatus.Completed)
                                                         {
-                                                            <button class="w-full mt-2 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors flex items-center justify-center"
-                                                                    @onclick:stopPropagation="true"
-                                                                    @onclick="() => CompleteRoute(route.Id)">
-                                                                <i class="fas fa-check-circle mr-2"></i> Rotayı Tamamla
-                                                            </button>
+                                                            <div id="simulation-controls-@route.Id">
+                                                                @if (!isSimulating)
+                                                                {
+                                                                    <div class="space-y-3">
+                                                                        <button class="w-full py-2 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors flex items-center justify-center"
+                                                                                @onclick:stopPropagation="true"
+                                                                                @onclick="() => StartRouteSimulation(route.Id)">
+                                                                            <i class="fas fa-play mr-2"></i> Simülasyonu Başlat
+                                                                        </button>
+                                                                        <button class="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors flex items-center justify-center"
+                                                                                @onclick:stopPropagation="true"
+                                                                                @onclick="() => CompleteRoute(route.Id)">
+                                                                            <i class="fas fa-check-circle mr-2"></i> Rotayı Tamamla
+                                                                        </button>
+                                                                    </div>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <div class="space-y-3">
+                                                                        <!-- Hız Kontrolü -->
+                                                                        <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                                                                            <div class="flex justify-between items-center mb-2">
+                                                                                <span class="text-sm font-medium text-blue-800 dark:text-blue-200">Simülasyon Hızı</span>
+                                                                                <span class="text-sm font-bold text-blue-600 dark:text-blue-300" id="speed-display-@route.Id">1x</span>
+                                                                            </div>
+                                                                            <input type="range" min="1" max="10" value="1"
+                                                                                   class="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer dark:bg-blue-700"
+                                                                                   id="speed-slider-@route.Id"
+                                                                                   @onchange="@((ChangeEventArgs e) => UpdateSimulationSpeed(route.Id, int.Parse(e.Value.ToString())))" />
+                                                                            <div class="flex justify-between text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                                                                <span>1x</span>
+                                                                                <span>5x</span>
+                                                                                <span>10x</span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <!-- Kontrol Butonları -->
+                                                                        <div class="flex space-x-2">
+                                                                            <button class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors flex items-center justify-center"
+                                                                                    @onclick:stopPropagation="true"
+                                                                                    @onclick="() => StopSimulation(route.Id)">
+                                                                                <i class="fas fa-stop mr-2"></i> Durdur
+                                                                            </button>
+                                                                            <button class="flex-1 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors flex items-center justify-center"
+                                                                                    @onclick:stopPropagation="true"
+                                                                                    @onclick="() => CompleteRoute(route.Id)">
+                                                                                <i class="fas fa-forward mr-2"></i> Tamamla
+                                                                            </button>
+                                                                        </div>
+
+                                                                        <!-- Simülasyon Durumu -->
+                                                                        <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+                                                                            <div class="flex items-center justify-center mb-2">
+                                                                                <i class="fas fa-spinner fa-spin text-green-500 mr-2"></i>
+                                                                                <span class="text-green-700 dark:text-green-300 font-medium">Simülasyon Aktif</span>
+                                                                            </div>
+                                                                            <div class="text-sm text-green-600 dark:text-green-400" id="simulation-status-@route.Id">
+                                                                                Başlatılıyor...
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            </div>
                                                         }
                                                         else
                                                         {
-                                                            <div class="w-full mt-2 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-md flex items-center justify-center">
+                                                            <div class="w-full py-3 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-md flex items-center justify-center">
                                                                 <i class="fas fa-check-double mr-2"></i> Rota Tamamlandı
                                                             </div>
                                                         }
@@ -429,17 +490,20 @@
                                                                 <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Durum</th>
                                                             </tr>
                                                         </thead>
-                                                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                                        <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="route-steps-@route.Id">
                                                             @foreach (var step in route.Steps.OrderBy(s => s.Order))
                                                             {
-                                                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700" id="step-row-@step.Id">
                                                                     <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">@step.Order</td>
                                                                     <td class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300">@step.Address</td>
                                                                     <td class="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">(@step.Latitude.ToString("F4"), @step.Longitude.ToString("F4"))</td>
-                                                                    <td class="px-4 py-2 whitespace-nowrap">
-                                                                        <span class="@(step.IsCompleted ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300") px-2 py-0.5 rounded-full text-xs">
-                                                                            @(step.IsCompleted ? "Tamamlandı" : "Beklemede")
-                                                                        </span>
+                                                                    <td class="px-4 py-2 whitespace-nowrap" id="step-status-@step.Id">
+                                                                        <div class="step-status-indicator">
+                                                                            <span class="@GetStepStatusClass(step, isSimulating) px-2 py-0.5 rounded-full text-xs flex items-center w-fit">
+                                                                                <span class="status-icon">@GetStepStatusIcon(step, isSimulating)</span>
+                                                                                <span class="ml-1">@GetStepStatusText(step, isSimulating)</span>
+                                                                            </span>
+                                                                        </div>
                                                                     </td>
                                                                 </tr>
                                                             }
@@ -501,220 +565,6 @@
         </div>
     }
 </div>
-
-<!-- Route Details Modal -->
-@if (isModalOpen && selectedRoute != null)
-{
-    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-modal-show">
-            <!-- Modal Header -->
-            <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
-                <h2 class="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
-                    <i class="fas fa-route mr-3 text-primary-500"></i>
-                    @(GetDriverName(selectedRoute.DriverId) + " - " + FormatDateTime(selectedRoute.StartTime))
-                </h2>
-                <button class="text-gray-500 hover:text-red-600" @onclick="CloseModal">
-                    <i class="fas fa-times text-xl"></i>
-                </button>
-            </div>
-
-            <!-- Modal Content -->
-            <div class="p-6">
-                <!-- Route Info Overview -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                        <div class="flex items-center text-gray-700 dark:text-gray-300 mb-2">
-                            <i class="fas fa-user-hard-hat mr-2 text-primary-500"></i>
-                            <span class="text-sm">Sürücü:</span>
-                            <span class="ml-auto font-medium">@GetDriverName(selectedRoute.DriverId)</span>
-                        </div>
-                        <div class="flex items-center text-gray-700 dark:text-gray-300 mb-2">
-                            <i class="fas fa-truck mr-2 text-blue-500"></i>
-                            <span class="text-sm">Araç:</span>
-                            <span class="ml-auto font-medium">@GetVehiclePlate(selectedRoute.VehicleId)</span>
-                        </div>
-                        <div class="flex items-center text-gray-700 dark:text-gray-300">
-                            <i class="fas fa-trash-alt mr-2 text-green-500"></i>
-                            <span class="text-sm">Atık Tipi:</span>
-                            <span class="ml-auto font-medium">@selectedRoute.WasteType</span>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                        <div class="flex items-center text-gray-700 dark:text-gray-300 mb-2">
-                            <i class="fas fa-calendar-alt mr-2 text-yellow-500"></i>
-                            <span class="text-sm">Başlangıç:</span>
-                            <span class="ml-auto font-medium">@selectedRoute.StartTime.ToString("dd.MM.yyyy HH:mm")</span>
-                        </div>
-                        <div class="flex items-center text-gray-700 dark:text-gray-300 mb-2">
-                            <i class="fas fa-road mr-2 text-purple-500"></i>
-                            <span class="text-sm">Mesafe:</span>
-                            <span class="ml-auto font-medium">@selectedRoute.TotalDistanceKm.ToString("F1") km</span>
-                        </div>
-                        <div class="flex items-center text-gray-700 dark:text-gray-300">
-                            <i class="fas fa-clock mr-2 text-orange-500"></i>
-                            <span class="text-sm">Süre:</span>
-                            <span class="ml-auto font-medium">@selectedRoute.EstimatedDurationMin dk</span>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg flex flex-col justify-between">
-                        <div class="flex items-center text-gray-700 dark:text-gray-300 mb-2">
-                            <i class="fas fa-chart-pie mr-2 text-red-500"></i>
-                            <span class="text-sm">Durum:</span>
-                            <span class="ml-auto">
-                                <span class="@GetStatusBadgeClass(selectedRoute.Status) px-2 py-1 rounded-full text-xs">
-                                    @GetStatusText(selectedRoute.Status)
-                                </span>
-                            </span>
-                        </div>
-                        <div class="flex items-center text-gray-700 dark:text-gray-300 mb-2">
-                            <i class="fas fa-sort-amount-down mr-2 text-indigo-500"></i>
-                            <span class="text-sm">Optimizasyon:</span>
-                            <span class="ml-auto font-medium">@GetOptimizationTypeText(selectedRoute.OptimizationType)</span>
-                        </div>
-                        <div class="flex items-center text-gray-700 dark:text-gray-300">
-                            <i class="fas fa-map-marked-alt mr-2 text-teal-500"></i>
-                            <span class="text-sm">Adımlar:</span>
-                            <span class="ml-auto font-medium">@selectedRoute.Steps.Count() adet</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Çevresel Etki -->
-                <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
-                        <i class="fas fa-leaf mr-2 text-green-500"></i> Çevresel Etki
-                    </h3>
-
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                            <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini Yakıt Tüketimi:</span>
-                            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">@selectedRoute.EstimatedFuelL.ToString("F2") L</span>
-                        </div>
-                        <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                            <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini CO2 Emisyonu:</span>
-                            <span class="text-sm font-medium text-gray-800 dark:text-gray-200">@selectedRoute.EstimatedCO2Kg.ToString("F2") kg</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Map -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-6">
-                    <div class="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600 flex justify-between items-center">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                            <i class="fas fa-map-marked-alt mr-2 text-primary-500"></i> Rota Haritası
-                        </h3>
-                        <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-                            <i class="fas fa-map-pin mr-1 text-red-500"></i> Adım sayısı: @selectedRoute.Steps.Count()
-                        </div>
-                    </div>
-                    <div id="route-map" class="w-full h-80"></div>
-                </div>
-
-                <!-- Simulation Controls -->
-                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
-                        <i class="fas fa-play-circle mr-2 text-green-500"></i> Rota Simülasyonu
-                    </h3>
-
-                    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                        <div class="flex space-x-2">
-                            <button id="start-simulation" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md flex items-center transition-colors">
-                                <i class="fas fa-play mr-2"></i> Başlat
-                            </button>
-                            <button id="pause-simulation" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md flex items-center transition-colors">
-                                <i class="fas fa-pause mr-2"></i> Duraklat
-                            </button>
-                            <button id="stop-simulation" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md flex items-center transition-colors">
-                                <i class="fas fa-stop mr-2"></i> Durdur
-                            </button>
-                        </div>
-
-                        <div class="flex flex-col">
-                            <div class="flex items-center justify-between mb-1">
-                                <span class="text-gray-600 dark:text-gray-300 text-sm">Hız: <span id="speed-value">1x</span></span>
-                                <div class="flex space-x-1">
-                                    <button id="speed-min" class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs">Min</button>
-                                    <button id="speed-max" class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs">Max</button>
-                                </div>
-                            </div>
-                            <input type="range" id="speed-slider" min="1" max="10" value="1"
-                                   class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700">
-                        </div>
-                    </div>
-
-                    <!-- Simulation Progress -->
-                    <div class="mt-4">
-                        <div class="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-                            <span>İlerleme: <span id="progress-percentage">0%</span></span>
-                            <span>Tahmini kalan süre: <span id="remaining-time">@selectedRoute.EstimatedDurationMin dk</span></span>
-                        </div>
-                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-3">
-                            <div id="progress-bar" class="bg-primary-500 h-3 rounded-full" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Steps Table -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-4">
-                    <div class="p-4 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                            <i class="fas fa-list-check mr-2 text-purple-500"></i> Rota Adımları
-                        </h3>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">No</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Adres</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Konum</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Durum</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700" id="route-steps-table">
-                                @foreach (var step in selectedRoute.Steps.OrderBy(s => s.Order))
-                                {
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700" data-step-id="@step.Id">
-                                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">@step.Order</td>
-                                        <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300">@step.Address</td>
-                                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">(@step.Latitude.ToString("F4"), @step.Longitude.ToString("F4"))</td>
-                                        <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="@(step.IsCompleted ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300") px-2 py-0.5 rounded-full text-xs">
-                                                @(step.IsCompleted ? "Tamamlandı" : "Beklemede")
-                                            </span>
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-700">
-                    @if (selectedRoute.Status != RouteStatus.Completed)
-                    {
-                        <div class="flex space-x-2">
-                            <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md transition-colors flex items-center" @onclick="() => CompleteRoute(selectedRoute.Id)">
-                                <i class="fas fa-check-circle mr-2"></i> Rotayı Tamamla
-                            </button>
-                            <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md transition-colors flex items-center" @onclick="() => ReoptimizeWithTraffic(selectedRoute.Id)">
-                                <i class="fas fa-traffic-light mr-2"></i> Trafik ile Yeniden Optimize Et
-                            </button>
-                        </div>
-                    }
-                    else
-                    {
-                        <div></div>
-                    }
-                    <button class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md transition-colors" @onclick="CloseModal">
-                        Kapat
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
 
 <!-- Create Route Modal -->
 @if (showCreateModal)
@@ -819,83 +669,83 @@
                         </h3>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <!-- Sürücü Seçimi -->
-<div>
-    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Sürücü Seçimi</label>
-    <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        @if (availableDrivers != null && availableDrivers.Any())
-        {
-            foreach (var driver in availableDrivers)
-            {
-                <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800 @(newRoute.DriverId == driver.Id ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "")"
-                     @onclick="@(() => newRoute.DriverId = driver.Id)">
-                    <input type="radio"
-                           id="driver-@driver.Id"
-                           name="driver-selection"
-                           value="@driver.Id"
-                           checked="@(newRoute.DriverId == driver.Id)"
-                           @onchange="@(e => newRoute.DriverId = driver.Id)"
-                           class="w-4 h-4 mr-3 text-primary-600 bg-gray-100 border-gray-300 rounded-full focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 bg-primary-500 rounded-full text-white flex items-center justify-center mr-3">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <div>
-                            <p class="font-medium text-gray-800 dark:text-white">@driver.Name @driver.Surname</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">@driver.PhoneNumber</p>
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-        else
-        {
-            <div class="text-center py-4 text-gray-500 dark:text-gray-400">
-                <i class="fas fa-users-slash text-3xl mb-2"></i>
-                <p>Kullanılabilir sürücü bulunamadı</p>
-            </div>
-        }
-    </div>
-</div>
+                            <!-- Sürücü Seçimi -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Sürücü Seçimi</label>
+                                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    @if (availableDrivers != null && availableDrivers.Any())
+                                    {
+                                        foreach (var driver in availableDrivers)
+                                        {
+                                            <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800 @(newRoute.DriverId == driver.Id ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "")"
+                                                 @onclick="@(() => newRoute.DriverId = driver.Id)">
+                                                <input type="radio"
+                                                       id="driver-@driver.Id"
+                                                       name="driver-selection"
+                                                       value="@driver.Id"
+                                                       checked="@(newRoute.DriverId == driver.Id)"
+                                                       @onchange="@(e => newRoute.DriverId = driver.Id)"
+                                                       class="w-4 h-4 mr-3 text-primary-600 bg-gray-100 border-gray-300 rounded-full focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                                                <div class="flex items-center">
+                                                    <div class="w-8 h-8 bg-primary-500 rounded-full text-white flex items-center justify-center mr-3">
+                                                        <i class="fas fa-user"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="font-medium text-gray-800 dark:text-white">@driver.Name @driver.Surname</p>
+                                                        <p class="text-xs text-gray-500 dark:text-gray-400">@driver.PhoneNumber</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                            <i class="fas fa-users-slash text-3xl mb-2"></i>
+                                            <p>Kullanılabilir sürücü bulunamadı</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
 
-<!-- Araç Seçimi -->
-<div>
-    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Araç Seçimi</label>
-    <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        @if (availableVehicles != null && availableVehicles.Any())
-        {
-            foreach (var vehicle in availableVehicles)
-            {
-                <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800 @(newRoute.VehicleId == vehicle.Id.ToString() ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "")"
-                     @onclick="@(() => newRoute.VehicleId = vehicle.Id.ToString())">
-                    <input type="radio"
-                           id="vehicle-@vehicle.Id"
-                           name="vehicle-selection"
-                           value="@vehicle.Id.ToString()"
-                           checked="@(newRoute.VehicleId == vehicle.Id.ToString())"
-                           @onchange="@(e => newRoute.VehicleId = vehicle.Id.ToString())"
-                           class="w-4 h-4 mr-3 text-primary-600 bg-gray-100 border-gray-300 rounded-full focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 bg-blue-500 rounded-full text-white flex items-center justify-center mr-3">
-                            <i class="fas fa-truck"></i>
-                        </div>
-                        <div>
-                            <p class="font-medium text-gray-800 dark:text-white">@vehicle.Plate</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">@vehicle.Description</p>
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-        else
-        {
-            <div class="text-center py-4 text-gray-500 dark:text-gray-400">
-                <i class="fas fa-truck-slash text-3xl mb-2"></i>
-                <p>Kullanılabilir araç bulunamadı</p>
-            </div>
-        }
-    </div>
-</div>
+                            <!-- Araç Seçimi -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Araç Seçimi</label>
+                                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    @if (availableVehicles != null && availableVehicles.Any())
+                                    {
+                                        foreach (var vehicle in availableVehicles)
+                                        {
+                                            <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800 @(newRoute.VehicleId == vehicle.Id.ToString() ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "")"
+                                                 @onclick="@(() => newRoute.VehicleId = vehicle.Id.ToString())">
+                                                <input type="radio"
+                                                       id="vehicle-@vehicle.Id"
+                                                       name="vehicle-selection"
+                                                       value="@vehicle.Id.ToString()"
+                                                       checked="@(newRoute.VehicleId == vehicle.Id.ToString())"
+                                                       @onchange="@(e => newRoute.VehicleId = vehicle.Id.ToString())"
+                                                       class="w-4 h-4 mr-3 text-primary-600 bg-gray-100 border-gray-300 rounded-full focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                                                <div class="flex items-center">
+                                                    <div class="w-8 h-8 bg-blue-500 rounded-full text-white flex items-center justify-center mr-3">
+                                                        <i class="fas fa-truck"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="font-medium text-gray-800 dark:text-white">@vehicle.Plate</p>
+                                                        <p class="text-xs text-gray-500 dark:text-gray-400">@vehicle.Description</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                            <i class="fas fa-truck-slash text-3xl mb-2"></i>
+                                            <p>Kullanılabilir araç bulunamadı</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -1031,19 +881,22 @@
 
     /* Row Expansion Animation */
     @@keyframes expandRow {
-        from {
-            opacity: 0;
-            max-height: 0;
-            transform: scaleY(0);
-            transform-origin: top;
-        }
+        from
 
-        to {
-            opacity: 1;
-            max-height: 1000px;
-            transform: scaleY(1);
-            transform-origin: top;
-        }
+    {
+        opacity: 0;
+        max-height: 0;
+        transform: scaleY(0);
+        transform-origin: top;
+    }
+
+    to {
+        opacity: 1;
+        max-height: 1000px;
+        transform: scaleY(1);
+        transform-origin: top;
+    }
+
     }
 
     .animate-expandRow {
@@ -1052,52 +905,22 @@
 
     /* Modal Animation */
     @@keyframes modalShow {
-        from {
-            opacity: 0;
-            transform: scale(0.95) translateY(10px);
-        }
+        from
 
-        to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
+    {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+
     }
 
     .animate-modal-show {
         animation: modalShow 0.2s ease-out forwards;
-    }
-
-    /* Map InfoWindow Styles */
-    :global(.gm-style .gm-style-iw-c) {
-        padding: 0 !important;
-        border-radius: 8px !important;
-        box-shadow: 0 6px 16px rgba(0,0,0,0.15) !important;
-    }
-
-    :global(.gm-style .gm-style-iw-d) {
-        overflow: hidden !important;
-    }
-
-    /* Pulse animation for markers */
-    @@keyframes markerPulse {
-        0% {
-            transform: scale(1);
-            opacity: 1;
-        }
-
-        50% {
-            transform: scale(1.1);
-            opacity: 0.9;
-        }
-
-        100% {
-            transform: scale(1);
-            opacity: 1;
-        }
-    }
-
-    .marker-pulse {
-        animation: markerPulse 1.5s infinite;
     }
 
     /* Line clamp for address text */
@@ -1108,14 +931,53 @@
         overflow: hidden;
     }
 
-    .line-clamp-2 {
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-</style>
+    /* Animate pulse for processing steps */
+    @@keyframes pulse {
+        0%, 100%
 
+    {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.7;
+    }
+
+    }
+
+    .animate-pulse {
+        animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    /* Improved step status indicators */
+    .step-status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+        .step-status-indicator .status-icon {
+            font-size: 1.1em;
+        }
+
+    /* Enhanced route progress visualization */
+    .route-progress-enhanced {
+        background: linear-gradient(45deg, #f3f4f6, #e5e7eb);
+        border-radius: 0.75rem;
+        padding: 1rem;
+        border: 2px solid #d1d5db;
+    }
+
+        .route-progress-enhanced.active {
+            background: linear-gradient(45deg, #dbeafe, #bfdbfe);
+            border-color: #3b82f6;
+        }
+
+        .route-progress-enhanced.completed {
+            background: linear-gradient(45deg, #dcfce7, #bbf7d0);
+            border-color: #10b981;
+        }
+</style>
 
 <script>
     // Global variables
@@ -1127,41 +989,87 @@
     let wasteBinMarkers = [];
     let markerCluster = null;
     let currentInfoWindow = null;
-    let sidebarOpen = false;
     let dotNetRef = null;
     let selectedRouteId = null;
     let userLocationMarker = null;
     let isDarkMode = false;
-    let simulationVehicleMarker = null;
-    let simulationNotificationSent = false;
-    let alreadyNotifiedSteps = [];
+    let activeSimulations = {};
+    let simulationIntervals = {};
+    let directionsService = null;
 
     // Constants
     const DEFAULT_CENTER = { lat: 41.1634, lng: 27.7951 }; // Çorlu merkez
     const DEFAULT_ZOOM = 13;
-    const FOCUS_ZOOM = 15;
+    const FOCUS_ZOOM = 16;
     const DETAIL_ZOOM = 14;
-    const DEFAULT_TILT = 67.7;
+    const DEFAULT_TILT = 67.5;
     const MAP_ID = '8b70db4a26fb9f4cd11929e3';
     const PRIMARY_COLOR = '#3B82F6';
     const RECYCLING_GREEN = "#10B981";
+    const SIMULATION_SPEED_KMH = 40;
 
-    // Add the missing scrollToRouteMap function
-    window.scrollToRouteMap = function() {
-        const mapElement = document.getElementById('route-map');
-        if (mapElement) {
-            mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Utility function to validate and convert coordinates
+    function safeCoordinate(coord) {
+        if (!coord) return null;
+
+        // Handle Google Maps LatLng objects
+        if (typeof coord.lat === 'function' && typeof coord.lng === 'function') {
+            const lat = coord.lat();
+            const lng = coord.lng();
+            if (isFinite(lat) && isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                return { lat: lat, lng: lng };
+            }
         }
-    };
 
-    // Dark mode detection
+        // Handle plain objects
+        if (typeof coord.lat === 'number' && typeof coord.lng === 'number') {
+            if (isFinite(coord.lat) && isFinite(coord.lng) &&
+                coord.lat >= -90 && coord.lat <= 90 &&
+                coord.lng >= -180 && coord.lng <= 180) {
+                return { lat: coord.lat, lng: coord.lng };
+            }
+        }
+
+        return null;
+    }
+
+    // Safe coordinate interpolation
+    function interpolateCoordinates(start, end, progress) {
+        const safeStart = safeCoordinate(start);
+        const safeEnd = safeCoordinate(end);
+
+        if (!safeStart || !safeEnd || !isFinite(progress)) {
+            return safeStart || DEFAULT_CENTER;
+        }
+
+        progress = Math.max(0, Math.min(1, progress));
+
+        return {
+            lat: safeStart.lat + (safeEnd.lat - safeStart.lat) * progress,
+            lng: safeStart.lng + (safeEnd.lng - safeStart.lng) * progress
+        };
+    }
+
+    // Debounced progress update to prevent spam
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    // Dark mode detection and theme management
     function detectDarkMode() {
         isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ||
                    document.documentElement.classList.contains('dark');
         return isDarkMode;
     }
 
-    // Watch for dark mode changes
     if (window.matchMedia) {
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
             isDarkMode = e.matches || document.documentElement.classList.contains('dark');
@@ -1169,7 +1077,6 @@
         });
     }
 
-    // Observer for dark class changes
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
@@ -1214,11 +1121,6 @@
                     stylers: [{ color: "#c4c4c4" }]
                 },
                 {
-                    featureType: "administrative.country",
-                    elementType: "geometry.stroke",
-                    stylers: [{ color: "#4e5c6e" }]
-                },
-                {
                     featureType: "poi",
                     elementType: "labels.text.fill",
                     stylers: [{ color: "#6b7280" }]
@@ -1229,18 +1131,9 @@
                     stylers: [{ color: "#1a2e1a" }]
                 },
                 {
-                    featureType: "poi.business",
-                    stylers: [{ visibility: "off" }]
-                },
-                {
                     featureType: "road",
                     elementType: "geometry",
                     stylers: [{ color: "#1f1f1f" }]
-                },
-                {
-                    featureType: "road",
-                    elementType: "geometry.stroke",
-                    stylers: [{ color: "#0a0a0a" }]
                 },
                 {
                     featureType: "road.highway",
@@ -1248,58 +1141,13 @@
                     stylers: [{ color: "#2d2d2d" }]
                 },
                 {
-                    featureType: "road.highway",
-                    elementType: "geometry.stroke",
-                    stylers: [{ color: "#1a1a1a" }]
-                },
-                {
-                    featureType: "road.arterial",
-                    elementType: "geometry",
-                    stylers: [{ color: "#262626" }]
-                },
-                {
-                    featureType: "road.local",
-                    elementType: "geometry",
-                    stylers: [{ color: "#1a1a1a" }]
-                },
-                {
                     featureType: "water",
                     elementType: "geometry.fill",
                     stylers: [{ color: "#0a1a2a" }]
-                },
-                {
-                    featureType: "water",
-                    elementType: "labels.text.fill",
-                    stylers: [{ color: "#4a90a4" }]
-                },
-                {
-                    featureType: "transit",
-                    elementType: "geometry",
-                    stylers: [{ color: "#1e1e1e" }]
-                },
-                {
-                    featureType: "transit.station",
-                    elementType: "labels.text.fill",
-                    stylers: [{ color: "#757575" }]
-                },
-                {
-                    featureType: "landscape.man_made",
-                    elementType: "geometry.fill",
-                    stylers: [{ color: "#1a1a1a" }]
-                },
-                {
-                    featureType: "landscape.natural",
-                    elementType: "geometry.fill",
-                    stylers: [{ color: "#0d0d0d" }]
                 }
             ];
         } else {
             return [
-                {
-                    "featureType": "all",
-                    "elementType": "geometry",
-                    "stylers": [{"color": "#f5f5f5"}]
-                },
                 {
                     "featureType": "landscape.man_made",
                     "elementType": "geometry.fill",
@@ -1319,18 +1167,13 @@
                     "featureType": "road",
                     "elementType": "geometry.fill",
                     "stylers": [{"color": "#ffffff"}]
-                },
-                {
-                    "featureType": "road",
-                    "elementType": "geometry.stroke",
-                    "stylers": [{"color": "#e0e0e0"}]
                 }
             ];
         }
     }
 
-       // Enhanced icon creation functions - Updated depot icon with larger building icon
-       function getDepotIcon(scale = 1.5) {
+    // Enhanced icon creation functions
+    function getDepotIcon(scale = 1.5) {
         const size = 45 * scale;
         const color = isDarkMode ? '#F59E0B' : '#D97706';
         const strokeColor = isDarkMode ? '#FBBF24' : '#B45309';
@@ -1346,39 +1189,26 @@
                         <stop offset="100%" style="stop-color:${strokeColor};stop-opacity:1" />
                     </radialGradient>
                 </defs>
-
-                <!-- Main pin circle -->
                 <circle cx="${(size + 16) / 2}" cy="${size / 2 + 8}" r="${size / 2}"
                         fill="url(#grad-depot)"
                         stroke="white"
                         stroke-width="4"
                         opacity="0.95"
                         filter="url(#shadow-depot)"/>
-
-                <!-- Pin point -->
                 <path d="M${(size + 16) / 2},${size + 8} L${(size + 16) / 2 + 8},${size + 20} L${(size + 16) / 2 - 8},${size + 20} Z"
                       fill="url(#grad-depot)"
                       stroke="white"
                       stroke-width="3"/>
-
-                <!-- Updated municipal building icon - Perfectly centered within circle -->
                 <g transform="translate(${(size + 16) / 2}, ${size / 2 + 8}) scale(1.9) translate(-12,-12)">
-                    <!-- Main building -->
                     <rect x="3" y="12" width="18" height="10" fill="white" opacity="0.95" rx="1"/>
-                    <!-- Roof -->
                     <polygon points="12,4 3,10 21,10" fill="white" opacity="0.95"/>
-                    <!-- Columns -->
                     <rect x="5" y="13" width="2" height="8" fill="${color}" opacity="0.8"/>
                     <rect x="9" y="13" width="2" height="8" fill="${color}" opacity="0.8"/>
                     <rect x="13" y="13" width="2" height="8" fill="${color}" opacity="0.8"/>
                     <rect x="17" y="13" width="2" height="8" fill="${color}" opacity="0.8"/>
-                    <!-- Flag pole -->
                     <rect x="11" y="4" width="1.5" height="6" fill="white" opacity="0.9"/>
-                    <!-- Flag -->
                     <polygon points="12.5,4 12.5,7 18,6 12.5,5" fill="#DC2626" opacity="0.9"/>
-                    <!-- Door -->
                     <rect x="10" y="17" width="4" height="4" fill="${color}" opacity="0.9" rx="0.5"/>
-                    <!-- Windows -->
                     <rect x="6" y="14" width="1.5" height="1.5" fill="${color}" opacity="0.6"/>
                     <rect x="16" y="14" width="1.5" height="1.5" fill="${color}" opacity="0.6"/>
                 </g>
@@ -1387,6 +1217,7 @@
 
         return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
     }
+
     function getTruckIcon(routeColor = '#4285F4', scale = 1.5) {
         const size = 36 * scale;
         const strokeColor = darkenColor(routeColor, 20);
@@ -1402,31 +1233,21 @@
                         <stop offset="100%" style="stop-color:${strokeColor};stop-opacity:1" />
                     </radialGradient>
                 </defs>
-
-                <!-- Main pin circle -->
                 <circle cx="${(size + 16) / 2}" cy="${size / 2 + 8}" r="${size / 2}"
                         fill="url(#grad-truck)"
                         stroke="white"
                         stroke-width="3"
                         opacity="0.95"
                         filter="url(#shadow-truck)"/>
-
-                <!-- Pin point -->
                 <path d="M${(size + 16) / 2},${size + 8} L${(size + 16) / 2 + 6},${size + 18} L${(size + 16) / 2 - 6},${size + 18} Z"
                       fill="url(#grad-truck)"
                       stroke="white"
                       stroke-width="2"/>
-
-                <!-- Truck icon -->
                 <g transform="translate(${(size + 16) / 2 - 10}, ${size / 2 + 8 - 10}) scale(1.2)">
-                    <!-- Truck body -->
                     <rect x="2" y="8" width="12" height="8" fill="white" opacity="0.9" rx="1"/>
-                    <!-- Truck cab -->
                     <rect x="14" y="10" width="6" height="6" fill="white" opacity="0.9" rx="1"/>
-                    <!-- Windows -->
                     <rect x="3" y="9" width="4" height="3" fill="${routeColor}" opacity="0.7"/>
                     <rect x="15" y="11" width="3" height="3" fill="${routeColor}" opacity="0.7"/>
-                    <!-- Wheels -->
                     <circle cx="5" cy="17" r="1.5" fill="white" opacity="0.9"/>
                     <circle cx="11" cy="17" r="1.5" fill="white" opacity="0.9"/>
                     <circle cx="17" cy="17" r="1.5" fill="white" opacity="0.9"/>
@@ -1437,8 +1258,7 @@
         return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
     }
 
-    // Updated waste bin icon with larger size
-    function getWasteBinIcon(status, fillLevel, opacity = 1, scale = 1.8) { // Increased default scale from 1.0 to 1.4
+    function getWasteBinIcon(status, fillLevel, opacity = 1, scale = 1.8) {
         let fillColor, strokeColor;
 
         if (fillLevel >= 90) {
@@ -1461,16 +1281,10 @@
         if (status === 'Inactive') {
             fillColor = '#9CA3AF';
             strokeColor = '#6B7280';
-        } else if (status === 'Maintenance') {
-            fillColor = '#FBBF24';
-            strokeColor = '#D97706';
-        } else if (status === 'Faulty') {
-            fillColor = '#F87171';
-            strokeColor = '#DC2626';
         }
 
-        const size = 32 * scale; // Increased base size from 28 to 32
-        const iconSize = 16 * scale; // Increased icon size from 14 to 16
+        const size = 32 * scale;
+        const iconSize = 16 * scale;
 
         const svg = `
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size + 12} ${size + 16}" width="${size + 12}" height="${size + 16}">
@@ -1483,34 +1297,23 @@
                         <stop offset="100%" style="stop-color:${strokeColor};stop-opacity:1" />
                     </radialGradient>
                 </defs>
-
-                <!-- Main pin circle -->
                 <circle cx="${(size + 12) / 2}" cy="${size / 2 + 6}" r="${size / 2}"
                         fill="url(#grad-bin)"
                         stroke="white"
                         stroke-width="3"
                         opacity="${opacity}"
                         filter="url(#shadow-bin)"/>
-
-                <!-- Pin point -->
                 <path d="M${(size + 12) / 2},${size + 6} L${(size + 12) / 2 + 6},${size + 16} L${(size + 12) / 2 - 6},${size + 16} Z"
                       fill="url(#grad-bin)"
                       stroke="white"
                       stroke-width="2"/>
-
-                <!-- Trash bin icon -->
                 <g transform="translate(${(size + 12) / 2 - iconSize / 2}, ${size / 2 + 6 - iconSize / 2}) scale(${iconSize / 16})">
                     <rect x="2" y="5" width="12" height="9" rx="1" fill="white" opacity="0.9"/>
                     <rect x="1" y="4" width="14" height="2" rx="1" fill="white" opacity="0.9"/>
                     <rect x="6" y="2" width="4" height="3" rx="1" fill="white" opacity="0.7"/>
                     <rect x="3" y="${14 - (fillLevel / 100) * 8}" width="10" height="${(fillLevel / 100) * 8}"
                           fill="${fillColor}" opacity="0.3" rx="0.5"/>
-                    <!-- Lid handle -->
                     <ellipse cx="8" cy="3" rx="1" ry="0.5" fill="white" opacity="0.8"/>
-                    <!-- Waste level indicator lines -->
-                    <line x1="4" y1="7" x2="12" y2="7" stroke="${fillColor}" stroke-width="0.3" opacity="0.6"/>
-                    <line x1="4" y1="9" x2="12" y2="9" stroke="${fillColor}" stroke-width="0.3" opacity="0.6"/>
-                    <line x1="4" y1="11" x2="12" y2="11" stroke="${fillColor}" stroke-width="0.3" opacity="0.6"/>
                 </g>
             </svg>
         `;
@@ -1518,7 +1321,6 @@
         return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
     }
 
-    // Helper function to darken colors
     function darkenColor(color, percent) {
         const hex = color.replace('#', '');
         const num = parseInt(hex, 16);
@@ -1573,6 +1375,9 @@
                     fullscreenControl: true,
                     styles: getMapStyles()
                 });
+
+                // Initialize Directions Service
+                directionsService = new google.maps.DirectionsService();
 
                 this.add3DToggle(mainMap);
                 this.addUserLocationButton(mainMap);
@@ -1635,9 +1440,6 @@
                     transform: translateY(-1px);
                     box-shadow: 0 4px 12px rgba(0,0,0,.25);
                 }
-                .toggle-view-button i {
-                    margin-right: 6px;
-                }
             `;
             document.head.appendChild(style);
         },
@@ -1682,46 +1484,14 @@
                             locationButton.innerHTML = '<i class="fas fa-location-arrow"></i>';
                         },
                         () => {
-                            alert('Error: The Geolocation service failed.');
+                            console.error('Geolocation failed');
                             locationButton.innerHTML = '<i class="fas fa-location-arrow"></i>';
                         }
                     );
-                } else {
-                    alert('Error: Your browser doesn\'t support geolocation.');
                 }
             });
 
             map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(locationButton);
-
-            const style = document.createElement('style');
-            style.textContent = `
-                .location-button {
-                    background-color: ${isDarkMode ? '#1F2937' : '#fff'};
-                    border: 2px solid ${isDarkMode ? '#374151' : '#fff'};
-                    border-radius: 50%;
-                    box-shadow: 0 3px 8px rgba(0,0,0,.2);
-                    color: ${isDarkMode ? '#E5E7EB' : '#666'};
-                    cursor: pointer;
-                    height: 44px;
-                    width: 44px;
-                    margin: 10px;
-                    padding: 0;
-                    text-align: center;
-                    transition: all 0.3s ease;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                }
-                .location-button:hover {
-                    background-color: ${isDarkMode ? '#374151' : '#f8f9fa'};
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 12px rgba(0,0,0,.25);
-                }
-                .location-button i {
-                    font-size: 16px;
-                }
-            `;
-            document.head.appendChild(style);
         },
 
         initializeStartPointMap: function() {
@@ -1743,13 +1513,12 @@
                     styles: getMapStyles()
                 });
 
-                // Add marker for depot with updated icon
                 new google.maps.Marker({
                     position: DEFAULT_CENTER,
                     map: startPointMap,
                     icon: {
                         url: getDepotIcon(1.0),
-                        scaledSize: new google.maps.Size(50, 60), // Increased size
+                        scaledSize: new google.maps.Size(50, 60),
                         anchor: new google.maps.Point(25, 56)
                     },
                     title: 'Çorlu Belediyesi (Başlangıç Noktası)'
@@ -1759,340 +1528,6 @@
             } catch (error) {
                 console.error("Error initializing start point map:", error);
                 return false;
-            }
-        },
-
-        initializeDetailMap: function(routeJson) {
-            const mapElement = document.getElementById("route-map");
-            if (!mapElement) {
-                console.log("Route map element not found");
-                return false;
-            }
-
-            try {
-                const routeData = JSON.parse(routeJson);
-                const routeSteps = routeData.steps;
-                const polyline = routeData.overviewPolyline;
-
-                const detailMap = new google.maps.Map(mapElement, {
-                    center: DEFAULT_CENTER,
-                    zoom: DETAIL_ZOOM,
-                    mapTypeId: 'roadmap',
-                    streetViewControl: false,
-                    mapTypeControl: false,
-                    fullscreenControl: true,
-                    styles: getMapStyles()
-                });
-
-                // Add depot marker with updated icon
-                new google.maps.Marker({
-                    position: DEFAULT_CENTER,
-                    map: detailMap,
-                    icon: {
-                        url: getDepotIcon(1.2),
-                        scaledSize: new google.maps.Size(60, 72), // Increased size
-                        anchor: new google.maps.Point(30, 68)
-                    },
-                    title: 'Çorlu Belediyesi (Başlangıç/Bitiş Noktası)',
-                    zIndex: 1000
-                });
-
-                if (routeSteps && routeSteps.length > 0) {
-                    const bounds = new google.maps.LatLngBounds();
-
-                    routeSteps.forEach((step, index) => {
-                        if (!step.latitude || !step.longitude ||
-                            !isFinite(step.latitude) || !isFinite(step.longitude)) {
-                            return;
-                        }
-
-                        const position = { lat: step.latitude, lng: step.longitude };
-                        bounds.extend(position);
-
-                        const marker = new google.maps.Marker({
-                            position: position,
-                            map: detailMap,
-                            icon: {
-        url: getWasteBinIcon('Active', 70, 1, 1.4), // Using updated larger waste bin icon
-        scaledSize: new google.maps.Size(50, 58), // Increased size from 45x52 to 50x58
-        anchor: new google.maps.Point(25, 54), // Updated anchor point
-        labelOrigin: new google.maps.Point(25, 29) // Updated label position
-                            },
-                            label: {
-                                text: `${index + 1}`,
-                                color: 'white',
-                                fontSize: '14px', // Increased font size
-                                fontWeight: 'bold'
-                            },
-                            title: step.address
-                        });
-
-                        const infoWindow = new google.maps.InfoWindow({
-                            content: this.createStepInfoContent(step, index + 1)
-                        });
-
-                        marker.addListener('click', () => {
-                            if (currentInfoWindow) {
-                                currentInfoWindow.close();
-                            }
-                            infoWindow.open(detailMap, marker);
-                            currentInfoWindow = infoWindow;
-                        });
-                    });
-
-                    // Handle polyline
-                    if (polyline) {
-                        try {
-                            const path = google.maps.geometry.encoding.decodePath(polyline);
-                            if (path && path.length > 0) {
-                                const routePolyline = new google.maps.Polyline({
-                                    path: path,
-                                    geodesic: true,
-                                    strokeColor: '#4285F4',
-                                    strokeOpacity: 0.8,
-                                    strokeWeight: 4
-                                });
-                                routePolyline.setMap(detailMap);
-                                path.forEach(point => bounds.extend(point));
-                            }
-                        } catch (error) {
-                            console.error("Error decoding polyline:", error);
-                        }
-                    } else {
-                        const path = routeSteps
-                            .filter(step => step.latitude && step.longitude &&
-                                   isFinite(step.latitude) && isFinite(step.longitude))
-                            .map(step => ({ lat: step.latitude, lng: step.longitude }));
-
-                        if (path.length > 0) {
-                            path.unshift(DEFAULT_CENTER);
-                            path.push(DEFAULT_CENTER);
-
-                            const routePolyline = new google.maps.Polyline({
-                                path: path,
-                                geodesic: true,
-                                strokeColor: '#4285F4',
-                                strokeOpacity: 0.8,
-                                strokeWeight: 4
-                            });
-                            routePolyline.setMap(detailMap);
-                        }
-                    }
-
-                    if (!bounds.isEmpty()) {
-                        detailMap.fitBounds(bounds);
-                        google.maps.event.addListenerOnce(detailMap, 'bounds_changed', function() {
-                            if (detailMap.getZoom() > 15) {
-                                detailMap.setZoom(15);
-                            }
-                        });
-                    }
-                }
-
-                this.initializeSimulation(routeData, detailMap);
-                return true;
-            } catch (error) {
-                console.error("Error initializing detail map:", error);
-                return false;
-            }
-        },
-
-        initializeSimulation: function(routeData, map) {
-            if (!map || !routeData || !routeData.steps || routeData.steps.length === 0) {
-                return false;
-            }
-
-            try {
-                simulationNotificationSent = false;
-                alreadyNotifiedSteps = [];
-
-                const steps = routeData.steps;
-                const polyline = routeData.overviewPolyline;
-
-                let path;
-                if (polyline) {
-                    try {
-                        path = google.maps.geometry.encoding.decodePath(polyline);
-                        if (!path || path.length === 0) {
-                            path = null;
-                        }
-                    } catch (error) {
-                        path = null;
-                    }
-                }
-
-                if (!path || path.length === 0) {
-                    path = [];
-                    steps.forEach(step => {
-                        if (step.latitude && step.longitude &&
-                            isFinite(step.latitude) && isFinite(step.longitude)) {
-                            path.push({ lat: step.latitude, lng: step.longitude });
-                        }
-                    });
-
-                    if (path.length > 0) {
-                        path.unshift(DEFAULT_CENTER);
-                        path.push(DEFAULT_CENTER);
-                    } else {
-                        path = [DEFAULT_CENTER];
-                    }
-                }
-
-                const truckIcon = {
-                    url: getTruckIcon('#4285F4', 1.2),
-                    scaledSize: new google.maps.Size(43, 52),
-                    anchor: new google.maps.Point(21.5, 48)
-                };
-
-                simulationVehicleMarker = new google.maps.Marker({
-                    position: path[0],
-                    map: map,
-                    icon: truckIcon,
-                    title: 'Çöp Kamyonu',
-                    zIndex: 1000
-                });
-
-                const traveledPath = new google.maps.Polyline({
-                    path: [],
-                    geodesic: true,
-                    strokeColor: '#28a745',
-                    strokeOpacity: 0.8,
-                    strokeWeight: 5
-                });
-                traveledPath.setMap(map);
-
-                const remainingPath = new google.maps.Polyline({
-                    path: path,
-                    geodesic: true,
-                    strokeColor: '#3B82F6',
-                    strokeOpacity: 0.8,
-                    strokeWeight: 5
-                });
-                remainingPath.setMap(map);
-
-                // Setup simulation controls
-                this.setupSimulationControls(path, traveledPath, remainingPath, map, routeData);
-
-                return true;
-            } catch (error) {
-                console.error("Error initializing simulation:", error);
-                return false;
-            }
-        },
-
-        setupSimulationControls: function(path, traveledPath, remainingPath, map, routeData) {
-            let simulationIndex = 0;
-            let simulationRunning = false;
-            let simulationComplete = false;
-            let simulationInterval = null;
-            let simulationSpeed = 1;
-
-            const startButton = document.getElementById('start-simulation');
-            const pauseButton = document.getElementById('pause-simulation');
-            const stopButton = document.getElementById('stop-simulation');
-            const speedSlider = document.getElementById('speed-slider');
-            const speedValue = document.getElementById('speed-value');
-            const progressBar = document.getElementById('progress-bar');
-            const progressPercentage = document.getElementById('progress-percentage');
-
-            if (speedSlider) {
-                speedSlider.addEventListener('input', function() {
-                    simulationSpeed = parseInt(this.value);
-                    if (speedValue) {
-                        speedValue.textContent = simulationSpeed + 'x';
-                    }
-                });
-            }
-
-            function startSimulation() {
-                if (simulationInterval) {
-                    clearInterval(simulationInterval);
-                }
-
-                simulationInterval = setInterval(() => {
-                    if (!simulationRunning) return;
-
-                    if (simulationIndex >= path.length) {
-                        clearInterval(simulationInterval);
-                        simulationRunning = false;
-                        simulationComplete = true;
-
-                        if (!simulationNotificationSent) {
-                            simulationNotificationSent = true;
-                            if (dotNetRef) {
-                                dotNetRef.invokeMethodAsync('ShowToastFromJs', '🚚 Rota simülasyonu tamamlandı!');
-                            }
-                        }
-                        return;
-                    }
-
-                    const pos = path[simulationIndex];
-
-                    if (simulationVehicleMarker) {
-                        simulationVehicleMarker.setPosition(pos);
-                    }
-
-                    map.panTo(pos);
-
-                    traveledPath.setPath(path.slice(0, simulationIndex + 1));
-                    remainingPath.setPath(path.slice(simulationIndex));
-
-                    if (progressBar && progressPercentage) {
-                        const pct = Math.floor(simulationIndex / path.length * 100);
-                        progressBar.style.width = pct + '%';
-                        progressPercentage.textContent = pct + '%';
-                    }
-
-                    simulationIndex += simulationSpeed;
-                }, 200);
-
-                simulationRunning = true;
-            }
-
-            if (startButton) {
-                startButton.addEventListener('click', () => {
-                    if (simulationComplete) {
-                        simulationIndex = 0;
-                        simulationComplete = false;
-                        simulationNotificationSent = false;
-                        traveledPath.setPath([]);
-                        remainingPath.setPath(path);
-
-                        if (simulationVehicleMarker) {
-                            simulationVehicleMarker.setPosition(path[0]);
-                        }
-                    }
-
-                    simulationRunning = true;
-                    startSimulation();
-                });
-            }
-
-            if (pauseButton) {
-                pauseButton.addEventListener('click', () => {
-                    simulationRunning = false;
-                });
-            }
-
-            if (stopButton) {
-                stopButton.addEventListener('click', () => {
-                    simulationRunning = false;
-                    simulationIndex = 0;
-                    simulationComplete = false;
-                    simulationNotificationSent = false;
-
-                    if (simulationVehicleMarker) {
-                        simulationVehicleMarker.setPosition(path[0]);
-                    }
-
-                    traveledPath.setPath([]);
-                    remainingPath.setPath(path);
-
-                    if (progressBar && progressPercentage) {
-                        progressBar.style.width = '0%';
-                        progressPercentage.textContent = '0%';
-                    }
-                });
             }
         },
 
@@ -2119,6 +1554,7 @@
                 const bounds = new google.maps.LatLngBounds();
                 bounds.extend(DEFAULT_CENTER);
 
+                // ✅ Fixed: Single consistent color per route
                 const colors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8E24AA', '#16A085', '#E67E22', '#E74C3C', '#2980B9', '#27AE60'];
 
                 routes.forEach((route, routeIndex) => {
@@ -2127,7 +1563,7 @@
 
                     if (!route.steps || route.steps.length === 0) return;
 
-                    const color = colors[routeIndex % colors.length];
+                    const routeColor = colors[routeIndex % colors.length]; // ✅ Consistent color for entire route
                     let path = null;
 
                     if (route.overviewPolyline) {
@@ -2153,7 +1589,7 @@
 
                             if (path.length > 0) {
                                 path.unshift(DEFAULT_CENTER);
-                                path.push(DEFAULT_CENTER);
+                                path.push(DEFAULT_CENTER); // ✅ Return to depot
                             } else {
                                 path = [DEFAULT_CENTER];
                             }
@@ -2166,19 +1602,28 @@
                         const routePolyline = new google.maps.Polyline({
                             path: path,
                             geodesic: true,
-                            strokeColor: color,
+                            strokeColor: routeColor, // ✅ Use consistent color
                             strokeOpacity: 0.7,
                             strokeWeight: 4
                         });
+
                         routePolyline.setMap(mainMap);
                         routePolylines.push(routePolyline);
+
+                        // Store route color for simulation consistency
+                        route._simulationColor = routeColor;
+
+                        // Add click event to polyline to show route info
+                        routePolyline.addListener('click', (event) => {
+                            this.focusRouteOnMap(route.id);
+                        });
 
                         if (path && path.length > 0) {
                             const vehicleMarker = new google.maps.Marker({
                                 position: path[0],
                                 map: mainMap,
                                 icon: {
-                                    url: getTruckIcon(color, 1.0),
+                                    url: getTruckIcon(routeColor, 1.0), // ✅ Use consistent color
                                     scaledSize: new google.maps.Size(36, 43),
                                     anchor: new google.maps.Point(18, 39)
                                 },
@@ -2190,7 +1635,7 @@
                             truckMarkers.push(vehicleMarker);
 
                             vehicleMarker.addListener('click', () => {
-                                this.onRouteMarkerClick(vehicleMarker, route);
+                                this.focusRouteOnMap(route.id);
                             });
                         }
 
@@ -2205,21 +1650,17 @@
                     }
                 });
 
-                // Add depot marker with updated icon
+                // Add depot marker
                 const depotMarker = new google.maps.Marker({
                     position: DEFAULT_CENTER,
                     map: mainMap,
                     icon: {
                         url: getDepotIcon(1.5),
-                        scaledSize: new google.maps.Size(75, 90), // Increased size
+                        scaledSize: new google.maps.Size(75, 90),
                         anchor: new google.maps.Point(37.5, 84)
                     },
                     title: 'Çorlu Belediyesi (Araç Deposu)',
                     zIndex: 1000
-                });
-
-                depotMarker.addListener('click', () => {
-                    this.openDepotSidebar();
                 });
 
                 markers.push(depotMarker);
@@ -2243,310 +1684,510 @@
             }
         },
 
-        onRouteMarkerClick: function(marker, route) {
-            this.smoothPanTo(mainMap, marker.getPosition());
+        // Generate real road path using Google Directions API
+        generateRealRoutePath: async function(routeSteps) {
+            if (!directionsService || !routeSteps || routeSteps.length === 0) {
+                return null;
+            }
 
-            marker.setAnimation(google.maps.Animation.BOUNCE);
-            setTimeout(() => {
-                marker.setAnimation(null);
-            }, 1500);
+            try {
+                // Create waypoints from route steps
+                const waypoints = routeSteps
+                    .filter(step => step.latitude && step.longitude &&
+                           isFinite(step.latitude) && isFinite(step.longitude))
+                    .map(step => ({
+                        location: new google.maps.LatLng(step.latitude, step.longitude),
+                        stopover: true
+                    }));
 
-            this.openRouteSidebar(route);
-            selectedRouteId = route.id;
+                if (waypoints.length === 0) {
+                    return null;
+                }
 
+                const origin = DEFAULT_CENTER;
+                const destination = DEFAULT_CENTER; // ✅ Return to depot
+                const intermediateWaypoints = waypoints;
+
+                return new Promise((resolve, reject) => {
+                    directionsService.route({
+                        origin: origin,
+                        destination: destination,
+                        waypoints: intermediateWaypoints.slice(0, 23), // Google limits to 23 waypoints
+                        travelMode: google.maps.TravelMode.DRIVING,
+                        avoidTolls: false,
+                        avoidHighways: false,
+                        optimizeWaypoints: true // ✅ Route optimization
+                    }, (result, status) => {
+                        if (status === google.maps.DirectionsStatus.OK) {
+                            // Extract detailed path from directions result
+                            const detailedPath = [];
+                            const route = result.routes[0];
+
+                            route.legs.forEach(leg => {
+                                leg.steps.forEach(step => {
+                                    const stepPath = google.maps.geometry.encoding.decodePath(step.polyline.points);
+                                    detailedPath.push(...stepPath);
+                                });
+                            });
+
+                            resolve({
+                                path: detailedPath,
+                                waypoints: waypoints,
+                                directionsResult: result
+                            });
+                        } else {
+                            console.warn('Directions request failed:', status);
+                            resolve(null);
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Error generating real route path:', error);
+                return null;
+            }
+        },
+
+        // ✅ Optimized simulation with performance improvements
+        startRouteSimulation: async function(routeId, routeData) {
+            if (activeSimulations[routeId]) {
+                console.log(`Simulation already running for route ${routeId}`);
+                return false;
+            }
+
+            try {
+                const route = JSON.parse(routeData);
+                if (!route.steps || route.steps.length === 0) {
+                    console.error('Route has no steps for simulation');
+                    return false;
+                }
+
+                // Generate real road path
+                console.log('Generating optimized route path for:', routeId);
+                const routePathData = await this.generateRealRoutePath(route.steps);
+
+                let path = [];
+                let waypoints = [];
+
+                if (routePathData && routePathData.path && routePathData.path.length > 1) {
+                    path = routePathData.path.map(p => safeCoordinate(p)).filter(p => p);
+                    waypoints = routePathData.waypoints;
+                    console.log(`✅ Optimized route generated with ${path.length} points`);
+                } else {
+                    // Fallback path
+                    console.warn('⚠️ Using fallback path');
+                    path = route.steps
+                        .filter(step => step.latitude && step.longitude &&
+                               isFinite(step.latitude) && isFinite(step.longitude))
+                        .map(step => ({
+                            lat: step.latitude,
+                            lng: step.longitude
+                        }));
+
+                    if (path.length > 0) {
+                        path.unshift(DEFAULT_CENTER);
+                        path.push(DEFAULT_CENTER); // ✅ Return to depot
+                    }
+                }
+
+                if (path.length < 2) {
+                    console.error('Insufficient coordinates for simulation');
+                    return false;
+                }
+
+                // Use consistent route color
+                const routeColor = route._simulationColor || '#FF6B35';
+
+                // Create simulation vehicle marker
+                const simulationMarker = new google.maps.Marker({
+                    position: path[0],
+                    map: mainMap,
+                    icon: {
+                        url: getTruckIcon(routeColor, 1.6),
+                        scaledSize: new google.maps.Size(65, 78),
+                        anchor: new google.maps.Point(32.5, 74)
+                    },
+                    title: `🚛 Simülasyon - ${route.routeName || 'Rota'}`,
+                    zIndex: 2000
+                });
+
+                // Create polylines with consistent color
+                const traveledPath = new google.maps.Polyline({
+                    path: [path[0]],
+                    geodesic: true,
+                    strokeColor: '#28a745',
+                    strokeOpacity: 0.9,
+                    strokeWeight: 8,
+                    zIndex: 100
+                });
+                traveledPath.setMap(mainMap);
+
+                const remainingPath = new google.maps.Polyline({
+                    path: path,
+                    geodesic: true,
+                    strokeColor: routeColor,
+                    strokeOpacity: 0.6,
+                    strokeWeight: 6,
+                    zIndex: 50
+                });
+                remainingPath.setMap(mainMap);
+
+                // ✅ Calculate smooth progress parameters
+                const totalDistance = route.totalDistanceKm || 10;
+                const baseSpeed = SIMULATION_SPEED_KMH;
+                let currentSpeed = 1;
+
+                const intervalMs = 200; // ✅ Longer interval for better performance
+                const totalSimulationTime = Math.max(30000, totalDistance * 1000); // Min 30 seconds
+                const totalSteps = Math.floor(totalSimulationTime / intervalMs);
+
+                let currentStep = 0;
+                let currentPathIndex = 0;
+                let completedRouteSteps = 0;
+
+                // Store simulation data
+                activeSimulations[routeId] = {
+                    marker: simulationMarker,
+                    traveledPath: traveledPath,
+                    remainingPath: remainingPath,
+                    route: route,
+                    path: path,
+                    waypoints: waypoints,
+                    currentStep: currentStep,
+                    totalSteps: totalSteps,
+                    isRunning: true,
+                    speed: currentSpeed,
+                    completedRouteSteps: completedRouteSteps,
+                    lastStepTime: 0,
+                    currentProgress: 0 // ✅ Track smooth progress
+                };
+
+                // 3D focus and camera settings
+                mainMap.setTilt(67.5);
+                mainMap.setHeading(0);
+                mainMap.setZoom(17);
+                mainMap.panTo(path[0]);
+
+                setTimeout(() => {
+                    mainMap.setTilt(67.5);
+                    mainMap.setZoom(16);
+                }, 500);
+
+                // Show simulation start notification
+                if (dotNetRef) {
+                    dotNetRef.invokeMethodAsync('ShowToastFromJs', '🚀 Rota simülasyonu başlatıldı!');
+                    dotNetRef.invokeMethodAsync('OnSimulationStarted', routeId);
+                }
+
+                // ✅ Debounced progress update to prevent spam
+                const debouncedProgressUpdate = debounce((routeId, progress, steps) => {
+                    this.updateSimulationProgress(routeId, progress, steps);
+                }, 100);
+
+                // Start simulation interval
+                simulationIntervals[routeId] = setInterval(async () => {
+                    const simulation = activeSimulations[routeId];
+                    if (!simulation || !simulation.isRunning) {
+                        return;
+                    }
+
+                    // Update current step
+                    simulation.currentStep += simulation.speed;
+                    const pathProgress = (simulation.currentStep / simulation.totalSteps) * path.length;
+                    currentPathIndex = Math.min(Math.floor(pathProgress), path.length - 1);
+
+                    if (currentPathIndex >= path.length - 1) {
+                        this.completeSimulation(routeId);
+                        return;
+                    }
+
+                    // Calculate current position with safe interpolation
+                    let currentPosition = path[currentPathIndex];
+
+                    if (currentPathIndex < path.length - 1) {
+                        const segmentProgress = pathProgress - currentPathIndex;
+                        currentPosition = interpolateCoordinates(
+                            path[currentPathIndex],
+                            path[currentPathIndex + 1],
+                            segmentProgress
+                        );
+                    }
+
+                    // Validate and set marker position
+                    const safePosition = safeCoordinate(currentPosition);
+                    if (safePosition) {
+                        try {
+                            simulationMarker.setPosition(safePosition);
+                        } catch (error) {
+                            console.error('Error setting marker position:', error);
+                            return;
+                        }
+                    }
+
+                    // Update polylines
+                    const traveledSegment = path.slice(0, currentPathIndex + 1);
+                    if (currentPathIndex < path.length - 1 && safePosition) {
+                        traveledSegment.push(safePosition);
+                    }
+
+                    try {
+                        traveledPath.setPath(traveledSegment);
+                        remainingPath.setPath(path.slice(currentPathIndex));
+                    } catch (error) {
+                        console.error('Error updating polylines:', error);
+                    }
+
+                    // ✅ Smooth progress calculation (0-100%)
+                    const currentProgress = Math.min((simulation.currentStep / simulation.totalSteps) * 100, 100);
+                    simulation.currentProgress = currentProgress;
+
+                    // Step completion logic based on route steps
+                    const totalRouteSteps = route.steps.length;
+                    const expectedCompletedSteps = Math.floor((currentProgress / 100) * totalRouteSteps);
+
+                    if (expectedCompletedSteps > simulation.completedRouteSteps &&
+                        (Date.now() - simulation.lastStepTime) > 3000) {
+
+                        simulation.completedRouteSteps = expectedCompletedSteps;
+                        simulation.lastStepTime = Date.now();
+
+                        try {
+                            await dotNetRef.invokeMethodAsync('CompleteNextSimulationStep', routeId);
+
+                            // Step completion notification
+                            const stepNumber = expectedCompletedSteps;
+                            if (stepNumber === 1) {
+                                dotNetRef.invokeMethodAsync('ShowToastFromJs', `🚀 ${stepNumber}. adım: Başlangıç noktasından ayrıldı`);
+                            } else if (stepNumber === totalRouteSteps) {
+                                dotNetRef.invokeMethodAsync('ShowToastFromJs', `🏁 ${stepNumber}. adım: Başlangıç noktasına döndü!`);
+                            } else {
+                                const stepInfo = route.steps[stepNumber - 1];
+                                const address = stepInfo?.address || `${stepNumber}. Durak`;
+                                dotNetRef.invokeMethodAsync('ShowToastFromJs', `📍 ${stepNumber}. adım: ${address} tamamlandı`);
+                            }
+                        } catch (error) {
+                            console.error('Error completing simulation step:', error);
+                        }
+                    }
+
+                    // ✅ Update progress smoothly
+                    debouncedProgressUpdate(routeId, currentProgress, simulation.completedRouteSteps);
+
+                    // ✅ Optimized camera tracking (less frequent updates)
+                    if (simulation.currentStep % 15 === 0 && safePosition) {
+                        // Calculate heading based on movement
+                        if (currentPathIndex > 0 && currentPathIndex < path.length - 1) {
+                            try {
+                                const prevPoint = safeCoordinate(path[currentPathIndex - 1]);
+                                const nextPoint = safeCoordinate(path[currentPathIndex + 1]);
+                                if (prevPoint && nextPoint) {
+                                    const heading = google.maps.geometry.spherical.computeHeading(prevPoint, nextPoint);
+                                    if (isFinite(heading)) {
+                                        mainMap.setHeading(heading);
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Error calculating heading:', error);
+                            }
+                        }
+
+                        // Smooth camera follow
+                        try {
+                            mainMap.panTo(safePosition);
+
+                            // Maintain 3D view
+                            if (mainMap.getTilt() < 60) {
+                                mainMap.setTilt(67.5);
+                            }
+                        } catch (error) {
+                            console.error('Error updating camera:', error);
+                        }
+                    }
+
+                }, intervalMs);
+
+                return true;
+            } catch (error) {
+                console.error('Error starting route simulation:', error);
+                return false;
+            }
+        },
+
+        updateSimulationSpeed: function(routeId, newSpeed) {
+            if (activeSimulations[routeId]) {
+                activeSimulations[routeId].speed = Math.max(0.1, Math.min(10, newSpeed));
+
+                // Update speed display
+                const speedDisplay = document.getElementById(`speed-display-${routeId}`);
+                if (speedDisplay) {
+                    speedDisplay.textContent = `${newSpeed}x`;
+                }
+
+                // Show speed change notification
+                if (dotNetRef) {
+                    dotNetRef.invokeMethodAsync('ShowToastFromJs', `⚡ Simülasyon hızı ${newSpeed}x olarak ayarlandı`);
+                }
+            }
+        },
+
+        completeSimulation: function(routeId) {
+            if (!activeSimulations[routeId]) return;
+
+            const simulation = activeSimulations[routeId];
+            simulation.isRunning = false;
+
+            // Clear interval
+            if (simulationIntervals[routeId]) {
+                clearInterval(simulationIntervals[routeId]);
+                delete simulationIntervals[routeId];
+            }
+
+            // Complete all remaining steps in database
             if (dotNetRef) {
-                dotNetRef.invokeMethodAsync('FocusRouteOnMap', route.id);
+                dotNetRef.invokeMethodAsync('CompleteRouteSimulation', routeId);
+            }
+
+            // Update marker to show completion
+            simulation.marker.setIcon({
+                url: getTruckIcon('#28a745', 1.4),
+                scaledSize: new google.maps.Size(55, 66),
+                anchor: new google.maps.Point(27.5, 62)
+            });
+
+            // ✅ Final progress update
+            this.updateSimulationProgress(routeId, 100, simulation.route.steps.length);
+
+            // Show completion notification
+            if (dotNetRef) {
+                dotNetRef.invokeMethodAsync('ShowToastFromJs', '🎉 Rota simülasyonu başarıyla tamamlandı!');
+                dotNetRef.invokeMethodAsync('OnSimulationCompleted', routeId);
+            }
+
+            // Clean up after 5 seconds
+            setTimeout(() => {
+                this.cleanupSimulation(routeId);
+            }, 5000);
+        },
+
+        stopSimulation: function(routeId) {
+            if (!activeSimulations[routeId]) return false;
+
+            const simulation = activeSimulations[routeId];
+            simulation.isRunning = false;
+
+            if (simulationIntervals[routeId]) {
+                clearInterval(simulationIntervals[routeId]);
+                delete simulationIntervals[routeId];
+            }
+
+            // Show stop notification
+            if (dotNetRef) {
+                dotNetRef.invokeMethodAsync('ShowToastFromJs', '⏹️ Rota simülasyonu durduruldu');
+                dotNetRef.invokeMethodAsync('OnSimulationStopped', routeId);
+            }
+
+            this.cleanupSimulation(routeId);
+            return true;
+        },
+
+        cleanupSimulation: function(routeId) {
+            if (!activeSimulations[routeId]) return;
+
+            const simulation = activeSimulations[routeId];
+
+            // Remove markers and polylines safely
+            try {
+                if (simulation.marker) simulation.marker.setMap(null);
+                if (simulation.traveledPath) simulation.traveledPath.setMap(null);
+                if (simulation.remainingPath) simulation.remainingPath.setMap(null);
+            } catch (error) {
+                console.error('Error cleaning up simulation:', error);
+            }
+
+            // Clear from active simulations
+            delete activeSimulations[routeId];
+
+            // Refresh the route data
+            if (dotNetRef) {
+                dotNetRef.invokeMethodAsync('RefreshData');
             }
         },
 
-        openRouteSidebar: function(route) {
-            const sidebar = document.getElementById('route-sidebar');
-            if (!sidebar) {
-                this.createRouteSidebar();
-            }
+        // ✅ Optimized progress update with error handling
+        updateSimulationProgress: function(routeId, progress, completedSteps) {
+            const safeProgress = Math.max(0, Math.min(100, progress || 0));
 
-            const sidebarElement = document.getElementById('route-sidebar');
-
-            const getStatusColor = (status) => {
-                switch (status) {
-                    case 'Scheduled': return '#3B82F6';
-                    case 'Active': return '#10B981';
-                    case 'Completed': return '#6B7280';
-                    default: return '#6B7280';
+            try {
+                // Update progress circle
+                const progressCircle = document.getElementById(`progress-circle-${routeId}`);
+                if (progressCircle) {
+                    progressCircle.setAttribute('stroke-dasharray', `${safeProgress}, 100`);
                 }
-            };
 
-            const getStatusText = (status) => {
-                switch (status) {
-                    case 'Scheduled': return 'Planlanmış';
-                    case 'Active': return 'Aktif';
-                    case 'Completed': return 'Tamamlanmış';
-                    default: return status;
+                // Update progress text
+                const progressText = document.getElementById(`progress-text-${routeId}`);
+                if (progressText) {
+                    progressText.textContent = `${Math.round(safeProgress)}%`;
                 }
-            };
 
-            const progressPercentage = route.steps && route.steps.length > 0
-                ? (route.steps.filter(s => s.isCompleted).length / route.steps.length * 100)
-                : 0;
+                // Update progress bar
+                const progressBar = document.getElementById(`progress-bar-${routeId}`);
+                if (progressBar) {
+                    progressBar.style.width = `${safeProgress}%`;
 
-            sidebarElement.innerHTML = `
-                <div class="h-full flex flex-col">
-                    <div class="p-4 bg-primary-500 text-white flex justify-between items-center">
-                        <h2 class="text-xl font-bold flex items-center">
-                            <i class="fas fa-route mr-2"></i> Rota Detayı
-                        </h2>
-                        <button class="p-2 hover:bg-primary-600 rounded" onclick="googleMapsInterop.closeRouteSidebar()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-
-                    <div class="p-4 bg-white dark:bg-gray-800 shadow-md">
-                        <div class="bg-${getStatusColor(route.status).includes('10B981') ? 'green' : getStatusColor(route.status).includes('3B82F6') ? 'blue' : 'gray'}-100 text-${getStatusColor(route.status).includes('10B981') ? 'green' : getStatusColor(route.status).includes('3B82F6') ? 'blue' : 'gray'}-800 dark:bg-${getStatusColor(route.status).includes('10B981') ? 'green' : getStatusColor(route.status).includes('3B82F6') ? 'blue' : 'gray'}-900/20 dark:text-${getStatusColor(route.status).includes('10B981') ? 'green' : getStatusColor(route.status).includes('3B82F6') ? 'blue' : 'gray'}-300 px-3 py-1 inline-block rounded-full text-sm font-medium mb-2">
-                            ${getStatusText(route.status)}
-                        </div>
-                        <p class="text-gray-700 dark:text-gray-300 mb-2 flex items-start">
-                            <i class="fas fa-calendar-alt text-blue-500 mr-2 mt-1"></i>
-                            <span>${new Date(route.startTime).toLocaleString('tr-TR')}</span>
-                        </p>
-                        <p class="text-gray-700 dark:text-gray-300 mb-2 flex items-start">
-                            <i class="fas fa-trash-alt text-green-500 mr-2 mt-1"></i>
-                            <span>${route.wasteType}</span>
-                        </p>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto p-4">
-                        <!-- Rota Özeti -->
-                        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 mb-4">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                                    <i class="fas fa-info-circle mr-2 text-blue-500"></i>
-                                    Rota Bilgileri
-                                </h3>
-                            </div>
-
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                                    <span class="text-sm text-gray-500 dark:text-gray-400">Toplam Mesafe:</span>
-                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">${route.totalDistanceKm?.toFixed(1) || 0} km</span>
-                                </div>
-                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                                    <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini Süre:</span>
-                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">${route.estimatedDurationMin || 0} dk</span>
-                                </div>
-                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                                    <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini Yakıt:</span>
-                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">${route.estimatedFuelL?.toFixed(2) || 0} L</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-gray-500 dark:text-gray-400">Toplam Adım:</span>
-                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">${route.steps?.length || 0} adet</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- İlerleme Durumu -->
-                        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 mb-4">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                                    <i class="fas fa-chart-line mr-2 text-green-500"></i>
-                                    İlerleme Durumu
-                                </h3>
-                                <button class="text-primary-500 hover:text-primary-700 px-2 py-1 rounded text-xs border border-primary-500"
-                                        onclick="googleMapsInterop.showRouteDetails('${route.id}')">
-                                    <i class="fas fa-info mr-1"></i> Detaylar
-                                </button>
-                            </div>
-
-                            <div class="space-y-4">
-                                <div class="flex justify-center">
-                                    <div class="relative w-24 h-24">
-                                        <svg class="w-full h-full" viewBox="0 0 36 36">
-                                            <path class="stroke-current text-gray-200 dark:text-gray-700" fill="none" stroke-width="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                            <path class="stroke-current ${progressPercentage >= 100 ? 'text-green-500' : progressPercentage >= 75 ? 'text-blue-500' : progressPercentage >= 50 ? 'text-yellow-500' : 'text-red-500'}" fill="none" stroke-width="3.8" stroke-linecap="round"
-                                                  stroke-dasharray="${progressPercentage}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831">
-                                                <animate attributeName="stroke-dasharray"
-                                                         from="0, 100"
-                                                         to="${progressPercentage}, 100"
-                                                         dur="1s"
-                                                         fill="freeze"
-                                                         calcMode="spline"
-                                                         keyTimes="0; 1"
-                                                         keySplines="0.42 0 0.58 1" />
-                                            </path>
-                                            <text x="18" y="20.5" class="fill-current font-bold text-gray-700 dark:text-gray-200" text-anchor="middle" font-size="7">${progressPercentage.toFixed(0)}%</text>
-                                        </svg>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
-                                        <div class="${progressPercentage >= 100 ? 'bg-green-500' : progressPercentage >= 75 ? 'bg-blue-500' : progressPercentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'} h-2.5 rounded-full transition-all duration-500" style="width: ${progressPercentage}%"></div>
-                                    </div>
-                                </div>
-
-                                ${route.status !== 'Completed' ? `
-                                    <button class="w-full mt-2 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors flex items-center justify-center"
-                                            onclick="googleMapsInterop.completeRoute('${route.id}')">
-                                        <i class="fas fa-check-circle mr-2"></i> Rotayı Tamamla
-                                    </button>
-                                ` : `
-                                    <div class="w-full mt-2 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-md flex items-center justify-center">
-                                        <i class="fas fa-check-double mr-2"></i> Rota Tamamlandı
-                                    </div>
-                                `}
-                            </div>
-                        </div>
-
-                        <!-- Adımlar -->
-                        ${route.steps && route.steps.length > 0 ? `
-                            <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
-                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center">
-                                    <i class="fas fa-list-check mr-2 text-purple-500"></i> Rota Adımları
-                                </h3>
-
-                                <div class="space-y-2 max-h-48 overflow-y-auto">
-                                    ${route.steps.slice(0, 5).map((step, index) => `
-                                        <div class="group flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer mb-2
-                                                   transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-md border border-gray-100 dark:border-gray-600 hover:border-gray-200 dark:hover:border-gray-500">
-                                            <div class="flex items-center min-w-0 flex-1">
-                                                <div class="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm transition-transform duration-300 group-hover:scale-110"
-                                                     style="background: linear-gradient(135deg, ${step.isCompleted ? '#10B981' : '#F59E0B'}, ${step.isCompleted ? '#059669' : '#D97706'})">
-                                                    <span class="text-xs font-bold">${index + 1}</span>
-                                                </div>
-                                                <div class="ml-3 min-w-0 flex-1">
-                                                    <div class="font-semibold text-gray-900 dark:text-white truncate text-sm">
-                                                        Adım ${index + 1}
-                                                    </div>
-                                                    <div class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                                        ${step.address || 'Adres bilgisi yok'}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="flex items-center">
-                                                <span class="${step.isCompleted ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'} px-2 py-0.5 rounded-full text-xs">
-                                                    ${step.isCompleted ? 'Tamamlandı' : 'Beklemede'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    `).join('')}
-                                    ${route.steps.length > 5 ? `
-                                        <div class="text-center text-gray-500 dark:text-gray-400 text-sm pt-2">
-                                            ve ${route.steps.length - 5} adım daha...
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-
-            sidebarElement.classList.add('active');
-            document.body.classList.add('sidebar-active');
-        },
-
-        openDepotSidebar: function() {
-            const sidebar = document.getElementById('route-sidebar');
-            if (!sidebar) {
-                this.createRouteSidebar();
-            }
-
-            const sidebarElement = document.getElementById('route-sidebar');
-
-            sidebarElement.innerHTML = `
-                <div class="h-full flex flex-col">
-                    <div class="p-4 bg-primary-500 text-white flex justify-between items-center">
-                        <h2 class="text-xl font-bold flex items-center">
-                            <i class="fas fa-warehouse mr-2"></i> Araç Deposu
-                        </h2>
-                        <button class="p-2 hover:bg-primary-600 rounded" onclick="googleMapsInterop.closeRouteSidebar()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-
-                    <div class="p-4 bg-white dark:bg-gray-800 shadow-md">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Çorlu Belediyesi</h3>
-                        <p class="text-gray-700 dark:text-gray-300 mb-2 flex items-start">
-                            <i class="fas fa-map-marker-alt text-red-500 mr-2 mt-1"></i>
-                            <span>Merkez Araç Deposu ve Başlangıç Noktası</span>
-                        </p>
-                        <p class="text-gray-700 dark:text-gray-300 mb-2 flex items-start">
-                            <i class="fas fa-globe text-blue-500 mr-2 mt-1"></i>
-                            <span>${DEFAULT_CENTER.lat.toFixed(6)}, ${DEFAULT_CENTER.lng.toFixed(6)}</span>
-                        </p>
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto p-4">
-                        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 mb-4">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                                    <i class="fas fa-info-circle mr-2 text-blue-500"></i>
-                                    Depo Bilgileri
-                                </h3>
-                            </div>
-
-                            <div class="space-y-3">
-                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                                    <span class="text-sm text-gray-500 dark:text-gray-400">Tüm Rotaların Başlangıç Noktası</span>
-                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">Aktif</span>
-                                </div>
-                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                                    <span class="text-sm text-gray-500 dark:text-gray-400">Tüm Rotaların Bitiş Noktası</span>
-                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">Aktif</span>
-                                </div>
-                                <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
-                                    <span class="text-sm text-gray-500 dark:text-gray-400">Koordinat:</span>
-                                    <span class="text-sm font-medium text-gray-800 dark:text-gray-200">${DEFAULT_CENTER.lat.toFixed(4)}, ${DEFAULT_CENTER.lng.toFixed(4)}</span>
-                                </div>
-                                <div class="flex justify-between items-center">
-                                    <span class="text-sm text-gray-500 dark:text-gray-400">Durum:</span>
-                                    <span class="text-sm font-medium text-green-600 dark:text-green-400">Operasyonel</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center">
-                                <i class="fas fa-route mr-2 text-green-500"></i> Operasyon Merkezi
-                            </h3>
-                            <p class="text-gray-600 dark:text-gray-400 text-sm">
-                                Bu konum tüm atık toplama rotalarının başlangıç ve bitiş noktasıdır.
-                                Araçlar buradan yola çıkar ve görevlerini tamamladıktan sonra buraya geri döner.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            sidebarElement.classList.add('active');
-            document.body.classList.add('sidebar-active');
-        },
-
-        createRouteSidebar: function() {
-            const sidebar = document.createElement('div');
-            sidebar.id = 'route-sidebar';
-            sidebar.className = 'fixed top-0 right-[-400px] h-full w-[400px] bg-white dark:bg-gray-800 shadow-lg z-50 overflow-y-auto transition-all duration-300 ease-in-out border-l-4 border-primary-500';
-
-            const style = document.createElement('style');
-            style.textContent = `
-                #route-sidebar.active {
-                    right: 0;
+                    // Update color based on progress
+                    const colorClass = safeProgress >= 100 ? 'bg-green-500' :
+                                     safeProgress >= 75 ? 'bg-blue-500' :
+                                     safeProgress >= 50 ? 'bg-yellow-500' : 'bg-red-500';
+                    progressBar.className = `${colorClass} h-2.5 rounded-full transition-all duration-500 ease-in-out`;
                 }
-                .sidebar-active #admin-observer-map {
-                    width: calc(100% - 400px);
-                    transition: width 0.4s ease;
+
+                // Update step counts
+                const completedStepsEl = document.getElementById(`completed-steps-${routeId}`);
+                if (completedStepsEl) {
+                    completedStepsEl.textContent = `${completedSteps || 0} adet`;
                 }
-            `;
-            document.head.appendChild(style);
 
-            document.body.appendChild(sidebar);
-        },
+                const remainingStepsEl = document.getElementById(`remaining-steps-${routeId}`);
+                if (remainingStepsEl) {
+                    const totalSteps = activeSimulations[routeId]?.route?.steps?.length || 0;
+                    remainingStepsEl.textContent = `${Math.max(0, totalSteps - (completedSteps || 0))} adet`;
+                }
 
-        closeRouteSidebar: function() {
-            const sidebar = document.getElementById('route-sidebar');
-            if (sidebar) {
-                sidebar.classList.remove('active');
-                document.body.classList.remove('sidebar-active');
+                // Update simulation status
+                const statusEl = document.getElementById(`simulation-status-${routeId}`);
+                if (statusEl) {
+                    if (safeProgress >= 100) {
+                        statusEl.textContent = 'Simülasyon tamamlandı!';
+                        statusEl.className = 'text-green-600 font-semibold';
+                    } else {
+                        statusEl.textContent = `${Math.round(safeProgress)}% tamamlandı - ${completedSteps || 0} adım`;
+                        statusEl.className = 'text-blue-600 font-medium';
+                    }
+                }
+
+                // ✅ CSS class based selectors
+                const progressElements = document.querySelectorAll(`[data-route-id="${routeId}"]`);
+                progressElements.forEach(element => {
+                    if (element.classList.contains('progress-bar')) {
+                        element.style.width = `${safeProgress}%`;
+                    } else if (element.classList.contains('progress-text')) {
+                        element.textContent = `${Math.round(safeProgress)}%`;
+                    } else if (element.classList.contains('step-counter')) {
+                        element.textContent = `${completedSteps} / ${activeSimulations[routeId]?.route?.steps?.length || 0}`;
+                    }
+                });
+
+                // ✅ Window event dispatch for C# to catch
+                window.dispatchEvent(new CustomEvent('simulationProgressUpdate', {
+                    detail: {
+                        routeId: routeId,
+                        progress: safeProgress,
+                        completedSteps: completedSteps,
+                        totalSteps: activeSimulations[routeId]?.route?.steps?.length || 0
+                    }
+                }));
+            } catch (error) {
+                console.error('Error updating simulation progress:', error);
             }
         },
 
@@ -2562,9 +2203,9 @@
                     const marker = new google.maps.Marker({
                         position: position,
                         icon: {
-                            url: getWasteBinIcon(bin.deviceStatus || 'Active', bin.fillLevel || 0, 0.8, 1.0), // Increased scale
-                    scaledSize: new google.maps.Size(40, 46), // Increased size from 32x37 to 40x46
-                    anchor: new google.maps.Point(20, 44) // Updated anchor point
+                            url: getWasteBinIcon(bin.deviceStatus || 'Active', bin.fillLevel || 0, 0.8, 1.0),
+                            scaledSize: new google.maps.Size(40, 46),
+                            anchor: new google.maps.Point(20, 44)
                         },
                         title: `${bin.label} - ${bin.fillLevel || 0}% dolu`,
                         opacity: 0.8
@@ -2587,7 +2228,6 @@
                 }
             });
 
-            // Create marker clusterer
             this.createMarkerClusterer(markers);
             return true;
         },
@@ -2706,70 +2346,61 @@
             `;
         },
 
-        createStepInfoContent: function(step, stepNumber) {
-            return `
-                <div style="padding: 12px; max-width: 280px; font-family: Arial, sans-serif;">
-                    <div style="font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #1F2937; border-bottom: 1px solid #E5E7EB; padding-bottom: 4px;">
-                        Adım ${stepNumber}
-                    </div>
-                    <div style="margin-bottom: 6px; font-size: 14px; color: #6B7280;">
-                        ${step.address}
-                    </div>
-                    <div style="font-size: 12px; color: #9CA3AF; margin-bottom: 8px;">
-                        ${step.latitude.toFixed(6)}, ${step.longitude.toFixed(6)}
-                    </div>
-                    <div style="font-weight: bold; color: ${step.isCompleted ? '#10B981' : '#F59E0B'};">
-                        ${step.isCompleted ? '✓ Tamamlandı' : '⏳ Beklemede'}
-                    </div>
-                </div>
-            `;
-        },
-
         smoothPanTo: function (map, position) {
-            if (!position || !isFinite(position.lat) || !isFinite(position.lng)) {
+            const safePos = safeCoordinate(position);
+            if (!safePos) {
                 console.error("Invalid coordinates for smoothPanTo:", position);
                 return;
             }
 
-            const currentCenter = map.getCenter();
-            const currentLat = currentCenter.lat();
-            const currentLng = currentCenter.lng();
-            const targetLat = position.lat;
-            const targetLng = position.lng;
+            try {
+                const currentCenter = map.getCenter();
+                const currentLat = currentCenter.lat();
+                const currentLng = currentCenter.lng();
+                const targetLat = safePos.lat;
+                const targetLng = safePos.lng;
 
-            const frames = 60;
-            let frame = 0;
+                const frames = 60;
+                let frame = 0;
 
-            const animate = () => {
-                if (frame >= frames) {
-                    try {
-                        map.panTo(position);
-                    } catch (e) {
-                        console.error("Error in final panTo:", e);
+                const animate = () => {
+                    if (frame >= frames) {
+                        try {
+                            map.panTo(safePos);
+                        } catch (e) {
+                            console.error("Error in final panTo:", e);
+                        }
+                        return;
                     }
-                    return;
-                }
 
-                const t = frame / frames;
-                const progress = t < 0.5 ?
-                    4 * t * t * t :
-                    1 - Math.pow(-2 * t + 2, 3) / 2;
+                    const t = frame / frames;
+                    const progress = t < 0.5 ?
+                        4 * t * t * t :
+                        1 - Math.pow(-2 * t + 2, 3) / 2;
 
-                const lat = currentLat + (targetLat - currentLat) * progress;
-                const lng = currentLng + (targetLng - currentLng) * progress;
+                    const lat = currentLat + (targetLat - currentLat) * progress;
+                    const lng = currentLng + (targetLng - currentLng) * progress;
 
-                try {
-                    map.panTo({ lat, lng });
-                } catch (e) {
-                    console.error("Error during animation panTo:", e);
-                    return;
-                }
+                    const intermediatePos = { lat, lng };
+                    const safeIntermediate = safeCoordinate(intermediatePos);
+                    if (safeIntermediate) {
+                        try {
+                            map.panTo(safeIntermediate);
+                        } catch (e) {
+                            console.error("Error during animation panTo:", e);
+                            return;
+                        }
+                    }
 
-                frame++;
-                requestAnimationFrame(animate);
-            };
+                    frame++;
+                    requestAnimationFrame(animate);
+                };
 
-            animate();
+                animate();
+            } catch (error) {
+                console.error("Error in smoothPanTo:", error);
+                map.panTo(safePos);
+            }
         },
 
         focusRouteOnMap: function(routeId) {
@@ -2778,15 +2409,21 @@
 
             try {
                 const position = marker.getPosition();
-                mainMap.setCenter(position);
-                mainMap.setZoom(FOCUS_ZOOM);
+                const safePos = safeCoordinate(position);
+                if (safePos) {
+                    mainMap.setCenter(safePos);
+                    mainMap.setZoom(FOCUS_ZOOM);
 
-                google.maps.event.trigger(marker, 'click');
+                    marker.setAnimation(google.maps.Animation.BOUNCE);
+                    setTimeout(() => {
+                        marker.setAnimation(null);
+                    }, 1500);
+                }
 
-                marker.setAnimation(google.maps.Animation.BOUNCE);
-                setTimeout(() => {
-                    marker.setAnimation(null);
-                }, 1500);
+                // Trigger route expansion in table
+                if (dotNetRef) {
+                    dotNetRef.invokeMethodAsync('FocusRouteOnMap', routeId);
+                }
 
                 return true;
             } catch (error) {
@@ -2796,23 +2433,41 @@
         },
 
         clearMarkers: function() {
-            markers.forEach(marker => marker.setMap(null));
+            markers.forEach(marker => {
+                try {
+                    marker.setMap(null);
+                } catch (e) {}
+            });
             markers = [];
-            truckMarkers.forEach(marker => marker.setMap(null));
+            truckMarkers.forEach(marker => {
+                try {
+                    marker.setMap(null);
+                } catch (e) {}
+            });
             truckMarkers = [];
         },
 
         clearPolylines: function() {
-            routePolylines.forEach(polyline => polyline.setMap(null));
+            routePolylines.forEach(polyline => {
+                try {
+                    polyline.setMap(null);
+                } catch (e) {}
+            });
             routePolylines = [];
         },
 
         clearWasteBinMarkers: function() {
             if (markerCluster) {
-                markerCluster.clearMarkers();
-                markerCluster = null;
+                try {
+                    markerCluster.clearMarkers();
+                    markerCluster = null;
+                } catch (e) {}
             }
-            wasteBinMarkers.forEach(marker => marker.setMap(null));
+            wasteBinMarkers.forEach(marker => {
+                try {
+                    marker.setMap(null);
+                } catch (e) {}
+            });
             wasteBinMarkers = [];
         },
 
@@ -2823,37 +2478,23 @@
                 currentInfoWindow = null;
             }
 
-            this.closeRouteSidebar();
             selectedRouteId = null;
 
-            if (simulationVehicleMarker) {
-                simulationVehicleMarker.setMap(null);
-                simulationVehicleMarker = null;
-            }
+            // Stop all active simulations
+            Object.keys(activeSimulations).forEach(routeId => {
+                this.stopSimulation(routeId);
+            });
         },
 
-        // Add disposeResources method for cleanup
         disposeResources: function() {
             this.clearMarkers();
             this.clearPolylines();
             this.clearWasteBinMarkers();
             this.resetMapState();
-        },
-
-        // Blazor interop methods
-        showRouteDetails: function(routeId) {
-            if (dotNetRef) {
-                dotNetRef.invokeMethodAsync('ShowDetails', routeId);
-            }
-        },
-
-        completeRoute: function(routeId) {
-            if (dotNetRef) {
-                dotNetRef.invokeMethodAsync('CompleteRoute', routeId);
-            }
         }
     };
 </script>
+
 @code {
     // Data
     private List<RouteResultDto> routes;
@@ -2861,22 +2502,23 @@
     private List<RouteResultDto> displayedRoutes => GetDisplayedRoutes();
     private List<ResultVehicleDto> vehicles;
     private List<ResultUserDto> drivers;
-    private List<ResultUserDto> availableDrivers => GetAvailableDrivers(); // New property for available drivers
-    private List<ResultVehicleDto> availableVehicles => GetAvailableVehicles(); // New property for available vehicles
+    private List<ResultUserDto> availableDrivers => GetAvailableDrivers();
+    private List<ResultVehicleDto> availableVehicles => GetAvailableVehicles();
     private List<ResultWasteBinDto> wasteBins;
     private List<ResultWasteBinDto> filteredBins = new List<ResultWasteBinDto>();
 
     // Selected items
-    private RouteResultDto selectedRoute;
     private CreateRouteDto newRoute = new CreateRouteDto();
 
     // UI state flags
-    private bool isModalOpen = false;
     private bool showCreateModal = false;
     private bool mainMapInitialized = false;
     private Guid expandedRouteId;
     private DotNetObjectReference<RoutesManager> _objectReference;
     private CancellationTokenSource _debounceTokenSource = new CancellationTokenSource();
+
+    // Simulation tracking
+    private Dictionary<Guid, bool> activeSimulations = new Dictionary<Guid, bool>();
 
     // Filters
     private string driverFilter = "";
@@ -2904,19 +2546,16 @@
     private static readonly JsonSerializerOptions camelCase =
     new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
-    // New methods to filter out drivers and vehicles that are already assigned to active routes
     private List<ResultUserDto> GetAvailableDrivers()
     {
         if (drivers == null || routes == null)
             return new List<ResultUserDto>();
 
-        // Get IDs of drivers with active routes (not completed)
         var busyDriverIds = routes
             .Where(r => r.Status != RouteStatus.Completed)
             .Select(r => r.DriverId)
             .ToHashSet();
 
-        // Return only drivers who are not busy
         return drivers.Where(d => !busyDriverIds.Contains(d.Id)).ToList();
     }
 
@@ -2925,13 +2564,11 @@
         if (vehicles == null || routes == null)
             return new List<ResultVehicleDto>();
 
-        // Get IDs of vehicles with active routes (not completed)
         var busyVehicleIds = routes
             .Where(r => r.Status != RouteStatus.Completed)
             .Select(r => r.VehicleId)
             .ToHashSet();
 
-        // Return only vehicles that are not busy
         return vehicles.Where(v => !busyVehicleIds.Contains(v.Id.ToString())).ToList();
     }
 
@@ -2946,15 +2583,12 @@
             await LoadVehicles();
             await LoadWasteBins();
 
-            // Filtreleme işlemlerinden önce null kontrolü
             if (routes == null)
                 routes = new List<RouteResultDto>();
 
             if (filteredRoutes == null)
                 filteredRoutes = new List<RouteResultDto>();
 
-            // Set default values for new route
-            // Using current time + 1 hour instead of fixed 8:00 AM
             newRoute.ScheduledStart = DateTime.Now.AddHours(1);
             newRoute.StartLatitude = fixedStartLat;
             newRoute.StartLongitude = fixedStartLng;
@@ -2965,7 +2599,7 @@
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error in OnInitializedAsync: {ex.Message}");
-            toastService.ShowError("Sayfa yüklenirken bir hata oluştu");
+            ToastService.ShowError("Sayfa yüklenirken bir hata oluştu");
         }
     }
 
@@ -2998,7 +2632,6 @@
 
                 await JS.InvokeVoidAsync("initializeGoogleMaps", DotNetObjectReference.Create(this));
 
-                // Only initialize main map if data is loaded
                 if (routes != null && filteredRoutes != null)
                 {
                     await InitializeMainMap();
@@ -3006,17 +2639,9 @@
             }
             else if (!mainMapInitialized && routes != null && filteredRoutes != null)
             {
-                // Try to initialize map when data becomes available in subsequent renders
                 await InitializeMainMap();
             }
 
-            // Handle detail map initialization for route details
-            if (isModalOpen && selectedRoute != null)
-            {
-                await InitializeDetailMap();
-            }
-
-            // Handle start point map initialization for create route modal
             if (showCreateModal)
             {
                 await JS.InvokeVoidAsync("googleMapsInterop.initializeStartPointMap");
@@ -3025,7 +2650,7 @@
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error in OnAfterRenderAsync: {ex.Message}");
-            toastService.ShowError("Harita yüklenirken bir hata oluştu: " + ex.Message);
+            ToastService.ShowError("Harita yüklenirken bir hata oluştu: " + ex.Message);
         }
     }
 
@@ -3033,18 +2658,15 @@
     {
         try
         {
-            // The JS function now returns a boolean indicating success or failure
             var result = await JS.InvokeAsync<bool>("googleMapsInterop.initializeMainMap");
 
             if (result)
             {
                 mainMapInitialized = true;
-                // Only show routes if initialization succeeded
                 await ShowAllRoutesOnMap();
             }
             else
             {
-                // JS function already showed a toast, but we can handle it here as well
                 mainMapInitialized = false;
                 Console.Error.WriteLine("Map initialization failed");
             }
@@ -3053,26 +2675,7 @@
         {
             mainMapInitialized = false;
             Console.Error.WriteLine($"Error initializing main map: {ex.Message}");
-            toastService.ShowError("Harita yüklenirken bir hata oluştu");
-        }
-    }
-
-    private async Task InitializeDetailMap()
-    {
-        if (selectedRoute != null)
-        {
-            try
-            {
-                Console.WriteLine($"Initializing detail map for route {selectedRoute.Id} with {selectedRoute.Steps?.Count ?? 0} steps");
-
-                var routeJson = JsonSerializer.Serialize(selectedRoute, camelCase);
-                await JS.InvokeVoidAsync("googleMapsInterop.initializeDetailMap", routeJson);
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error initializing detail map: {ex.Message}");
-                toastService.ShowError("Detay haritası yüklenirken bir hata oluştu");
-            }
+            ToastService.ShowError("Harita yüklenirken bir hata oluştu");
         }
     }
 
@@ -3086,7 +2689,7 @@
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error loading routes: {ex.Message}");
-            toastService.ShowError("Rotalar yüklenirken bir hata oluştu");
+            ToastService.ShowError("Rotalar yüklenirken bir hata oluştu");
         }
     }
 
@@ -3106,7 +2709,7 @@
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error loading drivers: {ex.Message}");
-            toastService.ShowError("Sürücüler yüklenirken bir hata oluştu");
+            ToastService.ShowError("Sürücüler yüklenirken bir hata oluştu");
         }
     }
 
@@ -3119,7 +2722,7 @@
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error loading vehicles: {ex.Message}");
-            toastService.ShowError("Araçlar yüklenirken bir hata oluştu");
+            ToastService.ShowError("Araçlar yüklenirken bir hata oluştu");
         }
     }
 
@@ -3133,7 +2736,7 @@
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error loading waste bins: {ex.Message}");
-            toastService.ShowError("Atık kutuları yüklenirken bir hata oluştu");
+            ToastService.ShowError("Atık kutuları yüklenirken bir hata oluştu");
         }
     }
 
@@ -3157,19 +2760,16 @@
 
         var query = routes.AsEnumerable();
 
-        // Apply driver filter
         if (!string.IsNullOrEmpty(driverFilter))
         {
             query = query.Where(r => r.DriverId == driverFilter);
         }
 
-        // Apply status filter
         if (statusFilter.HasValue)
         {
             query = query.Where(r => r.Status == statusFilter);
         }
 
-        // Apply date range filter
         if (startDateFilter.HasValue)
         {
             query = query.Where(r => r.StartTime.Date >= startDateFilter.Value.Date);
@@ -3180,7 +2780,6 @@
             query = query.Where(r => r.StartTime.Date <= endDateFilter.Value.Date);
         }
 
-        // Apply search text
         if (!string.IsNullOrEmpty(searchText))
         {
             var search = searchText.ToLower();
@@ -3190,12 +2789,10 @@
                 (r.WasteType.ToString().ToLower().Contains(search) == true));
         }
 
-        // Apply sorting
         query = ApplySorting(query);
 
         filteredRoutes = query.ToList();
 
-        // Reset pagination if needed
         if (currentPage > 1 && (currentPage - 1) * pageSize >= filteredRoutes.Count)
         {
             currentPage = 1;
@@ -3206,22 +2803,16 @@
     {
         try
         {
-            // Önceki debounce işlemini iptal et
             _debounceTokenSource.Cancel();
             _debounceTokenSource = new CancellationTokenSource();
 
-            // 250ms bekle
             await Task.Delay(250, _debounceTokenSource.Token);
 
-            // Filtreleme işlemini yap
             ApplyFilters();
-
-            // UI'ı güncelle
             StateHasChanged();
         }
         catch (TaskCanceledException)
         {
-            // Debounce tarafından iptal edildi, normal durum
         }
         catch (Exception ex)
         {
@@ -3260,7 +2851,6 @@
 
         var query = wasteBins.AsEnumerable();
 
-        // Apply search filter
         if (!string.IsNullOrEmpty(binSearchText))
         {
             var search = binSearchText.ToLower();
@@ -3276,22 +2866,16 @@
     {
         try
         {
-            // Önceki debounce işlemini iptal et
             _debounceTokenSource.Cancel();
             _debounceTokenSource = new CancellationTokenSource();
 
-            // 250ms bekle
             await Task.Delay(250, _debounceTokenSource.Token);
 
-            // Filtreleme işlemini yap
             FilterBins();
-
-            // UI'ı güncelle
             StateHasChanged();
         }
         catch (TaskCanceledException)
         {
-            // Debounce tarafından iptal edildi, normal durum
         }
         catch (Exception ex)
         {
@@ -3310,30 +2894,26 @@
         {
             try
             {
-                // Convert route data to JSON
                 var routesJson = JsonSerializer.Serialize(routes, camelCase);
 
-                // Get waste bins for the map
                 var wasteBinsJson = "";
                 if (wasteBins != null && wasteBins.Any())
                 {
                     wasteBinsJson = JsonSerializer.Serialize(wasteBins, camelCase);
                 }
 
-                // Show routes on the map
                 await JS.InvokeVoidAsync("googleMapsInterop.showAllRoutes", routesJson, wasteBinsJson);
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error showing routes on map: {ex}");
-                toastService.ShowError("Rotalar haritada gösterilemedi");
+                ToastService.ShowError("Rotalar haritada gösterilemedi");
             }
         }
     }
 
     private void SortTable(string field)
     {
-        // Close expanded row before sorting
         expandedRouteId = Guid.Empty;
 
         if (sortField == field)
@@ -3352,7 +2932,7 @@
     private void ChangePage(int page)
     {
         currentPage = page;
-        expandedRouteId = Guid.Empty; // Close expanded row when changing page
+        expandedRouteId = Guid.Empty;
     }
 
     private async Task ClearFilters()
@@ -3379,68 +2959,6 @@
         }
     }
 
-    private async Task ShowDetails(RouteResultDto route)
-    {
-        Console.WriteLine($"ShowDetails called for route {route.Id} with {route.Steps?.Count ?? 0} steps");
-
-        // Check if the route has steps
-        if (route.Steps == null || !route.Steps.Any())
-        {
-            Console.Error.WriteLine($"Warning: Route {route.Id} has no steps!");
-
-            // Try to reload the route directly from the API
-            try
-            {
-                var refreshedRoute = await RouteService.GetRouteByIdAsync(route.Id);
-                if (refreshedRoute?.Steps != null && refreshedRoute.Steps.Any())
-                {
-                    route = refreshedRoute;
-                    Console.WriteLine($"Successfully refreshed route with {route.Steps.Count} steps");
-                }
-                else
-                {
-                    toastService.ShowWarning("Rota detayları görüntülenemiyor: Adım bilgisi eksik.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine($"Error refreshing route details: {ex.Message}");
-                toastService.ShowWarning("Rota detayları yüklenirken hata oluştu.");
-            }
-        }
-
-        selectedRoute = route;
-        isModalOpen = true;
-        StateHasChanged();
-
-        await Task.Delay(100);
-
-        // Initialize detail map only if we have steps
-        if (route.Steps != null && route.Steps.Any())
-        {
-            await InitializeDetailMap();
-            await JS.InvokeVoidAsync("scrollToRouteMap");
-        }
-        else
-        {
-            // Show empty map with just the depot if no steps
-            var emptyRoute = new RouteResultDto
-                {
-                    Id = route.Id,
-                    DriverId = route.DriverId,
-                    VehicleId = route.VehicleId,
-                    WasteType = route.WasteType,
-                    Steps = new List<RouteStepDto>()
-                };
-
-            var routeJson = JsonSerializer.Serialize(emptyRoute, camelCase);
-            await JS.InvokeVoidAsync("googleMapsInterop.initializeDetailMap", routeJson);
-
-            // Show a message in the map area
-            await JS.InvokeVoidAsync("googleMapsInterop.showNoStepsMessage");
-        }
-    }
-
     private void ToggleBin(Guid binId, object isChecked)
     {
         if ((bool)isChecked)
@@ -3460,25 +2978,24 @@
     {
         if (newRoute.WasteBinIds.Count == 0)
         {
-            toastService.ShowWarning("En az bir atık kutusu seçmelisiniz");
+            ToastService.ShowWarning("En az bir atık kutusu seçmelisiniz");
             return;
         }
 
         if (string.IsNullOrEmpty(newRoute.DriverId))
         {
-            toastService.ShowWarning("Bir sürücü seçmelisiniz");
+            ToastService.ShowWarning("Bir sürücü seçmelisiniz");
             return;
         }
 
         if (string.IsNullOrEmpty(newRoute.VehicleId))
         {
-            toastService.ShowWarning("Bir araç seçmelisiniz");
+            ToastService.ShowWarning("Bir araç seçmelisiniz");
             return;
         }
 
         try
         {
-            // Convert to API model
             var apiRoute = new ApiCreateRouteDto
                 {
                     DriverId = newRoute.DriverId.ToString(),
@@ -3495,20 +3012,20 @@
 
             if (success)
             {
-                toastService.ShowSuccess("Rota başarıyla oluşturuldu");
+                ToastService.ShowSuccess("✅ Rota başarıyla oluşturuldu!");
                 showCreateModal = false;
                 await LoadData();
                 await ShowAllRoutesOnMap();
             }
             else
             {
-                toastService.ShowError("Rota oluşturulurken bir hata oluştu");
+                ToastService.ShowError("❌ Rota oluşturulurken bir hata oluştu");
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error creating route: {ex.Message}");
-            toastService.ShowError($"Hata: {ex.Message}");
+            ToastService.ShowError($"❌ Hata: {ex.Message}");
         }
     }
 
@@ -3519,94 +3036,126 @@
             var result = await RouteService.CompleteRouteAsync(routeId);
             if (result)
             {
-                toastService.ShowSuccess("Rota başarıyla tamamlandı");
+                ToastService.ShowSuccess("✅ Rota başarıyla tamamlandı!");
                 await LoadData();
                 await ShowAllRoutesOnMap();
+                StateHasChanged();
             }
             else
             {
-                toastService.ShowError("Rota tamamlanırken bir hata oluştu");
+                ToastService.ShowError("❌ Rota tamamlanırken bir hata oluştu");
             }
         }
         catch (Exception ex)
         {
             Console.Error.WriteLine($"Error completing route: {ex.Message}");
-            toastService.ShowError($"Hata: {ex.Message}");
+            ToastService.ShowError($"❌ Hata: {ex.Message}");
         }
     }
 
-    private async Task ReoptimizeWithTraffic(Guid routeId)
+    private async Task StartRouteSimulation(Guid routeId)
     {
         try
         {
-            // Close modal first
-            CloseModal();
-
-            // Show notification
-            toastService.ShowInfo("Rota trafik durumuna göre yeniden optimize ediliyor...");
-
-            // Create a cancellation token to handle timeouts
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
-
-            try
+            var route = routes?.FirstOrDefault(r => r.Id == routeId);
+            if (route == null)
             {
-                // Reoptimize and get the updated route directly
-                var updatedRoute = await RouteService.ReoptimizeRouteWithTrafficAsync(routeId);
+                ToastService.ShowError("❌ Rota bulunamadı");
+                return;
+            }
 
-                // Check if steps are present in the returned route
-                if (updatedRoute?.Steps == null || !updatedRoute.Steps.Any())
-                {
-                    Console.Error.WriteLine($"Reoptimized route has no steps: {routeId}");
-                    toastService.ShowWarning("Rota optimize edildi ancak adımlar yüklenemedi. Lütfen sayfayı yenileyin.");
+            if (route.Status == RouteStatus.Completed)
+            {
+                ToastService.ShowWarning("⚠️ Tamamlanmış rotalar simüle edilemez");
+                return;
+            }
 
-                    // Try to get the route directly again after a small delay
-                    await Task.Delay(500);
-                    updatedRoute = await RouteService.GetRouteByIdAsync(routeId);
-                }
+            if (activeSimulations.ContainsKey(routeId))
+            {
+                ToastService.ShowInfo("ℹ️ Bu rota zaten simüle ediliyor");
+                return;
+            }
 
-                // Reload routes data for the list view
+            // Start simulation in database
+            await RouteService.StartRouteSimulationAsync(routeId);
+
+            // Add to active simulations
+            activeSimulations[routeId] = true;
+
+            // Start simulation on map
+            var routeJson = JsonSerializer.Serialize(route, camelCase);
+            await JS.InvokeVoidAsync("googleMapsInterop.startRouteSimulation", routeId.ToString(), routeJson);
+
+            // Update UI immediately
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error starting route simulation: {ex.Message}");
+            ToastService.ShowError($"❌ Simülasyon başlatılamadı: {ex.Message}");
+        }
+    }
+
+    private async Task StopSimulation(Guid routeId)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("googleMapsInterop.stopSimulation", routeId.ToString());
+
+            if (activeSimulations.ContainsKey(routeId))
+            {
+                activeSimulations.Remove(routeId);
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error stopping simulation: {ex.Message}");
+            ToastService.ShowError($"❌ Simülasyon durdurulamadı: {ex.Message}");
+        }
+    }
+
+    private async Task UpdateSimulationSpeed(Guid routeId, int speed)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("googleMapsInterop.updateSimulationSpeed", routeId.ToString(), speed);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error updating simulation speed: {ex.Message}");
+        }
+    }
+
+    private async Task SimulateAllRoutes()
+    {
+        try
+        {
+            var activeRoutes = routes?.Where(r => r.Status != RouteStatus.Completed).ToList();
+            if (activeRoutes == null || !activeRoutes.Any())
+            {
+                ToastService.ShowInfo("ℹ️ Simüle edilecek aktif rota bulunamadı");
+                return;
+            }
+
+            var simulatedCount = await RouteService.SimulateAllRoutesAsync();
+
+            if (simulatedCount > 0)
+            {
+                ToastService.ShowSuccess($"🎉 {simulatedCount} rota başarıyla simüle edildi!");
                 await LoadData();
                 await ShowAllRoutesOnMap();
-
-                // Find and focus the route on the map
-                await FocusRouteOnMap(routeId);
-
-                // Show success message
-                toastService.ShowSuccess("Rota trafik durumuna göre yeniden optimize edildi");
-
-                // If we have a valid route with steps, show it
-                if (updatedRoute?.Steps != null && updatedRoute.Steps.Any())
-                {
-                    Console.WriteLine($"Displaying updated route with {updatedRoute.Steps.Count} steps");
-                    await Task.Delay(300); // Small delay for UI update
-                    await ShowDetails(updatedRoute);
-                }
-                else
-                {
-                    // Fall back to loaded data if direct fetch failed
-                    var loadedRoute = routes?.FirstOrDefault(r => r.Id == routeId);
-                    if (loadedRoute?.Steps != null && loadedRoute.Steps.Any())
-                    {
-                        Console.WriteLine($"Displaying loaded route with {loadedRoute.Steps.Count} steps");
-                        await Task.Delay(300);
-                        await ShowDetails(loadedRoute);
-                    }
-                    else
-                    {
-                        toastService.ShowWarning("Rota adımları yüklenemedi. Lütfen sayfayı yenileyin.");
-                    }
-                }
             }
-            catch (OperationCanceledException)
+            else
             {
-                Console.Error.WriteLine("Route reoptimization timed out");
-                toastService.ShowError("Rota optimizasyon işlemi zaman aşımına uğradı.");
+                ToastService.ShowInfo("ℹ️ Simüle edilecek rota bulunamadı");
             }
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"Error reoptimizing route: {ex.Message}");
-            toastService.ShowError($"Rota optimize edilemedi: {ex.Message}");
+            Console.Error.WriteLine($"Error simulating all routes: {ex.Message}");
+            ToastService.ShowError($"❌ Toplu simülasyon hatası: {ex.Message}");
         }
     }
 
@@ -3661,6 +3210,42 @@
         };
     }
 
+    // *** DÜZELTME: GetStepStatusClass ***
+    private string GetStepStatusClass(RouteStepDto step, bool isSimulating)
+    {
+        if (step.IsCompleted)
+            return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300";
+
+        if (isSimulating)
+            return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 animate-pulse";
+
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300";
+    }
+
+    // *** DÜZELTME: GetStepStatusText ***
+    private string GetStepStatusText(RouteStepDto step, bool isSimulating)
+    {
+        if (step.IsCompleted)
+            return "Tamamlandı";
+
+        if (isSimulating)
+            return "İşlemede";
+
+        return "Beklemede";
+    }
+
+    // *** YENİ: GetStepStatusIcon ***
+    private string GetStepStatusIcon(RouteStepDto step, bool isSimulating)
+    {
+        if (step.IsCompleted)
+            return "✅";
+
+        if (isSimulating)
+            return "🔄";
+
+        return "⏳";
+    }
+
     private string GetOptimizationTypeText(OptimizationType type)
     {
         return type switch
@@ -3670,6 +3255,7 @@
             _ => type.ToString()
         };
     }
+
     public string GetWasteTypeText(WasteType type)
     {
         return type switch
@@ -3684,6 +3270,7 @@
             _ => type.ToString()
         };
     }
+
     private string GetProgressColor(double percentage)
     {
         return percentage switch
@@ -3714,6 +3301,27 @@
         return dateTime.ToString("dd.MM.yyyy HH:mm");
     }
 
+    // *** DEBUG HELPER ***
+    private void DebugRouteSteps(RouteResultDto route)
+    {
+        Console.WriteLine($"=== ROUTE DEBUG: {route.Id} ===");
+        Console.WriteLine($"Status: {route.Status}");
+        Console.WriteLine($"Total Steps: {route.Steps?.Count ?? 0}");
+
+        if (route.Steps != null)
+        {
+            foreach (var step in route.Steps.OrderBy(s => s.Order))
+            {
+                var stepType = step.Order == 0 ? "START" :
+                              step.Order == route.Steps.Count - 1 ? "END" :
+                              step.WasteBinId.HasValue ? "WASTE_BIN" : "UNKNOWN";
+
+                Console.WriteLine($"Step {step.Order}: {stepType} - {step.Address} - Completed: {step.IsCompleted} - WasteBinId: {step.WasteBinId}");
+            }
+        }
+        Console.WriteLine("=== END DEBUG ===");
+    }
+
     // JavaScript interop methods
     [JSInvokable]
     public void OnMapInitialized()
@@ -3722,29 +3330,10 @@
     }
 
     [JSInvokable]
-    public string GetDriverNameFromJs(string driverId)
-    {
-        return GetDriverName(driverId);
-    }
-
-    [JSInvokable]
-    public string GetVehiclePlateFromJs(string vehicleId)
-    {
-        return GetVehiclePlate(vehicleId);
-    }
-
-    [JSInvokable]
     public void ShowToastFromJs(string message)
     {
-        toastService.ShowInfo(message);
-    }
-
-    [JSInvokable]
-    public void CloseModal()
-    {
-        isModalOpen = false;
-        selectedRoute = null;
-        StateHasChanged();
+        ToastService.ShowInfo(message);
+        InvokeAsync(StateHasChanged);
     }
 
     [JSInvokable]
@@ -3760,7 +3349,7 @@
         expandedRouteId = Guid.Empty;
         await LoadData();
         await ShowAllRoutesOnMap();
-        toastService.ShowSuccess("Veriler yenilendi");
+        ToastService.ShowSuccess("🔄 Veriler yenilendi");
         StateHasChanged();
     }
 
@@ -3804,31 +3393,134 @@
     }
 
     [JSInvokable]
-    public async Task RefreshRouteDetails()
+    public async Task OnSimulationStarted(string routeId)
     {
-        if (selectedRoute != null)
+        if (Guid.TryParse(routeId, out Guid id))
+        {
+            if (!activeSimulations.ContainsKey(id))
+            {
+                activeSimulations[id] = true;
+            }
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnSimulationStopped(string routeId)
+    {
+        if (Guid.TryParse(routeId, out Guid id))
+        {
+            if (activeSimulations.ContainsKey(id))
+            {
+                activeSimulations.Remove(id);
+            }
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnSimulationCompleted(string routeId)
+    {
+        if (Guid.TryParse(routeId, out Guid id))
+        {
+            if (activeSimulations.ContainsKey(id))
+            {
+                activeSimulations.Remove(id);
+            }
+            await LoadData();
+            StateHasChanged();
+        }
+    }
+
+    // *** DÜZELTME: CompleteNextSimulationStep ***
+    [JSInvokable]
+    public async Task CompleteNextSimulationStep(string routeId)
+    {
+        if (Guid.TryParse(routeId, out Guid id))
         {
             try
             {
-                var refreshedRoute = await RouteService.GetRouteByIdAsync(selectedRoute.Id);
-                selectedRoute = refreshedRoute;
+                var result = await RouteService.CompleteNextStepAsync(id);
 
-                if (refreshedRoute.Steps != null && refreshedRoute.Steps.Any())
+                // Update local route data
+                var route = routes?.FirstOrDefault(r => r.Id == id);
+                if (route != null)
                 {
-                    toastService.ShowSuccess("Rota adımları başarıyla yüklendi");
-                    await InitializeDetailMap();
-                }
-                else
-                {
-                    toastService.ShowWarning("Rota adımları hala yüklenemedi");
+                    var step = route.Steps?.FirstOrDefault(s => s.Id == result.CompletedStepId);
+                    if (step != null)
+                    {
+                        step.IsCompleted = true;
+
+                        // Adım tipine göre özel mesaj
+                        string message;
+
+                        if (step.Order == 0) // Başlangıç
+                        {
+                            message = "🚀 Başlangıç noktasından ayrıldı";
+                        }
+                        else if (step.Order == route.Steps.Count - 1) // Son adım
+                        {
+                            message = "🏁 Hedefe varıldı - Rota tamamlandı!";
+                        }
+                        else if (step.WasteBinId.HasValue) // Waste bin durağı
+                        {
+                            message = $"📍 {step.Order}. durak tamamlandı: {step.Address}";
+                        }
+                        else // Diğer
+                        {
+                            message = $"✅ {step.Order}. adım tamamlandı";
+                        }
+
+                        ToastService.ShowSuccess(message);
+
+                        // Console'da detaylı log
+                        Console.WriteLine($"[STEP COMPLETED] RouteId: {id}, StepOrder: {step.Order}, Address: {step.Address}, Progress: {result.ProgressPercentage}%");
+
+                        StateHasChanged();
+                    }
                 }
 
+                if (result.IsRouteCompleted)
+                {
+                    // Route tamamen completed
+                    if (activeSimulations.ContainsKey(id))
+                    {
+                        activeSimulations.Remove(id);
+                    }
+
+                    ToastService.ShowSuccess("🎉 Rota simülasyonu başarıyla tamamlandı!");
+                    await LoadData();
+                    StateHasChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error completing simulation step: {ex.Message}");
+                ToastService.ShowError($"❌ Adım tamamlanırken hata: {ex.Message}");
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task CompleteRouteSimulation(string routeId)
+    {
+        if (Guid.TryParse(routeId, out Guid id))
+        {
+            try
+            {
+                await RouteService.CompleteRouteAsync(id);
+
+                if (activeSimulations.ContainsKey(id))
+                {
+                    activeSimulations.Remove(id);
+                }
+
+                await LoadData();
                 StateHasChanged();
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"Error refreshing route details: {ex.Message}");
-                toastService.ShowError("Rota yenilenirken hata oluştu: " + ex.Message);
+                Console.Error.WriteLine($"Error completing route simulation: {ex.Message}");
             }
         }
     }

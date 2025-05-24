@@ -1,5 +1,6 @@
 ﻿using EcoRoute.DtoLayer.RouteOptimizationDtos;
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace EcoRoute.UI.Services.RouteOptimizationServices
 {
@@ -149,6 +150,74 @@ namespace EcoRoute.UI.Services.RouteOptimizationServices
             {
                 Console.Error.WriteLine($"Error getting CO2 stats: {ex.Message}");
                 return new CO2StatsDto { DailyStats = new List<DailyCO2Stat>() };
+            }
+        }
+
+        public async Task CompleteStepAsync(Guid stepId)
+        {
+            await _httpClient.PutAsync($"routeoptimization/route/steps/{stepId}/complete", null);
+        }
+
+        // *** SIMÜLASYON METODLARI ***
+        public async Task StartRouteSimulationAsync(Guid routeId)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync($"routeoptimization/route/{routeId}/simulate", null);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error starting route simulation: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<SimulationStepResultDto> CompleteNextStepAsync(Guid routeId)
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync($"routeoptimization/route/{routeId}/complete-next-step", null);
+                response.EnsureSuccessStatusCode();
+
+                var result = await response.Content.ReadFromJsonAsync<SimulationStepResultDto>();
+                return result ?? new SimulationStepResultDto
+                {
+                    RouteId = routeId,
+                    IsRouteCompleted = false,
+                    TotalSteps = 0,
+                    CompletedSteps = 0,
+                    ProgressPercentage = 0
+                };
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error completing next step: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<int> SimulateAllRoutesAsync()
+        {
+            try
+            {
+                var response = await _httpClient.PostAsync("routeoptimization/route/simulate-all-routes", null);
+                response.EnsureSuccessStatusCode();
+
+                var content = await response.Content.ReadAsStringAsync();
+                var jsonDoc = JsonDocument.Parse(content);
+
+                if (jsonDoc.RootElement.TryGetProperty("simulatedCount", out var countElement))
+                {
+                    return countElement.GetInt32();
+                }
+
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error simulating all routes: {ex.Message}");
+                return 0; // Hata durumunda 0 döndür
             }
         }
     }

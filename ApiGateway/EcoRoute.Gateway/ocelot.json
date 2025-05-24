@@ -45,7 +45,7 @@
       }
     },
     {
-      "DownstreamPathTemplate": "/api/{everything}",
+      "DownstreamPathTemplate": "/api/routeoptimization/{everything}",
       "DownstreamScheme": "http",
       "DownstreamHostAndPorts": [
         {
@@ -54,7 +54,7 @@
         }
       ],
       "UpstreamPathTemplate": "/routeoptimization/{everything}",
-      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE" ],
+      "UpstreamHttpMethod": [ "GET", "POST", "PUT", "DELETE", "OPTIONS" ],
       "AuthenticationOptions": {
         "AuthenticationProviderKey": "OcelotAuthenticationScheme",
         "AllowedScopes": [ "RouteOptimizationFullPermission" ]
@@ -64,7 +64,330 @@
       },
       "DownstreamHeaderTransform": {
         "Authorization": "Bearer {Token}"
-      }
+      },
+      "Priority": 10
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/all",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/all",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 20
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/{id}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/{id}",
+      "UpstreamHttpMethod": [ "GET", "PUT", "DELETE" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 20
+    },
+    {
+      "DownstreamPathTemplate": "/api/route",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route",
+      "UpstreamHttpMethod": [ "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 20
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/my",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/my",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 20
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/{id}/complete",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/{id}/complete",
+      "UpstreamHttpMethod": [ "PUT" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 30
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/{id}/simulate",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/{id}/simulate",
+      "UpstreamHttpMethod": [ "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 30
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/{id}/complete-next-step",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/{id}/complete-next-step",
+      "UpstreamHttpMethod": [ "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 30
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/simulate-all-routes",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/simulate-all-routes",
+      "UpstreamHttpMethod": [ "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 30
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/{id}/reoptimize",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/{id}/reoptimize",
+      "UpstreamHttpMethod": [ "POST" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 30
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/steps/{stepId}/complete",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/steps/{stepId}/complete",
+      "UpstreamHttpMethod": [ "PUT" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 30
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/HasActiveRoute/{vehicleId}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/HasActiveRoute/{vehicleId}",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 30
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/HasActiveRouteForDriver/{driverId}",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/HasActiveRouteForDriver/{driverId}",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 30
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/co2-stats",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/co2-stats",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 30
+    },
+    {
+      "DownstreamPathTemplate": "/api/route/performance-report",
+      "DownstreamScheme": "http",
+      "DownstreamHostAndPorts": [
+        {
+          "Host": "localhost",
+          "Port": 5006
+        }
+      ],
+      "UpstreamPathTemplate": "/routeoptimization/route/performance-report",
+      "UpstreamHttpMethod": [ "GET" ],
+      "AuthenticationOptions": {
+        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
+        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
+      },
+      "RouteClaimsRequirement": {
+        "scope": "RouteOptimizationFullPermission"
+      },
+      "DownstreamHeaderTransform": {
+        "Authorization": "Bearer {Token}"
+      },
+      "Priority": 30
     },
     {
       "DownstreamPathTemplate": "/api/vehicle",
@@ -215,44 +538,6 @@
       },
       "DownstreamHeaderTransform": {
         "Authorization": "Bearer {Token}"
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/api/route/performance",
-      "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 5006
-        }
-      ],
-      "UpstreamPathTemplate": "/api/route/performance",
-      "UpstreamHttpMethod": [ "GET" ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
-        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
-      },
-      "RouteClaimsRequirement": {
-        "scope": "RouteOptimizationFullPermission"
-      }
-    },
-    {
-      "DownstreamPathTemplate": "/api/route/co2-stats",
-      "DownstreamScheme": "http",
-      "DownstreamHostAndPorts": [
-        {
-          "Host": "localhost",
-          "Port": 5006
-        }
-      ],
-      "UpstreamPathTemplate": "/api/route/co2-stats",
-      "UpstreamHttpMethod": [ "GET" ],
-      "AuthenticationOptions": {
-        "AuthenticationProviderKey": "OcelotAuthenticationScheme",
-        "AllowedScopes": [ "RouteOptimizationFullPermission" ]
-      },
-      "RouteClaimsRequirement": {
-        "scope": "RouteOptimizationFullPermission"
       }
     }
   ],
