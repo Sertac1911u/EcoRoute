@@ -37,7 +37,8 @@ namespace EcoRoute.IdentityServer
                 {
                     UserName = "admin",
                     Email = adminEmail,
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    CreateDate = DateTime.Now,
                 };
 
                 var result = userManager.CreateAsync(user, "Pass123$").Result;

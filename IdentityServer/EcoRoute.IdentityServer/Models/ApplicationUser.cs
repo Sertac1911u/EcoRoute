@@ -7,6 +7,7 @@ namespace EcoRoute.IdentityServer.Models
     {
         public string Name { get; set; }
         public string Surname { get; set; }
+        public DateTime CreateDate { get; set; } = DateTime.Now;
         public DateTime? LastLoginDate { get; set; }
 
     }

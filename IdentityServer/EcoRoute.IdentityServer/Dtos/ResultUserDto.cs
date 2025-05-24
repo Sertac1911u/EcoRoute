@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace EcoRoute.IdentityServer.Dtos
 {
@@ -14,6 +15,9 @@ namespace EcoRoute.IdentityServer.Dtos
 
         public string SelectedRole { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
+        public DateTime? CreateDate { get; set; }
+        public DateTime? LastLoginDate { get; set; }
+
     }
 
 }

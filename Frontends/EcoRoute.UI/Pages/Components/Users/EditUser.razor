@@ -46,10 +46,6 @@
                                         <span class="absolute bottom-0 right-0 block h-4 w-4 rounded-full bg-green-400 ring-2 ring-white dark:ring-gray-800"></span>
                                     }
                                 </div>
-                                <div>
-                                    <p class="text-sm text-gray-600 dark:text-gray-400">Kullanıcı ID</p>
-                                    <p class="font-mono text-lg font-semibold text-gray-900 dark:text-white">@User.Id</p>
-                                </div>
                             </div>
                             <div class="text-right">
                                 <label class="relative inline-flex items-center cursor-pointer">
@@ -249,7 +245,7 @@
                             <div class="text-sm">
                                 <p class="text-blue-900 dark:text-blue-300 font-medium mb-1">Son Aktivite Bilgileri</p>
                                 <p class="text-blue-700 dark:text-blue-400">
-                                    Kayıt Tarihi: @(User.RegistrationDate?.ToString("dd.MM.yyyy HH:mm") ?? "Bilinmiyor")
+                                    Kayıt Tarihi: @(User.CreateDate?.ToString("dd.MM.yyyy HH:mm") ?? "Bilinmiyor")
                                 </p>
                                 <p class="text-blue-700 dark:text-blue-400">
                                     Son Giriş: @(User.LastLoginDate?.ToString("dd.MM.yyyy HH:mm") ?? "Henüz giriş yapmamış")

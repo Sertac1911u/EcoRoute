@@ -1,4 +1,6 @@
-﻿namespace EcoRoute.IdentityServer.Dtos
+﻿using System;
+
+namespace EcoRoute.IdentityServer.Dtos
 {
     public class UserRegisterDto
     {
@@ -9,6 +11,7 @@
         public string Password { get; set; }
         public string Number { get; set; }
         public string Role { get; set; } // "SuperAdmin", "Manager", "Driver"
+        public DateTime CreateDate { get; set; } = DateTime.Now;
 
     }
 }

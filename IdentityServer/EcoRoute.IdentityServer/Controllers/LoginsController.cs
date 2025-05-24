@@ -31,7 +31,7 @@ namespace EcoRoute.IdentityServer.Controllers
 
             if (result.Succeeded && user != null)
             {
-                user.LastLoginDate = DateTime.UtcNow;
+                user.LastLoginDate = DateTime.Now;
                 await _userManager.UpdateAsync(user);
 
                 var userRoles = await _userManager.GetRolesAsync(user);

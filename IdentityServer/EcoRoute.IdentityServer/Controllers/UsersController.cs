@@ -47,7 +47,9 @@ namespace EcoRoute.IdentityServer.Controllers
                     Name = user.Name,
                     Surname = user.Surname,
                     PhoneNumber = user.PhoneNumber,
-                    Roles = roles.ToList()
+                    Roles = roles.ToList(),
+                    CreateDate = user.CreateDate,     
+                    LastLoginDate = user.LastLoginDate 
                 });
             }
 

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Threading.Tasks;
 using static IdentityServer4.IdentityServerConstants;
 
@@ -32,6 +33,7 @@ namespace EcoRoute.IdentityServer.Controllers
                 Name = model.Name,
                 Surname = model.Surname,
                 PhoneNumber = model.Number,
+                CreateDate = model.CreateDate == default(DateTime) ? DateTime.Now : model.CreateDate,
                 EmailConfirmed = true
             };
 
