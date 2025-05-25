@@ -9,7 +9,7 @@ namespace EcoRoute.UI.Services.ReportsServices
         Task<List<RoutePerformanceReportDto>> GetRoutePerformanceReportAsync();
         Task<List<RouteReportDto>> GetRouteReportAsync();
         Task<List<UserActivityReportDto>> GetUserActivityReportAsync();
-        Task<List<CO2EmissionReportDto>> GetCO2EmissionReportAsync();
+        Task<List<CO2EmissionReportDto>> GetCO2EmissionReportAsync(int days = 30);
 
         // Yardımcı metodlar
         Task<byte[]> ExportReportAsync(string reportType, string format);

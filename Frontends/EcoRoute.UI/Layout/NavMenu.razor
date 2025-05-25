@@ -4,6 +4,7 @@
 @using System.Security.Claims
 @using Blazored.LocalStorage
 @using Microsoft.AspNetCore.Components.Authorization
+
 @code {
     private List<string> userRoles = new();
     private bool isSuperAdmin = false;
@@ -11,22 +12,38 @@
     private bool isDriver = false;
     private bool isExpanded = false;
     private bool isTransitioning = false;
-    private int notificationCount = 0; // Bildirim sayısı için
+    private int notificationCount = 0;
 
-    // Menü öğelerinin stil sınıfı
+    // Menü öğelerinin stil sınıfı - Default primary renk
     private string GetMenuItemClass(bool expanded)
     {
         return expanded
-            ? "menu-item flex items-center w-full px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-800/40 hover:text-primary-600 dark:hover:text-primary-400 group transition-all duration-200"
-            : "menu-item flex items-center justify-center w-full px-2 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-800/40 hover:text-primary-600 dark:hover:text-primary-400 group transition-all duration-200";
+            ? "menu-item group relative flex items-center w-full px-4 py-3 text-gray-600 dark:text-gray-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-700 dark:hover:text-primary-300 transition-all duration-200 ease-out"
+            : "menu-item group relative flex items-center justify-center w-full px-3 py-3 text-primary-600 dark:text-primary-400 rounded-lg hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-700 dark:hover:text-primary-300 transition-all duration-200 ease-out";
     }
 
-    // İkonların stil sınıfı
+    // İkonların stil sınıfı - Default primary renk
     private string GetIconClass(bool expanded)
     {
         return expanded
-            ? "text-xl mr-3 text-primary-500 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
-            : "text-xl text-primary-500 transition-transform duration-300 ease-in-out group-hover:scale-110";
+            ? "text-xl mr-3 text-primary-500 transition-colors duration-200"
+            : "text-xl text-primary-500 transition-colors duration-200";
+    }
+
+    // Aktif menü öğelerinin stil sınıfı - Düzeltildi
+    private string GetActiveMenuItemClass(bool expanded)
+    {
+        return expanded
+            ? "menu-item group relative flex items-center w-full px-4 py-3 bg-primary-500 text-white rounded-lg shadow-md"
+            : "menu-item group relative flex items-center justify-center w-full px-3 py-3 bg-primary-500 text-white rounded-lg shadow-md";
+    }
+
+    // Aktif ikonların stil sınıfı - Düzeltildi
+    private string GetActiveIconClass(bool expanded)
+    {
+        return expanded
+            ? "text-xl mr-3 text-white"
+            : "text-xl text-white";
     }
 
     protected override async Task OnInitializedAsync()
@@ -39,7 +56,7 @@
 
         // Get saved sidebar state
         var savedState = await localStorage.GetItemAsync<bool?>("sidebarExpanded");
-        isExpanded = savedState ?? false; // Default kapalı
+        isExpanded = savedState ?? false;
 
         // Bildirim sayısını al
         await GetNotificationCount();
@@ -47,10 +64,8 @@
 
     private async Task GetNotificationCount()
     {
-        // Bu metod gerçek bildirim sayısını almalı
-        // Örnek olarak localStorage'dan alıyoruz, gerçek uygulamada bir servis kullanılmalı
         var count = await localStorage.GetItemAsync<int?>("notificationCount");
-        notificationCount = count ?? 3; // Varsayılan olarak 3 bildirim
+        notificationCount = count ?? 3;
     }
 
     private async Task ToggleSidebar()
@@ -59,14 +74,14 @@
         isExpanded = !isExpanded;
         await localStorage.SetItemAsync("sidebarExpanded", isExpanded);
 
-        // Geçiş durumunu sıfırla, animasyon tamamlandıktan sonra
-        await Task.Delay(isExpanded ? 150 : 300);
+        await Task.Delay(150);
         isTransitioning = false;
     }
 }
 
 <div class="hidden md:flex md:flex-shrink-0">
-    <div class="flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-sm dark:shadow-none transition-all duration-300 ease-in-out @(isExpanded ? "w-64" : "w-16")">
+    <div class="flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-lg transition-all duration-300 ease-out @(isExpanded ? "w-64" : "w-16")">
+
         <!-- Sidebar Header -->
         <div class="flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 px-4">
             <div class="flex items-center @(isExpanded ? "" : "justify-center w-full")">
@@ -75,12 +90,15 @@
                 </div>
                 @if (isExpanded)
                 {
-                    <h1 class="text-xl font-semibold ml-3 text-white bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100") logo-text">EcoRoute</h1>
+                    <div class="ml-3 transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">
+                        <h1 class="text-xl font-bold text-primary-600 dark:text-primary-400">EcoRoute</h1>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Akıllı Atık Yönetimi</p>
+                    </div>
                 }
             </div>
             @if (isExpanded)
             {
-                <button @onclick="ToggleSidebar" class="text-gray-500 hover:text-primary-500 focus:outline-none transition-all duration-300">
+                <button @onclick="ToggleSidebar" class="p-2 text-gray-400 hover:text-primary-500 focus:outline-none transition-colors duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
                     <i class="fas fa-chevron-left text-sm"></i>
                 </button>
             }
@@ -88,33 +106,34 @@
 
         @if (!isExpanded)
         {
-            <div class="flex justify-center w-full py-2">
-                <button @onclick="ToggleSidebar" class="text-gray-500 hover:text-primary-500 focus:outline-none transition-all duration-300 rotate-180">
-                    <i class="fas fa-chevron-left text-sm"></i>
+            <div class="flex justify-center w-full py-3">
+                <button @onclick="ToggleSidebar" class="p-2 text-gray-400 hover:text-primary-500 focus:outline-none transition-colors duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <i class="fas fa-chevron-right text-sm"></i>
                 </button>
             </div>
         }
 
         <!-- Sidebar Content -->
-        <div class="flex flex-col flex-grow py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-700 @(isExpanded ? "px-3" : "px-2")">
-            <nav class="flex-1 space-y-1.5">
+        <div class="flex flex-col flex-grow py-4 overflow-y-auto @(isExpanded ? "px-3" : "px-2")">
+            <nav class="flex-1 space-y-2">
+
                 <!-- Dashboard -->
-                <NavLink href="/home" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-                    <i class="fas fa-tachometer-alt @GetIconClass(isExpanded)"></i>
+                <NavLink href="/" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)" Match="NavLinkMatch.All">
+                    <i class="fas fa-home @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                     @if (isExpanded)
                     {
-                        <span class="transition-opacity duration-200 delay-50 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Ana Dashboard</span>
+                        <span class="font-medium transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">Ana Dashboard</span>
                     }
                 </NavLink>
 
                 @if (isSuperAdmin)
                 {
                     <!-- User Management -->
-                    <NavLink href="/users" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-                        <i class="fas fa-users @GetIconClass(isExpanded)"></i>
+                    <NavLink href="/users" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
+                        <i class="fas fa-users @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                         @if (isExpanded)
                         {
-                            <span class="transition-opacity duration-200 delay-75 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Kullanıcı Yönetimi</span>
+                            <span class="font-medium transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">Kullanıcı Yönetimi</span>
                         }
                     </NavLink>
                 }
@@ -122,29 +141,29 @@
                 @if (isSuperAdmin || isManager)
                 {
                     <!-- Bin Management -->
-                    <NavLink href="/bins" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-                        <i class="fas fa-trash-alt @GetIconClass(isExpanded)"></i>
+                    <NavLink href="/bins" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
+                        <i class="fas fa-dumpster @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                         @if (isExpanded)
                         {
-                            <span class="transition-opacity duration-200 delay-100 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Atık Kutusu Yönetimi</span>
+                            <span class="font-medium transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">Atık Kutusu Yönetimi</span>
                         }
                     </NavLink>
 
                     <!-- Route Management -->
-                    <NavLink href="/routes" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-                        <i class="fas fa-route @GetIconClass(isExpanded)"></i>
+                    <NavLink href="/routes" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
+                        <i class="fas fa-route @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                         @if (isExpanded)
                         {
-                            <span class="transition-opacity duration-200 delay-125 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Rota Yönetimi</span>
+                            <span class="font-medium transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">Rota Yönetimi</span>
                         }
                     </NavLink>
 
                     <!-- Reporting -->
-                    <NavLink href="/reports" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-                        <i class="fas fa-chart-bar @GetIconClass(isExpanded)"></i>
+                    <NavLink href="/reports" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
+                        <i class="fas fa-chart-line @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                         @if (isExpanded)
                         {
-                            <span class="transition-opacity duration-200 delay-150 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Raporlama ve Analiz</span>
+                            <span class="font-medium transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">Raporlama ve Analiz</span>
                         }
                     </NavLink>
                 }
@@ -152,56 +171,85 @@
                 @if (isDriver)
                 {
                     <!-- Driver Routes -->
-                    <NavLink href="/driver-routes" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-                        <i class="fas fa-map-marked-alt @GetIconClass(isExpanded)"></i>
+                    <NavLink href="/driver-routes" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
+                        <i class="fas fa-map-marked-alt @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                         @if (isExpanded)
                         {
-                            <span class="transition-opacity duration-200 delay-175 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Benim Rotalarım</span>
+                            <span class="font-medium transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">Benim Rotalarım</span>
                         }
                     </NavLink>
                 }
 
+                <!-- Section Divider -->
+                @if (isExpanded)
+                {
+                    <div class="py-2 transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">
+                        <hr class="border-gray-200 dark:border-gray-700">
+                        <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mt-3 mb-2 px-1">Sistem</p>
+                    </div>
+                }
+
                 <!-- Notifications -->
-                <NavLink href="/notifications" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                <NavLink href="/notifications" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
                     <div class="relative flex items-center">
-                        <i class="fas fa-bell @GetIconClass(isExpanded)"></i>
+                        <i class="fas fa-bell @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                         @if (notificationCount > 0)
                         {
-                            <span class="absolute -top-2 -right-2 flex items-center justify-center min-w-5 h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full shadow-sm animate-pulse">@notificationCount</span>
+                            <span class="notification-badge absolute -top-2 @(isExpanded ? "-right-1" : "-right-2") flex items-center justify-center min-w-5 h-5 px-1 bg-red-500 text-white text-xs font-bold rounded-full">
+                                @(notificationCount > 99 ? "99+" : notificationCount.ToString())
+                            </span>
                         }
                     </div>
                     @if (isExpanded)
                     {
-                        <span class="transition-opacity duration-200 delay-200 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Bildirimler</span>
+                        <span class="font-medium transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">Bildirimler</span>
+                        @if (notificationCount > 0)
+                        {
+                            <span class="notification-count ml-auto px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold rounded-lg">@notificationCount</span>
+                        }
                     }
                 </NavLink>
 
                 <!-- Settings -->
-                <NavLink href="/settings" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-                    <i class="fas fa-cog @GetIconClass(isExpanded)"></i>
+                <NavLink href="/settings" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
+                    <i class="fas fa-cog @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                     @if (isExpanded)
                     {
-                        <span class="transition-opacity duration-200 delay-225 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Sistem Ayarları</span>
+                        <span class="font-medium transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">Sistem Ayarları</span>
                     }
                 </NavLink>
 
                 <!-- Support -->
-                <NavLink href="/supports" class="@GetMenuItemClass(isExpanded)" ActiveClass="bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-                    <i class="fas fa-headset @GetIconClass(isExpanded)"></i>
+                <NavLink href="/supports" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
+                    <i class="fas fa-headset @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                     @if (isExpanded)
                     {
-                        <span class="transition-opacity duration-200 delay-250 @(isTransitioning ? "opacity-0 translate-x-2" : "opacity-100 translate-x-0")">Destek</span>
+                        <span class="font-medium transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">Destek</span>
                     }
                 </NavLink>
             </nav>
         </div>
+
+        <!-- Footer Section -->
+        @if (isExpanded)
+        {
+            <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">
+                <div class="text-center space-y-1">
+                    <div class="flex items-center justify-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-leaf text-primary-500"></i>
+                        <span class="font-medium">EcoRoute v2.1</span>
+                    </div>
+                    <p class="text-xs text-gray-400 dark:text-gray-500">© 2024 Çevre Dostu Çözümler</p>
+                </div>
+            </div>
+        }
     </div>
 </div>
 
 <style>
-    /* Özel kaydırma çubuğu */
+    /* Basitleştirilmiş kaydırma çubuğu */
     .scrollbar-thin::-webkit-scrollbar {
-        width: 4px;
+        width: 3px;
     }
 
     .scrollbar-thin::-webkit-scrollbar-track {
@@ -209,110 +257,147 @@
     }
 
     .scrollbar-thin::-webkit-scrollbar-thumb {
-        background-color: #CBD5E1;
-        border-radius: 20px;
+        background: #CBD5E1;
+        border-radius: 10px;
     }
 
     .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-        background-color: #475569;
+        background: #475569;
     }
 
-    /* Logo animasyonu */
+    /* Optimize edilmiş logo animasyonu */
     .logo-icon {
-        animation: pulse 2s infinite;
+        animation: logoSpin 4s linear infinite;
         transform-origin: center;
     }
 
-    @@keyframes pulse {
-        0% {
-            transform: scale(1);
+    @@keyframes logoSpin {
+        from
+
+    {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+
+    }
+
+    /* NavLink aktif durumu için özel stil */
+    .menu-item[href].active,
+    .menu-item[href][aria-current="page"] {
+        background: linear-gradient(135deg, var(--tw-color-primary-500), var(--tw-color-primary-600)) !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(43, 168, 109, 0.3);
+    }
+
+        .menu-item[href].active i,
+        .menu-item[href][aria-current="page"] i {
+            color: white !important;
         }
 
-        50% {
-            transform: scale(1.1);
-            color: #ffffff;
+        .menu-item[href].active span,
+        .menu-item[href][aria-current="page"] span {
+            color: white !important;
         }
 
-        100% {
-            transform: scale(1);
-        }
+    /* Hover efektleri - optimize edildi */
+    .menu-item:hover {
+        transform: translateX(2px);
     }
 
-    /* Logo metin animasyonu */
-    .logo-text {
-        background: linear-gradient(90deg, #2ba86d, #3089d6, #2ba86d);
-        background-size: 200% auto;
-        background-clip: text;
-        -webkit-background-clip: text;
-        color: transparent;
-        animation: gradient 3s linear infinite;
-        font-weight: bold;
-        letter-spacing: 0.5px;
+    /* CSS Variables for primary colors */
+    :root {
+        --tw-color-primary-50: #e7f8ef;
+        --tw-color-primary-100: #c5edd8;
+        --tw-color-primary-200: #9fe3be;
+        --tw-color-primary-300: #74d8a3;
+        --tw-color-primary-400: #4acd87;
+        --tw-color-primary-500: #2ba86d;
+        --tw-color-primary-600: #1f8c58;
+        --tw-color-primary-700: #166e44;
+        --tw-color-primary-800: #0e5031;
+        --tw-color-primary-900: #06321d;
     }
 
-    @@keyframes gradient {
-        0% {
-            background-position: 0% center;
-        }
-
-        100% {
-            background-position: 200% center;
-        }
+    /* Dark mode variables */
+    .dark {
+        --tw-color-primary-50: #06321d;
+        --tw-color-primary-100: #0e5031;
+        --tw-color-primary-200: #166e44;
+        --tw-color-primary-300: #1f8c58;
+        --tw-color-primary-400: #2ba86d;
+        --tw-color-primary-500: #4acd87;
+        --tw-color-primary-600: #74d8a3;
+        --tw-color-primary-700: #9fe3be;
+        --tw-color-primary-800: #c5edd8;
+        --tw-color-primary-900: #e7f8ef;
     }
 
-    /* Metin görünüm gecikmesi için transition */
-    span.delay-50 {
-        transition-delay: 50ms;
+    /* Notification badge active durumda düzenleme */
+    .active .notification-badge {
+        background: rgba(255, 255, 255, 0.2) !important;
+        color: white !important;
+        border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
-    span.delay-75 {
-        transition-delay: 75ms;
+    .active .notification-count {
+        background: rgba(255, 255, 255, 0.15) !important;
+        color: white !important;
     }
 
-    span.delay-100 {
-        transition-delay: 100ms;
-    }
-
-    span.delay-125 {
-        transition-delay: 125ms;
-    }
-
-    span.delay-150 {
-        transition-delay: 150ms;
-    }
-
-    span.delay-175 {
-        transition-delay: 175ms;
-    }
-
-    span.delay-200 {
-        transition-delay: 200ms;
-    }
-
-    span.delay-225 {
-        transition-delay: 225ms;
-    }
-
-    span.delay-250 {
-        transition-delay: 250ms;
-    }
-
-    /* Bildirim rozet animasyonu */
-    @@keyframes pulse {
-        0% {
-            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
-        }
-
-        70% {
-            box-shadow: 0 0 0 5px rgba(239, 68, 68, 0);
-        }
-
-        100% {
-            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-        }
-    }
-
-    .animate-pulse {
+    /* Notification badge basit animasyon */
+    .notification-badge {
         animation: pulse 2s infinite;
     }
+
+    @@keyframes pulse {
+        0%, 100%
+
+    {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.8;
+    }
+
+    }
+
+    /* Performans için will-change */
+    .menu-item {
+        will-change: transform;
+    }
+
+    /* Transition optimizasyonu */
+    .transition-all {
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Aktif durumda text ve icon rengini zorla beyaz yap */
+    a[aria-current="page"] {
+        background: linear-gradient(135deg, #2ba86d, #1f8c58) !important;
+        color: white !important;
+    }
+
+        a[aria-current="page"] i {
+            color: white !important;
+        }
+
+        a[aria-current="page"] span {
+            color: white !important;
+        }
+
+    /* Blazor NavLink active class override */
+    .active {
+        background: linear-gradient(135deg, #2ba86d, #1f8c58) !important;
+        color: white !important;
+    }
+
+        .active i,
+        .active span {
+            color: white !important;
+        }
 </style>

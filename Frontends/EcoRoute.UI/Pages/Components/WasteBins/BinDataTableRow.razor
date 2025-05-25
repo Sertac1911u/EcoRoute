@@ -1,0 +1,77 @@
+﻿@using EcoRoute.DtoLayer.WasteBinDtos
+
+<tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer @(IsExpanded ? "bg-gray-50 dark:bg-gray-700" : "")"
+    @onclick="ToggleExpansion">
+    <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">@RowIndex</td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+        <div class="flex items-center">
+            <i class="fas fa-dumpster text-lg mr-3 @GetBinIconColor(Bin)"></i>
+            <span>@Bin.Label</span>
+        </div>
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 truncate max-w-xs">
+        <i class="fas fa-map-marker-alt mr-2 text-red-500"></i>
+        @Bin.Address
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@Bin.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm">
+        <span class="@GetDeviceStatusColor(Bin.DeviceStatus) px-2 py-1 rounded-full text-xs">
+            @GetDeviceStatusText(Bin.DeviceStatus)
+        </span>
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap">
+        <div class="relative w-full h-5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden bg-stripes">
+            <div class="@GetFillLevelColor(Bin.FillLevel) h-full transition-all duration-500 ease-in-out flex items-center justify-center"
+                 style="width: @(Bin.FillLevel ?? 0)%">
+                <span class="text-xs font-bold text-white">@(Bin.FillLevel ?? 0)%</span>
+            </div>
+        </div>
+    </td>
+    <td class="px-4 py-4 whitespace-nowrap text-sm">
+        <div class="flex space-x-3" @onclick:stopPropagation>
+            <button class="text-blue-500 hover:text-blue-700 text-lg tooltip-container" @onclick="TriggerOpenEditModal">
+                <i class="fas fa-edit"></i>
+                <span class="tooltip">Düzenle</span>
+            </button>
+            <button class="text-primary-500 hover:text-primary-700 text-lg tooltip-container" @onclick="TriggerFocusOnBin">
+                <i class="fas fa-map-marker"></i>
+                <span class="tooltip">Haritada Göster</span>
+            </button>
+            <button class="text-red-500 hover:text-red-700 text-lg tooltip-container" @onclick="TriggerDeleteBin">
+                <i class="fas fa-trash-alt"></i>
+                <span class="tooltip">Sil</span>
+            </button>
+        </div>
+    </td>
+</tr>
+
+@if (IsExpanded)
+{
+    <tr class="bg-gray-50 dark:bg-gray-700 animate-expandRow">
+        <td colspan="7" class="px-6 py-6">
+            <BinRowDetails Bin="Bin" />
+        </td>
+    </tr>
+}
+
+@code {
+    [Parameter] public ResultWasteBinDto Bin { get; set; }
+    [Parameter] public int RowIndex { get; set; }
+    [Parameter] public bool IsExpanded { get; set; }
+
+    [Parameter] public EventCallback OnToggleRowExpansion { get; set; }
+    [Parameter] public EventCallback OnOpenEditModal { get; set; }
+    [Parameter] public EventCallback OnFocusOnBin { get; set; }
+    [Parameter] public EventCallback OnDeleteBin { get; set; }
+
+    private async Task ToggleExpansion() => await OnToggleRowExpansion.InvokeAsync();
+    private async Task TriggerOpenEditModal() => await OnOpenEditModal.InvokeAsync();
+    private async Task TriggerFocusOnBin() => await OnFocusOnBin.InvokeAsync();
+    private async Task TriggerDeleteBin() => await OnDeleteBin.InvokeAsync();
+
+    // Helper methods for styling (copied from original component)
+    private string GetBinIconColor(ResultWasteBinDto bin) => bin.DeviceStatus switch { "Active" => "text-green-500", "Inactive" => "text-gray-500", "Maintenance" => "text-yellow-500", "Faulty" => "text-red-500", _ => "text-gray-500" };
+    private string GetDeviceStatusColor(string status) => status switch { "Active" => "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300", "Inactive" => "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300", "Maintenance" => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300", "Faulty" => "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300", _ => "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300" };
+    private string GetDeviceStatusText(string status) => status switch { "Active" => "Aktif", "Inactive" => "Pasif", "Maintenance" => "Bakımda", "Faulty" => "Arızalı", _ => status };
+    private string GetFillLevelColor(double? fillLevel) { if (!fillLevel.HasValue) return "bg-gray-500"; return fillLevel switch { >= 90 => "bg-red-500", >= 70 => "bg-orange-500", >= 50 => "bg-yellow-500", >= 30 => "bg-blue-500", _ => "bg-green-500" }; }
+}

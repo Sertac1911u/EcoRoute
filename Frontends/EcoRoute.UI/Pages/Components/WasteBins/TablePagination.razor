@@ -1,0 +1,42 @@
+﻿<div class="flex justify-center mt-4">
+    <div class="flex space-x-1">
+        <button @onclick="() => OnPageChanged.InvokeAsync(1)"
+                disabled="@(CurrentPage == 1)"
+                class="@(CurrentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+            <i class="fas fa-angle-double-left"></i>
+        </button>
+        <button @onclick="() => OnPageChanged.InvokeAsync(CurrentPage - 1)"
+                disabled="@(CurrentPage == 1)"
+                class="@(CurrentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+            <i class="fas fa-angle-left"></i>
+        </button>
+
+        @for (int i = StartPage; i <= EndPage; i++)
+        {
+            var pageNumber = i;
+            <button @onclick="() => OnPageChanged.InvokeAsync(pageNumber)"
+                    class="@(CurrentPage == pageNumber ? "bg-primary-500 text-white" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                @pageNumber
+            </button>
+        }
+
+        <button @onclick="() => OnPageChanged.InvokeAsync(CurrentPage + 1)"
+                disabled="@(CurrentPage == TotalPages)"
+                class="@(CurrentPage == TotalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+            <i class="fas fa-angle-right"></i>
+        </button>
+        <button @onclick="() => OnPageChanged.InvokeAsync(TotalPages)"
+                disabled="@(CurrentPage == TotalPages)"
+                class="@(CurrentPage == TotalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+            <i class="fas fa-angle-double-right"></i>
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int CurrentPage { get; set; }
+    [Parameter] public int TotalPages { get; set; }
+    [Parameter] public int StartPage { get; set; }
+    [Parameter] public int EndPage { get; set; }
+    [Parameter] public EventCallback<int> OnPageChanged { get; set; }
+}

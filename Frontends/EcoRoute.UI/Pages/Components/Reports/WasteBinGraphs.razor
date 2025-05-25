@@ -1,6 +1,7 @@
 ﻿@using EcoRoute.DtoLayer.ReportsDtos
 @inject EcoRoute.UI.Services.ReportsServices.IReportService ReportService
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <div class="space-y-6 animate-fadeIn">
     <!-- İstatistik Kartları -->
@@ -59,7 +60,13 @@
                     Doluluk Oranı Dağılımı
                 </h3>
             </div>
-            <div class="h-64">
+            <div class="h-64 relative">
+                @if (IsLoading)
+                {
+                    <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                        <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                }
                 <canvas id="fillLevelChart" class="transition-all duration-500"></canvas>
             </div>
             <div class="mt-4 flex justify-center gap-5 text-sm text-gray-500 dark:text-gray-400">
@@ -90,7 +97,13 @@
                     Cihaz Durumları
                 </h3>
             </div>
-            <div class="h-64">
+            <div class="h-64 relative">
+                @if (IsLoading)
+                {
+                    <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                        <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                }
                 <canvas id="deviceStatusChart" class="transition-all duration-500"></canvas>
             </div>
             <div class="mt-4 flex justify-center gap-5 text-sm text-gray-500 dark:text-gray-400">
@@ -122,12 +135,26 @@
                 Son Güncellenme Zamanları
             </h3>
             <div>
-                <button class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors">
-                    <i class="fas fa-sync-alt mr-1"></i> Yenile
+                <button class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors" disabled="@IsLoading">
+                    @if (IsLoading)
+                    {
+                        <div class="inline-block w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin mr-1"></div>
+                    }
+                    else
+                    {
+                        <i class="fas fa-sync-alt mr-1"></i>
+                    }
+                    Yenile
                 </button>
             </div>
         </div>
-        <div class="h-64">
+        <div class="h-64 relative">
+            @if (IsLoading)
+            {
+                <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                    <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }
             <canvas id="updateTimeChart" class="transition-all duration-500"></canvas>
         </div>
     </div>
@@ -136,247 +163,330 @@
 @code {
     private List<WasteBinReportDto> ReportList = new();
     private WasteBinStatsDto Stats = new();
+    private bool IsLoading = true;
+    private CancellationTokenSource? _cancellationTokenSource;
 
     protected override async Task OnInitializedAsync()
     {
-        ReportList = await ReportService.GetWasteBinReportAsync();
-        Stats = await ReportService.GetWasteBinStatsAsync();
-        await RenderCharts();
+        _cancellationTokenSource = new CancellationTokenSource();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            IsLoading = true;
+            StateHasChanged();
+
+            ReportList = await ReportService.GetWasteBinReportAsync();
+            Stats = await ReportService.GetWasteBinStatsAsync();
+
+            await Task.Delay(100, _cancellationTokenSource?.Token ?? CancellationToken.None);
+            await RenderCharts();
+        }
+        catch (OperationCanceledException)
+        {
+            // İptal edildi
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Waste bin data loading error: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
     }
 
     private async Task RenderCharts()
     {
-        // Doluluk oranı dağılımı
-        var lowCount = ReportList.Count(r => r.FillLevel <= 50);
-        var mediumCount = ReportList.Count(r => r.FillLevel > 50 && r.FillLevel <= 75);
-        var highCount = ReportList.Count(r => r.FillLevel > 75 && r.FillLevel <= 90);
-        var criticalCount = ReportList.Count(r => r.FillLevel > 90);
+        try
+        {
+            // Doluluk oranı dağılımı
+            var lowCount = ReportList.Count(r => r.FillLevel <= 50);
+            var mediumCount = ReportList.Count(r => r.FillLevel > 50 && r.FillLevel <= 75);
+            var highCount = ReportList.Count(r => r.FillLevel > 75 && r.FillLevel <= 90);
+            var criticalCount = ReportList.Count(r => r.FillLevel > 90);
 
-        var fillLevelCounts = new[] { lowCount, mediumCount, highCount, criticalCount };
-        var fillLevelLabels = new[] { "0-50%", "51-75%", "76-90%", "91-100%" };
-        var fillLevelColors = new[] { "rgba(16,185,129,0.7)", "rgba(59,130,246,0.7)", "rgba(245,158,11,0.7)", "rgba(239,68,68,0.7)" };
+            var fillLevelCounts = new[] { lowCount, mediumCount, highCount, criticalCount };
+            var fillLevelLabels = new[] { "0-50%", "51-75%", "76-90%", "91-100%" };
+            var fillLevelColors = new[] { "rgba(16,185,129,0.7)", "rgba(59,130,246,0.7)", "rgba(245,158,11,0.7)", "rgba(239,68,68,0.7)" };
 
-        await JS.InvokeVoidAsync("renderFillLevelChart", fillLevelLabels, fillLevelCounts, fillLevelColors);
+            await SafeJSInvoke("renderFillLevelChart", fillLevelLabels, fillLevelCounts, fillLevelColors);
 
-        // Cihaz durumları
-        var online = ReportList.Count(r => r.DeviceStatus?.ToLower() == "active" || r.DeviceStatus?.ToLower() == "çevrimiçi");
-        var standby = ReportList.Count(r => r.DeviceStatus?.ToLower() == "inactive" || r.DeviceStatus?.ToLower() == "beklemede");
-        var offline = ReportList.Count(r => r.DeviceStatus?.ToLower() == "maintenance" || r.DeviceStatus?.ToLower() == "çevrimdışı");
-        var faulty = ReportList.Count(r => r.DeviceStatus?.ToLower() == "faulty" || r.DeviceStatus?.ToLower() == "çevrimdışı");
-        var unknown = ReportList.Count(r => string.IsNullOrEmpty(r.DeviceStatus) || r.DeviceStatus?.ToLower() == "unknown" || r.DeviceStatus?.ToLower() == "bilinmeyen");
+            // Cihaz durumları
+            var online = ReportList.Count(r => r.DeviceStatus?.ToLower() == "active" || r.DeviceStatus?.ToLower() == "çevrimiçi");
+            var standby = ReportList.Count(r => r.DeviceStatus?.ToLower() == "inactive" || r.DeviceStatus?.ToLower() == "beklemede");
+            var offline = ReportList.Count(r => r.DeviceStatus?.ToLower() == "maintenance" || r.DeviceStatus?.ToLower() == "çevrimdışı");
+            var faulty = ReportList.Count(r => r.DeviceStatus?.ToLower() == "faulty" || r.DeviceStatus?.ToLower() == "arızalı");
+            var unknown = ReportList.Count(r => string.IsNullOrEmpty(r.DeviceStatus) || r.DeviceStatus?.ToLower() == "unknown" || r.DeviceStatus?.ToLower() == "bilinmeyen");
 
-        var statusCounts = new[] { online, standby, offline, faulty, unknown };
-        var statusLabels = new[] { "Çevrimiçi", "Beklemede", "Çevrimdışı", "Teknik", "Bilinmeyen" };
-        var statusColors = new[] { "rgba(16,185,129,0.7)", "rgba(245,158,11,0.7)", "rgba(239,68,68,0.7)", "rgba(156,163,175,0.7)" };
+            var statusCounts = new[] { online, standby, offline, unknown };
+            var statusLabels = new[] { "Çevrimiçi", "Beklemede", "Çevrimdışı", "Bilinmeyen" };
+            var statusColors = new[] { "rgba(16,185,129,0.7)", "rgba(245,158,11,0.7)", "rgba(239,68,68,0.7)", "rgba(156,163,175,0.7)" };
 
-        await JS.InvokeVoidAsync("renderDeviceStatusChart", statusLabels, statusCounts, statusColors);
+            await SafeJSInvoke("renderDeviceStatusChart", statusLabels, statusCounts, statusColors);
 
-        // Son güncellenme zamanları
-        var now = DateTime.Now;
-        var last24hours = ReportList.Count(r => (now - r.LastUpdated).TotalHours <= 24);
-        var last3days = ReportList.Count(r => (now - r.LastUpdated).TotalHours > 24 && (now - r.LastUpdated).TotalHours <= 72);
-        var lastWeek = ReportList.Count(r => (now - r.LastUpdated).TotalHours > 72 && (now - r.LastUpdated).TotalHours <= 168);
-        var older = ReportList.Count(r => (now - r.LastUpdated).TotalHours > 168);
+            // Son güncellenme zamanları
+            var now = DateTime.Now;
+            var last24hours = ReportList.Count(r => (now - r.LastUpdated).TotalHours <= 24);
+            var last3days = ReportList.Count(r => (now - r.LastUpdated).TotalHours > 24 && (now - r.LastUpdated).TotalHours <= 72);
+            var lastWeek = ReportList.Count(r => (now - r.LastUpdated).TotalHours > 72 && (now - r.LastUpdated).TotalHours <= 168);
+            var older = ReportList.Count(r => (now - r.LastUpdated).TotalHours > 168);
 
-        var timeCounts = new[] { last24hours, last3days, lastWeek, older };
-        var timeLabels = new[] { "Son 24 Saat", "Son 3 Gün", "Son 1 Hafta", "Daha Eski" };
-        var timeColors = new[] { "rgba(16,185,129,0.7)", "rgba(59,130,246,0.7)", "rgba(245,158,11,0.7)", "rgba(239,68,68,0.7)" };
+            var timeCounts = new[] { last24hours, last3days, lastWeek, older };
+            var timeLabels = new[] { "Son 24 Saat", "Son 3 Gün", "Son 1 Hafta", "Daha Eski" };
+            var timeColors = new[] { "rgba(16,185,129,0.7)", "rgba(59,130,246,0.7)", "rgba(245,158,11,0.7)", "rgba(239,68,68,0.7)" };
 
-        await JS.InvokeVoidAsync("renderUpdateTimeChart", timeLabels, timeCounts, timeColors);
+            await SafeJSInvoke("renderUpdateTimeChart", timeLabels, timeCounts, timeColors);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Chart rendering error: {ex.Message}");
+        }
+    }
+
+    private async Task SafeJSInvoke(string functionName, params object[] parameters)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync(functionName, parameters);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"JS function '{functionName}' error: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
+
+        try
+        {
+            await JS.InvokeVoidAsync("cleanupWasteBinCharts");
+        }
+        catch { }
     }
 }
 
 <script>
-    // Doluluk Oranı Dağılımı
-    window.renderFillLevelChart = (labels, data, colors) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('fillLevelChart').getContext('2d');
+    window.renderFillLevelChart = async function(labels, data, colors) {
+        try {
+            await (window.ChartHelper?.waitForElement('fillLevelChart') ?? Promise.resolve());
 
-        if (window._fillLevelChartInstance) {
-            window._fillLevelChartInstance.destroy();
-        }
-
-        window._fillLevelChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: colors,
-                    borderColor: 'white',
-                    borderWidth: 2,
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '65%',
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                const value = context.raw;
-                                const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${context.label}: ${value} kutu (${percentage}%)`;
+            const chartConfig = {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: 'white',
+                        borderWidth: 2,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${context.label}: ${value} kutu (${percentage}%)`;
+                                }
                             }
                         }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    },
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('fillLevelChart', chartConfig, '_fillLevelChartInstance');
+            } else {
+                const canvas = document.getElementById('fillLevelChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._fillLevelChartInstance) {
+                    window._fillLevelChartInstance.destroy();
+                }
+
+                window._fillLevelChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderFillLevelChart:', error);
+            return false;
+        }
     };
 
-    // Cihaz Durumları Grafiği
-    window.renderDeviceStatusChart = (labels, data, colors) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('deviceStatusChart').getContext('2d');
+    window.renderDeviceStatusChart = async function(labels, data, colors) {
+        try {
+            await (window.ChartHelper?.waitForElement('deviceStatusChart') ?? Promise.resolve());
 
-        if (window._deviceStatusChartInstance) {
-            window._deviceStatusChartInstance.destroy();
-        }
-
-        window._deviceStatusChartInstance = new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: colors,
-                    borderColor: 'white',
-                    borderWidth: 2,
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                const value = context.raw;
-                                const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${context.label}: ${value} kutu (${percentage}%)`;
+            const chartConfig = {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: 'white',
+                        borderWidth: 2,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${context.label}: ${value} kutu (${percentage}%)`;
+                                }
                             }
                         }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    },
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('deviceStatusChart', chartConfig, '_deviceStatusChartInstance');
+            } else {
+                const canvas = document.getElementById('deviceStatusChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._deviceStatusChartInstance) {
+                    window._deviceStatusChartInstance.destroy();
+                }
+
+                window._deviceStatusChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderDeviceStatusChart:', error);
+            return false;
+        }
     };
 
-    // Son Güncellenme Zamanları
-    window.renderUpdateTimeChart = (labels, data, colors) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('updateTimeChart').getContext('2d');
+    window.renderUpdateTimeChart = async function(labels, data, colors) {
+        try {
+            await (window.ChartHelper?.waitForElement('updateTimeChart') ?? Promise.resolve());
 
-        if (window._updateTimeChartInstance) {
-            window._updateTimeChartInstance.destroy();
-        }
-
-        window._updateTimeChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Kutu Sayısı',
-                    data: data,
-                    backgroundColor: colors,
-                    borderColor: colors.map(c => c.replace('0.7', '1')),
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.raw}`;
+            const chartConfig = {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Kutu Sayısı',
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: colors.map(c => c.replace('0.7', '1')),
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' },
+                            title: { display: true, text: 'Kutu Sayısı', font: { size: 11 } }
                         },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
-                        },
-                        title: {
-                            display: true,
-                            text: 'Kutu Sayısı',
-                            font: { size: 11 }
+                        x: {
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { display: false }
                         }
                     },
-                    x: {
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('updateTimeChart', chartConfig, '_updateTimeChartInstance');
+            } else {
+                const canvas = document.getElementById('updateTimeChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._updateTimeChartInstance) {
+                    window._updateTimeChartInstance.destroy();
+                }
+
+                window._updateTimeChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderUpdateTimeChart:', error);
+            return false;
+        }
+    };
+
+    window.cleanupWasteBinCharts = function() {
+        try {
+            if (window._fillLevelChartInstance) {
+                window._fillLevelChartInstance.destroy();
+                window._fillLevelChartInstance = null;
+            }
+            if (window._deviceStatusChartInstance) {
+                window._deviceStatusChartInstance.destroy();
+                window._deviceStatusChartInstance = null;
+            }
+            if (window._updateTimeChartInstance) {
+                window._updateTimeChartInstance.destroy();
+                window._updateTimeChartInstance = null;
+            }
+        } catch (error) {
+            console.error('Error cleaning up waste bin charts:', error);
+        }
     };
 </script>

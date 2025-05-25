@@ -92,9 +92,9 @@ namespace EcoRoute.UI.Services.ReportsServices
             return await GetAsync<List<UserActivityReportDto>>("services/reports/users/activity");
         }
 
-        public async Task<List<CO2EmissionReportDto>> GetCO2EmissionReportAsync()
+        public async Task<List<CO2EmissionReportDto>> GetCO2EmissionReportAsync(int days = 30)
         {
-            return await GetAsync<List<CO2EmissionReportDto>>("services/reports/routes/co2");
+            return await GetAsync<List<CO2EmissionReportDto>>($"services/reports/routes/co2-stats?days={days}");
         }
 
         public async Task<WasteBinStatsDto> GetWasteBinStatsAsync()

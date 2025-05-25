@@ -1836,8 +1836,8 @@
                 const baseSpeed = SIMULATION_SPEED_KMH;
                 let currentSpeed = 1;
 
-                const intervalMs = 200; // ✅ Longer interval for better performance
-                const totalSimulationTime = Math.max(30000, totalDistance * 1000); // Min 30 seconds
+                const intervalMs = 500; // ✅ Longer interval for better performance
+                const totalSimulationTime = Math.max(30000, totalDistance * 3000); // Min 30 seconds
                 const totalSteps = Math.floor(totalSimulationTime / intervalMs);
 
                 let currentStep = 0;

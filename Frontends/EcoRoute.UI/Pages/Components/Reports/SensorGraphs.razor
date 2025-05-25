@@ -1,6 +1,8 @@
 ﻿@using EcoRoute.DtoLayer.ReportsDtos
 @inject EcoRoute.UI.Services.ReportsServices.IReportService ReportService
 @inject IJSRuntime JS
+@implements IAsyncDisposable
+
 <div class="space-y-6 animate-fadeIn">
     <!-- İstatistik Kartları -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -14,6 +16,7 @@
             <h3 class="text-2xl font-bold text-slate-800 dark:text-white">@TotalSensors</h3>
             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">kayıtlı cihaz</span>
         </div>
+
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
                 <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mr-3">
@@ -24,6 +27,7 @@
             <h3 class="text-2xl font-bold text-emerald-500 dark:text-emerald-400">@ActiveSensors</h3>
             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">çalışır durumda</span>
         </div>
+
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
                 <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mr-3">
@@ -34,6 +38,7 @@
             <h3 class="text-2xl font-bold text-red-500 dark:text-red-400">@InactiveSensors</h3>
             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">müdahale gerekli</span>
         </div>
+
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
                 <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
@@ -45,6 +50,7 @@
             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">gün</span>
         </div>
     </div>
+
     <!-- Sensör Tipleri Dağılımı -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
@@ -54,10 +60,17 @@
                     Sensör Tipleri Dağılımı
                 </h3>
             </div>
-            <div class="h-64">
+            <div class="h-64 relative">
+                @if (IsLoading)
+                {
+                    <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                        <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                }
                 <canvas id="sensorTypeChart" class="transition-all duration-500"></canvas>
             </div>
         </div>
+
         <!-- Sensör Durumları -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-4">
@@ -66,7 +79,13 @@
                     Sensör Durumları
                 </h3>
             </div>
-            <div class="h-64">
+            <div class="h-64 relative">
+                @if (IsLoading)
+                {
+                    <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                        <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                }
                 <canvas id="sensorStatusChart" class="transition-all duration-500"></canvas>
             </div>
             <div class="mt-4 flex justify-center gap-6 text-sm text-gray-500 dark:text-gray-400">
@@ -81,6 +100,7 @@
             </div>
         </div>
     </div>
+
     <!-- Son Güncelleme Zamanları -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
@@ -89,15 +109,30 @@
                 Son Güncelleme Zamanları
             </h3>
             <div>
-                <button class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors">
-                    <i class="fas fa-sync-alt mr-1"></i> Yenile
+                <button class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors" disabled="@IsLoading">
+                    @if (IsLoading)
+                    {
+                        <div class="inline-block w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin mr-1"></div>
+                    }
+                    else
+                    {
+                        <i class="fas fa-sync-alt mr-1"></i>
+                    }
+                    Yenile
                 </button>
             </div>
         </div>
-        <div class="h-64">
+        <div class="h-64 relative">
+            @if (IsLoading)
+            {
+                <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                    <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }
             <canvas id="lastUpdateChart" class="transition-all duration-500"></canvas>
         </div>
     </div>
+
     <!-- Cihaz Kurulum Zaman Çizelgesi -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
@@ -106,7 +141,13 @@
                 Kurulum Zaman Çizelgesi
             </h3>
         </div>
-        <div class="h-64">
+        <div class="h-64 relative">
+            @if (IsLoading)
+            {
+                <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                    <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }
             <canvas id="installationTimelineChart" class="transition-all duration-500"></canvas>
         </div>
     </div>
@@ -114,6 +155,9 @@
 
 @code {
     private List<SensorReportDto> SensorList = new();
+    private bool IsLoading = true;
+    private CancellationTokenSource? _cancellationTokenSource;
+
     private int TotalSensors => SensorList.Count;
     private int ActiveSensors => SensorList.Count(s => s.IsActive);
     private int InactiveSensors => SensorList.Count(s => !s.IsActive);
@@ -125,54 +169,100 @@
 
     protected override async Task OnInitializedAsync()
     {
-        SensorList = await ReportService.GetSensorReportAsync();
-        await RenderCharts();
+        _cancellationTokenSource = new CancellationTokenSource();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            IsLoading = true;
+            StateHasChanged();
+
+            SensorList = await ReportService.GetSensorReportAsync();
+
+            await Task.Delay(100, _cancellationTokenSource?.Token ?? CancellationToken.None);
+            await RenderCharts();
+        }
+        catch (OperationCanceledException)
+        {
+            // İptal edildi
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Sensor data loading error: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
     }
 
     private async Task RenderCharts()
     {
-        // Sensör tipleri dağılımı
-        var sensorTypeGroups = SensorList
-            .GroupBy(s => string.IsNullOrEmpty(s.Type) ? "Bilinmeyen" : s.Type)
-            .Select(g => new { Type = g.Key, Count = g.Count() })
-            .OrderByDescending(x => x.Count)
-            .ToList();
-        var typeLabels = sensorTypeGroups.Select(g => g.Type).ToArray();
-        var typeCounts = sensorTypeGroups.Select(g => g.Count).ToArray();
-        var typeColors = GetColorPalette(typeLabels.Length);
-        await JS.InvokeVoidAsync("renderSensorTypeChart", typeLabels, typeCounts, typeColors);
+        try
+        {
+            // Sensör tipleri dağılımı
+            var sensorTypeGroups = SensorList
+                .GroupBy(s => string.IsNullOrEmpty(s.Type) ? "Bilinmeyen" : s.Type)
+                .Select(g => new { Type = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count)
+                .ToList();
+            var typeLabels = sensorTypeGroups.Select(g => g.Type).ToArray();
+            var typeCounts = sensorTypeGroups.Select(g => g.Count).ToArray();
+            var typeColors = GetColorPalette(typeLabels.Length);
+            await SafeJSInvoke("renderSensorTypeChart", typeLabels, typeCounts, typeColors);
 
-        // Sensör durumları - IsActive boolean özelliği kullanılıyor
-        var activeCount = ActiveSensors;
-        var inactiveCount = InactiveSensors;
+            // Sensör durumları - IsActive boolean özelliği kullanılıyor
+            var activeCount = ActiveSensors;
+            var inactiveCount = InactiveSensors;
 
-        var statusLabels = new[] { "Active", "Inactive" };
-        var statusCounts = new[] { activeCount, inactiveCount };
-        var statusColors = new[] { "rgba(16,185,129,0.7)", "rgba(239,68,68,0.7)" };
-        await JS.InvokeVoidAsync("renderSensorStatusChart", statusLabels, statusCounts, statusColors);
+            var statusLabels = new[] { "Active", "Inactive" };
+            var statusCounts = new[] { activeCount, inactiveCount };
+            var statusColors = new[] { "rgba(16,185,129,0.7)", "rgba(239,68,68,0.7)" };
+            await SafeJSInvoke("renderSensorStatusChart", statusLabels, statusCounts, statusColors);
 
-        // Son güncelleme zamanları
-        var now = DateTime.Now;
-        var lastDayCount = SensorList.Count(s => s.LastUpdate.HasValue && (now - s.LastUpdate.Value).TotalHours <= 24);
-        var lastWeekCount = SensorList.Count(s => s.LastUpdate.HasValue && (now - s.LastUpdate.Value).TotalHours > 24 && (now - s.LastUpdate.Value).TotalHours <= 168);
-        var lastMonthCount = SensorList.Count(s => s.LastUpdate.HasValue && (now - s.LastUpdate.Value).TotalHours > 168 && (now - s.LastUpdate.Value).TotalDays <= 30);
-        var olderCount = SensorList.Count(s => s.LastUpdate.HasValue && (now - s.LastUpdate.Value).TotalDays > 30);
-        var noUpdateCount = SensorList.Count(s => !s.LastUpdate.HasValue);
+            // Son güncelleme zamanları
+            var now = DateTime.Now;
+            var lastDayCount = SensorList.Count(s => s.LastUpdate.HasValue && (now - s.LastUpdate.Value).TotalHours <= 24);
+            var lastWeekCount = SensorList.Count(s => s.LastUpdate.HasValue && (now - s.LastUpdate.Value).TotalHours > 24 && (now - s.LastUpdate.Value).TotalHours <= 168);
+            var lastMonthCount = SensorList.Count(s => s.LastUpdate.HasValue && (now - s.LastUpdate.Value).TotalHours > 168 && (now - s.LastUpdate.Value).TotalDays <= 30);
+            var olderCount = SensorList.Count(s => s.LastUpdate.HasValue && (now - s.LastUpdate.Value).TotalDays > 30);
+            var noUpdateCount = SensorList.Count(s => !s.LastUpdate.HasValue);
 
-        var updateLabels = new[] { "Son 24 Saat", "Son Hafta", "Son Ay", "Daha Eski", "Güncelleme Yok" };
-        var updateCounts = new[] { lastDayCount, lastWeekCount, lastMonthCount, olderCount, noUpdateCount };
-        var updateColors = new[] {
-            "rgba(16,185,129,0.7)",
-            "rgba(59,130,246,0.7)",
-            "rgba(245,158,11,0.7)",
-            "rgba(239,68,68,0.7)",
-            "rgba(156,163,175,0.7)"
-        };
-        await JS.InvokeVoidAsync("renderLastUpdateChart", updateLabels, updateCounts, updateColors);
+            var updateLabels = new[] { "Son 24 Saat", "Son Hafta", "Son Ay", "Daha Eski", "Güncelleme Yok" };
+            var updateCounts = new[] { lastDayCount, lastWeekCount, lastMonthCount, olderCount, noUpdateCount };
+            var updateColors = new[] {
+                "rgba(16,185,129,0.7)",
+                "rgba(59,130,246,0.7)",
+                "rgba(245,158,11,0.7)",
+                "rgba(239,68,68,0.7)",
+                "rgba(156,163,175,0.7)"
+            };
+            await SafeJSInvoke("renderLastUpdateChart", updateLabels, updateCounts, updateColors);
 
-        // Kurulum zaman çizelgesi
-        var installationData = GetInstallationTimelineData();
-        await JS.InvokeVoidAsync("renderInstallationTimelineChart", installationData.Labels, installationData.Counts);
+            // Kurulum zaman çizelgesi
+            var installationData = GetInstallationTimelineData();
+            await SafeJSInvoke("renderInstallationTimelineChart", installationData.Labels, installationData.Counts);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Chart rendering error: {ex.Message}");
+        }
+    }
+
+    private async Task SafeJSInvoke(string functionName, params object[] parameters)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync(functionName, parameters);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"JS function '{functionName}' error: {ex.Message}");
+        }
     }
 
     private (string[] Labels, int[] Counts) GetInstallationTimelineData()
@@ -211,17 +301,14 @@
             "rgba(249,115,22,0.7)"    // orange
         };
 
-        // Gerekli renk sayısı, temel renk sayısından azsa
         if (count <= baseColors.Length)
         {
             return baseColors.Take(count).ToArray();
         }
 
-        // Gerekli renk sayısı, temel renk sayısından fazlaysa
         var result = new List<string>(baseColors);
         while (result.Count < count)
         {
-            // Renkleri biraz değiştirerek ekle
             var newColors = baseColors.Select(c =>
             {
                 var parts = c.Replace("rgba(", "").Replace(")", "").Split(',');
@@ -229,7 +316,7 @@
                 var g = int.Parse(parts[1]);
                 var b = int.Parse(parts[2]);
                 var a = double.Parse(parts[3]);
-                // Rengi biraz değiştir
+
                 r = Math.Min(255, r + new Random().Next(-30, 30));
                 g = Math.Min(255, g + new Random().Next(-30, 30));
                 b = Math.Min(255, b + new Random().Next(-30, 30));
@@ -240,289 +327,332 @@
 
         return result.Take(count).ToArray();
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
+
+        try
+        {
+            await JS.InvokeVoidAsync("cleanupSensorCharts");
+        }
+        catch { }
+    }
 }
 
 <script>
-    // Sensör Tipleri Dağılımı
-    window.renderSensorTypeChart = (labels, data, colors) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('sensorTypeChart').getContext('2d');
-        if (window._sensorTypeChartInstance) {
-            window._sensorTypeChartInstance.destroy();
-        }
-        window._sensorTypeChartInstance = new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: colors,
-                    borderColor: 'white',
-                    borderWidth: 2,
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            padding: 15,
-                            boxWidth: 10,
-                            font: { size: 11 }
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
+    window.renderSensorTypeChart = async function(labels, data, colors) {
+        try {
+            await (window.ChartHelper?.waitForElement('sensorTypeChart') ?? Promise.resolve());
+
+            const chartConfig = {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: 'white',
+                        borderWidth: 2,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                padding: 15,
+                                boxWidth: 10,
+                                font: { size: 11 }
+                            }
                         },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                const value = context.raw;
-                                const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${context.label}: ${value} sensör (${percentage}%)`;
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${context.label}: ${value} sensör (${percentage}%)`;
+                                }
                             }
                         }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    },
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('sensorTypeChart', chartConfig, '_sensorTypeChartInstance');
+            } else {
+                const canvas = document.getElementById('sensorTypeChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._sensorTypeChartInstance) {
+                    window._sensorTypeChartInstance.destroy();
+                }
+
+                window._sensorTypeChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderSensorTypeChart:', error);
+            return false;
+        }
     };
 
-    // Sensör Durumları Grafiği
-    window.renderSensorStatusChart = (labels, data, colors) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('sensorStatusChart').getContext('2d');
-        if (window._sensorStatusChartInstance) {
-            window._sensorStatusChartInstance.destroy();
-        }
-        window._sensorStatusChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: data,
-                    backgroundColor: colors,
-                    borderColor: 'white',
-                    borderWidth: 2,
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '60%',
-                plugins: {
-                    legend: {
-                        display: false  // Manuel legend kullanıyoruz
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                const value = context.raw;
-                                const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${context.label}: ${value} sensör (${percentage}%)`;
+    window.renderSensorStatusChart = async function(labels, data, colors) {
+        try {
+            await (window.ChartHelper?.waitForElement('sensorStatusChart') ?? Promise.resolve());
+
+            const chartConfig = {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: 'white',
+                        borderWidth: 2,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${context.label}: ${value} sensör (${percentage}%)`;
+                                }
                             }
                         }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    },
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('sensorStatusChart', chartConfig, '_sensorStatusChartInstance');
+            } else {
+                const canvas = document.getElementById('sensorStatusChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._sensorStatusChartInstance) {
+                    window._sensorStatusChartInstance.destroy();
+                }
+
+                window._sensorStatusChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderSensorStatusChart:', error);
+            return false;
+        }
     };
 
-    // Son Güncelleme Zamanları Grafiği
-    window.renderLastUpdateChart = (labels, data, colors) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('lastUpdateChart').getContext('2d');
-        if (window._lastUpdateChartInstance) {
-            window._lastUpdateChartInstance.destroy();
-        }
-        window._lastUpdateChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Sensör Sayısı',
-                    data: data,
-                    backgroundColor: colors,
-                    borderColor: colors.map(c => c.replace('0.7', '1')),
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.raw}`;
+    window.renderLastUpdateChart = async function(labels, data, colors) {
+        try {
+            await (window.ChartHelper?.waitForElement('lastUpdateChart') ?? Promise.resolve());
+
+            const chartConfig = {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Sensör Sayısı',
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: colors.map(c => c.replace('0.7', '1')),
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' },
+                            title: { display: true, text: 'Sensör Sayısı', font: { size: 11 } }
                         },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
-                        },
-                        title: {
-                            display: true,
-                            text: 'Sensör Sayısı',
-                            font: { size: 11 }
+                        x: {
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { display: false }
                         }
                     },
-                    x: {
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('lastUpdateChart', chartConfig, '_lastUpdateChartInstance');
+            } else {
+                const canvas = document.getElementById('lastUpdateChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._lastUpdateChartInstance) {
+                    window._lastUpdateChartInstance.destroy();
+                }
+
+                window._lastUpdateChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderLastUpdateChart:', error);
+            return false;
+        }
     };
 
-    // Kurulum Zaman Çizelgesi
-    window.renderInstallationTimelineChart = (labels, data) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('installationTimelineChart').getContext('2d');
-        if (window._installationTimelineChartInstance) {
-            window._installationTimelineChartInstance.destroy();
-        }
+    window.renderInstallationTimelineChart = async function(labels, data) {
+        try {
+            await (window.ChartHelper?.waitForElement('installationTimelineChart') ?? Promise.resolve());
 
-        // Define gradient fill
-        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(139,92,246,0.3)');
-        gradient.addColorStop(1, 'rgba(139,92,246,0.02)');
-
-        window._installationTimelineChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Kurulan Sensör Sayısı',
-                    data: data,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    borderColor: 'rgba(139,92,246,0.9)',
-                    backgroundColor: gradient,
-                    fill: true,
-                    pointRadius: 3,
-                    pointBackgroundColor: 'white',
-                    pointBorderColor: 'rgba(139,92,246,0.9)',
-                    pointBorderWidth: 2,
-                    pointHoverRadius: 5,
-                    pointHoverBackgroundColor: 'white',
-                    pointHoverBorderColor: 'rgba(139,92,246,0.9)',
-                    pointHoverBorderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
+            const chartConfig = {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Kurulan Sensör Sayısı',
+                        data: data,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        borderColor: 'rgba(139,92,246,0.9)',
+                        backgroundColor: function(context) {
+                            const ctx = context.chart.ctx;
+                            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                            gradient.addColorStop(0, 'rgba(139,92,246,0.3)');
+                            gradient.addColorStop(1, 'rgba(139,92,246,0.02)');
+                            return gradient;
                         },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.raw}`;
+                        fill: true,
+                        pointRadius: 3,
+                        pointBackgroundColor: 'white',
+                        pointBorderColor: 'rgba(139,92,246,0.9)',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: 'white',
+                        pointHoverBorderColor: 'rgba(139,92,246,0.9)',
+                        pointHoverBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' },
+                            title: { display: true, text: 'Sensör Sayısı', font: { size: 11 } }
                         },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
-                        },
-                        title: {
-                            display: true,
-                            text: 'Sensör Sayısı',
-                            font: { size: 11 }
+                        x: {
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { display: false }
                         }
                     },
-                    x: {
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('installationTimelineChart', chartConfig, '_installationTimelineChartInstance');
+            } else {
+                const canvas = document.getElementById('installationTimelineChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._installationTimelineChartInstance) {
+                    window._installationTimelineChartInstance.destroy();
+                }
+
+                window._installationTimelineChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderInstallationTimelineChart:', error);
+            return false;
+        }
+    };
+
+    window.cleanupSensorCharts = function() {
+        try {
+            if (window._sensorTypeChartInstance) {
+                window._sensorTypeChartInstance.destroy();
+                window._sensorTypeChartInstance = null;
+            }
+            if (window._sensorStatusChartInstance) {
+                window._sensorStatusChartInstance.destroy();
+                window._sensorStatusChartInstance = null;
+            }
+            if (window._lastUpdateChartInstance) {
+                window._lastUpdateChartInstance.destroy();
+                window._lastUpdateChartInstance = null;
+            }
+            if (window._installationTimelineChartInstance) {
+                window._installationTimelineChartInstance.destroy();
+                window._installationTimelineChartInstance = null;
+            }
+        } catch (error) {
+            console.error('Error cleaning up sensor charts:', error);
+        }
     };
 </script>

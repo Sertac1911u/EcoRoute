@@ -6,38 +6,52 @@
             <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
 
             <!-- Modal -->
-            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md transform transition-all animate-scaleIn"
+            <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md transform transition-all animate-scaleIn"
                  @onclick:stopPropagation="true">
 
                 <!-- Icon and Content -->
                 <div class="p-6 text-center">
                     <!-- Icon Container -->
-                    <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full @IconClass mb-5 animate-pulse">
-                        <i class="fas @Icon text-3xl"></i>
+                    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full @IconClass mb-4">
+                        <i class="fas @Icon text-2xl"></i>
                     </div>
 
                     <!-- Title -->
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                         @Title
                     </h3>
 
                     <!-- Message -->
-                    <p class="text-gray-600 dark:text-gray-400 leading-relaxed">
+                    <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
                         @Message
                     </p>
                 </div>
 
                 <!-- Actions -->
-                <div class="flex flex-col sm:flex-row gap-3 p-6 pt-0">
-                    <button class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-all hover:scale-105"
-                            @onclick="OnCancel">
+                <div class="flex gap-3 p-6 pt-0">
+                    <button class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-all hover:scale-105 text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            @onclick="OnCancel"
+                            disabled="@IsLoading">
                         <i class="fas fa-times mr-2"></i>
                         İptal
                     </button>
-                    <button class="flex-1 px-4 py-3 @ConfirmButtonClass text-white rounded-xl font-medium shadow-lg hover:shadow-xl transform transition-all hover:scale-105"
-                            @onclick="OnConfirm">
-                        <i class="fas fa-check mr-2"></i>
-                        @ConfirmButtonText
+                    <button class="flex-1 px-4 py-2.5 @GetConfirmButtonClass() text-white rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 min-h-[40px] flex items-center justify-center"
+                            @onclick="OnConfirm"
+                            disabled="@IsLoading">
+                        @if (IsLoading)
+                        {
+                            <div class="flex items-center">
+                                <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                                <span>Yükleniyor...</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="flex items-center">
+                                <i class="fas fa-check mr-2"></i>
+                                <span>@ConfirmButtonText</span>
+                            </div>
+                        }
                     </button>
                 </div>
             </div>
@@ -71,6 +85,26 @@
     [Parameter] public string ConfirmButtonClass { get; set; }
     [Parameter] public string Icon { get; set; }
     [Parameter] public string IconClass { get; set; }
+    [Parameter] public bool IsLoading { get; set; } = false;
     [Parameter] public EventCallback OnConfirm { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
+
+    private string GetConfirmButtonClass()
+    {
+        // Override custom classes with primary variants for consistency
+        if (!string.IsNullOrEmpty(ConfirmButtonClass))
+        {
+            if (ConfirmButtonClass.Contains("red"))
+                return "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700";
+            else if (ConfirmButtonClass.Contains("green"))
+                return "bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700";
+            else if (ConfirmButtonClass.Contains("secondary"))
+                return "bg-gradient-to-r from-primary-400 to-primary-500 hover:from-primary-500 hover:to-primary-600";
+            else
+                return ConfirmButtonClass;
+        }
+
+        // Default to primary colors
+        return "bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700";
+    }
 }

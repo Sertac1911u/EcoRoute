@@ -4,6 +4,7 @@
 @using EcoRoute.UI.Services.ReportsServices
 @using Microsoft.AspNetCore.Authorization
 @inject IReportService ReportService
+@implements IDisposable
 
 <div class="transition-all duration-300 bg-white dark:bg-slate-900 rounded-xl overflow-hidden shadow-lg border border-gray-100 dark:border-slate-800 animate-fadeIn">
     <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-slate-800">
@@ -15,45 +16,68 @@
             Beta
         </span>
     </div>
+
     <div class="px-6 pt-4 pb-2 border-b border-gray-200 dark:border-slate-800 overflow-x-auto">
         <div class="flex flex-wrap gap-3">
             @foreach (var tab in TabOptions)
             {
-                <button class="@GetTabClass(tab.Id) transition-all duration-200" @onclick="@(() => ChangeTab(tab.Id))">
-                    <i class="@tab.Icon mr-2"></i>
+                <button class="@GetTabClass(tab.Id) transition-all duration-200"
+                        @onclick="@(() => ChangeTab(tab.Id))"
+                        disabled="@(IsLoading && ActiveTab != tab.Id)">
+                    @if (IsLoading && ActiveTab == tab.Id)
+                    {
+                        <div class="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    }
+                    else
+                    {
+                        <i class="@tab.Icon mr-2"></i>
+                    }
                     @tab.Name
                 </button>
             }
         </div>
     </div>
 
-    <div class="p-6 transition-all duration-500">
-        @switch (ActiveTab)
+    <div class="p-6 transition-all duration-500 min-h-[500px]">
+        @if (IsLoading)
         {
-            case 0:
-                <WasteBinGraphs />
-                break;
-            case 1:
-                <SensorGraphs />
-                break;
-            case 2:
-                <RoutePerformanceGraphs />
-                break;
-            case 3:
-                <CO2EmissionGraphs />
-                break;
-            case 4:
-                <UserActivityGraphs />
-                break;
-            case 5:
-                <RouteListGraphs />
-                break;
+            <div class="flex flex-col items-center justify-center h-64">
+                <div class="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                <p class="mt-3 text-sm text-gray-600 dark:text-gray-400">@LoadingMessage</p>
+            </div>
+        }
+        else
+        {
+            @switch (ActiveTab)
+            {
+                case 0:
+                    <WasteBinGraphs @key="@($"wastebin-{ActiveTab}")" />
+                    break;
+                case 1:
+                    <SensorGraphs @key="@($"sensor-{ActiveTab}")" />
+                    break;
+                case 2:
+                    <RoutePerformanceGraphs @key="@($"route-perf-{ActiveTab}")" />
+                    break;
+                case 3:
+                    <CO2EmissionGraphs @key="@($"co2-{ActiveTab}")" />
+                    break;
+                case 4:
+                    <UserActivityGraphs @key="@($"user-activity-{ActiveTab}")" />
+                    break;
+                case 5:
+                    <RouteListGraphs @key="@($"route-list-{ActiveTab}")" />
+                    break;
+            }
         }
     </div>
 </div>
 
 @code {
     private int ActiveTab = 0;
+    private bool IsLoading = false;
+    private string LoadingMessage = "Veriler yükleniyor...";
+    private CancellationTokenSource? _cancellationTokenSource;
 
     private class TabOption
     {
@@ -72,29 +96,96 @@
         new TabOption { Id = 5, Name = "Genel Rota Listesi", Icon = "fas fa-list" }
     };
 
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTabData(ActiveTab);
+    }
+
     private string GetTabClass(int tab)
         => $"px-4 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium flex items-center " +
            (ActiveTab == tab
                 ? "bg-primary-500 hover:bg-primary-600 text-white shadow-md"
-                : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700");
+                : IsLoading && ActiveTab != tab
+                    ? "bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50"
+                    : "bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-700");
 
-    private void ChangeTab(int tabId)
+    private async Task ChangeTab(int tabId)
     {
+        if (IsLoading || ActiveTab == tabId) return;
+
+        // Önceki istekleri iptal et
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource = new CancellationTokenSource();
+
         ActiveTab = tabId;
+        await LoadTabData(tabId);
+    }
+
+    private async Task LoadTabData(int tabId)
+    {
+        try
+        {
+            IsLoading = true;
+            LoadingMessage = GetLoadingMessage(tabId);
+            StateHasChanged();
+
+            // Kısa bir bekleme ekleyerek UI'ın güncellenmesini sağla
+            await Task.Delay(100, _cancellationTokenSource?.Token ?? CancellationToken.None);
+
+            // Tab değişimini gerçekleştir
+            StateHasChanged();
+
+            // Component'in render olmasını bekle
+            await Task.Delay(500, _cancellationTokenSource?.Token ?? CancellationToken.None);
+        }
+        catch (OperationCanceledException)
+        {
+            // İptal edildi, hiçbir şey yapma
+            return;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Tab yükleme hatası: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetLoadingMessage(int tabId) => tabId switch
+    {
+        0 => "Atık kutusu verileri yükleniyor...",
+        1 => "Sensör verileri yükleniyor...",
+        2 => "Rota performans verileri yükleniyor...",
+        3 => "CO₂ emisyon verileri yükleniyor...",
+        4 => "Kullanıcı aktivite verileri yükleniyor...",
+        5 => "Rota listesi verileri yükleniyor...",
+        _ => "Veriler yükleniyor..."
+    };
+
+    public void Dispose()
+    {
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
     }
 }
 
 <style>
     @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
+        from
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
     }
 
     .animate-fadeIn {
@@ -105,6 +196,25 @@
     .transition-all {
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Loading animation */
+    @@keyframes spin {
+        to
+
+    {
+        transform: rotate(360deg);
+    }
+
+    }
+
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+
+    /* Disabled state styling */
+    button:disabled {
+        pointer-events: none;
     }
 
     /* Custom scrollbar for all panels */

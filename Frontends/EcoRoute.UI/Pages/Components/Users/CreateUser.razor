@@ -3,185 +3,190 @@
 @if (IsOpen)
 {
     <div class="fixed inset-0 z-50 overflow-y-auto" @onclick="OnClose">
-        <div class="flex min-h-screen items-center justify-center p-4">
+        <div class="flex min-h-screen items-center justify-center p-2 sm:p-4">
             <!-- Backdrop -->
             <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
 
-            <!-- Modal -->
-            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all animate-slideIn"
+            <!-- Modal - Optimized for smaller screens -->
+            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] transform transition-all animate-slideIn flex flex-col"
                  @onclick:stopPropagation="true">
 
-                <!-- Header -->
-                <div class="relative overflow-hidden rounded-t-2xl bg-gradient-to-r from-primary-500 to-primary-600 p-6 text-white">
-                    <div class="absolute inset-0 bg-white/10 backdrop-blur-3xl"></div>
-                    <div class="relative flex items-center justify-between">
+                <!-- Header - Fixed -->
+                <div class="relative bg-gradient-to-r from-primary-500 to-primary-600 px-4 sm:px-6 py-3 sm:py-4 rounded-t-2xl flex-shrink-0">
+                    <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-3">
-                            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-xl">
-                                <i class="fas fa-user-plus text-xl"></i>
+                            <div class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-white/20">
+                                <i class="fas fa-user-plus text-white text-sm sm:text-base"></i>
                             </div>
                             <div>
-                                <h3 class="text-2xl font-bold">Yeni Kullanıcı</h3>
-                                <p class="text-primary-100">Sisteme yeni kullanıcı ekleyin</p>
+                                <h3 class="text-lg sm:text-xl font-bold text-white">Yeni Kullanıcı</h3>
+                                <p class="text-primary-100 text-xs sm:text-sm">Sisteme yeni kullanıcı ekleyin</p>
                             </div>
                         </div>
                         <button @onclick="OnClose"
-                                class="rounded-lg bg-white/20 p-2 hover:bg-white/30 transition-colors">
-                            <i class="fas fa-times text-xl"></i>
+                                class="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-white/20 hover:bg-white/30 rounded-xl transition-colors">
+                            <i class="fas fa-times text-white text-sm"></i>
                         </button>
                     </div>
                 </div>
 
-                <!-- Body -->
-                <div class="p-6 space-y-6">
-                    <!-- Personal Information -->
-                    <div class="space-y-4">
-                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            <span class="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs">1</span>
+                <!-- Body - Scrollable -->
+                <div class="p-4 sm:p-6 overflow-y-auto flex-1">
+
+                    <!-- Kişisel Bilgiler -->
+                    <div class="mb-4">
+                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                            <span class="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs">1</span>
                             Kişisel Bilgiler
                         </h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div class="group relative">
                                 <input type="text"
                                        id="create-name"
-                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-gray-900 dark:text-white placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
                                        @bind="User.Name"
                                        placeholder="Ad" />
                                 <label for="create-name"
-                                       class="absolute left-4 top-3 text-gray-500 dark:text-gray-400 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-3 peer-focus:bg-white dark:peer-focus:bg-gray-800 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-800 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                    Ad
+                                       class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
+                                    Ad *
                                 </label>
                             </div>
 
                             <div class="group relative">
                                 <input type="text"
                                        id="create-surname"
-                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-gray-900 dark:text-white placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
                                        @bind="User.Surname"
                                        placeholder="Soyad" />
                                 <label for="create-surname"
-                                       class="absolute left-4 top-3 text-gray-500 dark:text-gray-400 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-3 peer-focus:bg-white dark:peer-focus:bg-gray-800 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-800 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                    Soyad
+                                       class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
+                                    Soyad *
                                 </label>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Account Information -->
-                    <div class="space-y-4">
-                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            <span class="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-secondary-100 dark:bg-secondary-900/20 text-secondary-600 dark:text-secondary-400 text-xs">2</span>
+                    <!-- Hesap Bilgileri -->
+                    <div class="mb-4">
+                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                            <span class="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs">2</span>
                             Hesap Bilgileri
                         </h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="group relative">
-                                <input type="text"
-                                       id="create-username"
-                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-gray-900 dark:text-white placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-                                       @bind="User.UserName"
-                                       placeholder="Kullanıcı Adı" />
-                                <label for="create-username"
-                                       class="absolute left-4 top-3 text-gray-500 dark:text-gray-400 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-3 peer-focus:bg-white dark:peer-focus:bg-gray-800 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-800 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                    Kullanıcı Adı
-                                </label>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="group relative">
+                                    <input type="text"
+                                           id="create-username"
+                                           class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                                           @bind="User.UserName"
+                                           placeholder="Kullanıcı Adı" />
+                                    <label for="create-username"
+                                           class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
+                                        Kullanıcı Adı *
+                                    </label>
+                                </div>
+
+                                <div class="group relative">
+                                    <input type="tel"
+                                           id="create-phone"
+                                           class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                                           @bind="User.PhoneNumber"
+                                           placeholder="Telefon" />
+                                    <label for="create-phone"
+                                           class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
+                                        Telefon
+                                    </label>
+                                </div>
                             </div>
 
                             <div class="group relative">
-                                <input type="tel"
-                                       id="create-phone"
-                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-gray-900 dark:text-white placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-                                       @bind="User.PhoneNumber"
-                                       placeholder="Telefon" />
-                                <label for="create-phone"
-                                       class="absolute left-4 top-3 text-gray-500 dark:text-gray-400 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-3 peer-focus:bg-white dark:peer-focus:bg-gray-800 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-800 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                    Telefon
-                                </label>
-                            </div>
-
-                            <div class="group relative md:col-span-2">
                                 <input type="email"
                                        id="create-email"
-                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-gray-900 dark:text-white placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
                                        @bind="User.Email"
                                        placeholder="E-posta" />
                                 <label for="create-email"
-                                       class="absolute left-4 top-3 text-gray-500 dark:text-gray-400 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-3 peer-focus:bg-white dark:peer-focus:bg-gray-800 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-800 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                    E-posta
+                                       class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
+                                    E-posta *
                                 </label>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Password -->
-                    <div class="space-y-4">
-                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            <span class="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-xs">3</span>
+                    <!-- Güvenlik -->
+                    <div class="mb-4">
+                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                            <span class="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs">3</span>
                             Güvenlik
                         </h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="group relative">
-                                <input type="@(_showPassword ? "text" : "password")"
-                                       id="create-password"
-                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 pr-12 text-gray-900 dark:text-white placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-                                       @bind="User.Password"
-                                       placeholder="Şifre" />
-                                <label for="create-password"
-                                       class="absolute left-4 top-3 text-gray-500 dark:text-gray-400 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-3 peer-focus:bg-white dark:peer-focus:bg-gray-800 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-800 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                    Şifre
-                                </label>
-                                <button type="button"
-                                        class="absolute right-3 top-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                        @onclick="TogglePasswordVisibility">
-                                    <i class="fas @(_showPassword ? "fa-eye-slash" : "fa-eye")"></i>
-                                </button>
+                        <div class="space-y-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div class="group relative">
+                                    <input type="@(_showPassword ? "text" : "password")"
+                                           id="create-password"
+                                           class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 pr-10 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                                           @bind="User.Password"
+                                           placeholder="Şifre" />
+                                    <label for="create-password"
+                                           class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
+                                        Şifre *
+                                    </label>
+                                    <button type="button"
+                                            class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                            @onclick="TogglePasswordVisibility">
+                                        <i class="fas @(_showPassword ? "fa-eye-slash" : "fa-eye") text-sm"></i>
+                                    </button>
+                                </div>
+
+                                <div class="group relative">
+                                    <input type="@(_showPassword ? "text" : "password")"
+                                           id="create-confirm-password"
+                                           class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
+                                           @bind="ConfirmPassword"
+                                           placeholder="Şifre Tekrarı" />
+                                    <label for="create-confirm-password"
+                                           class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
+                                        Şifre Tekrarı *
+                                    </label>
+                                </div>
                             </div>
 
-                            <div class="group relative">
-                                <input type="@(_showPassword ? "text" : "password")"
-                                       id="create-confirm-password"
-                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-4 py-3 text-gray-900 dark:text-white placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-                                       @bind="ConfirmPassword"
-                                       placeholder="Şifre Tekrarı" />
-                                <label for="create-confirm-password"
-                                       class="absolute left-4 top-3 text-gray-500 dark:text-gray-400 transition-all peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-3 peer-focus:bg-white dark:peer-focus:bg-gray-800 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-3 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-800 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                    Şifre Tekrarı
-                                </label>
-                            </div>
-                        </div>
+                            @if (!string.IsNullOrEmpty(PasswordError))
+                            {
+                                <div class="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-2 flex items-start space-x-2">
+                                    <i class="fas fa-exclamation-circle text-red-500 mt-0.5 text-sm"></i>
+                                    <p class="text-xs text-red-700 dark:text-red-400">@PasswordError</p>
+                                </div>
+                            }
 
-                        @if (!string.IsNullOrEmpty(PasswordError))
-                        {
-                            <div class="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-3 flex items-start space-x-2">
-                                <i class="fas fa-exclamation-circle text-red-500 mt-0.5"></i>
-                                <p class="text-sm text-red-700 dark:text-red-400">@PasswordError</p>
+                            <!-- Şifre Gereksinimleri - Compact -->
+                            <div class="rounded-lg bg-gray-50 dark:bg-gray-700/50 p-3">
+                                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Şifre Gereksinimleri:</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 text-xs text-gray-600 dark:text-gray-400">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check-circle mr-1 @(User.Password?.Length >= 6 ? "text-green-500" : "text-gray-400") text-xs"></i>
+                                        En az 6 karakter
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check-circle mr-1 @(User.Password?.Any(char.IsLetter) == true ? "text-green-500" : "text-gray-400") text-xs"></i>
+                                        En az bir harf
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check-circle mr-1 @(User.Password?.Any(char.IsDigit) == true ? "text-green-500" : "text-gray-400") text-xs"></i>
+                                        En az bir rakam
+                                    </div>
+                                </div>
                             </div>
-                        }
-
-                        <div class="rounded-lg bg-gray-50 dark:bg-gray-700/50 p-4">
-                            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Şifre Gereksinimleri:</p>
-                            <ul class="space-y-1 text-xs text-gray-600 dark:text-gray-400">
-                                <li class="flex items-center">
-                                    <i class="fas fa-check-circle mr-2 @(User.Password?.Length >= 6 ? "text-green-500" : "text-gray-400")"></i>
-                                    En az 6 karakter
-                                </li>
-                                <li class="flex items-center">
-                                    <i class="fas fa-check-circle mr-2 @(User.Password?.Any(char.IsLetter) == true ? "text-green-500" : "text-gray-400")"></i>
-                                    En az bir harf
-                                </li>
-                                <li class="flex items-center">
-                                    <i class="fas fa-check-circle mr-2 @(User.Password?.Any(char.IsDigit) == true ? "text-green-500" : "text-gray-400")"></i>
-                                    En az bir rakam
-                                </li>
-                            </ul>
                         </div>
                     </div>
 
-                    <!-- Role Selection -->
-                    <div class="space-y-4">
-                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            <span class="mr-2 flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 text-xs">4</span>
+                    <!-- Kullanıcı Rolü -->
+                    <div class="mb-4">
+                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                            <span class="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs">4</span>
                             Kullanıcı Rolü
                         </h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <label class="relative cursor-pointer">
                                 <input type="radio"
                                        name="new-role"
@@ -189,17 +194,17 @@
                                        checked="@(User.Role == "Manager")"
                                        @onchange='@(() => User.Role = "Manager")'
                                        class="sr-only peer" />
-                                <div class="rounded-xl border-2 border-gray-200 dark:border-gray-700 p-4 transition-all hover:border-gray-300 dark:hover:border-gray-600 peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/10">
-                                    <div class="flex items-start space-x-3">
-                                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
-                                            <i class="fas fa-user-tie"></i>
+                                <div class="rounded-lg border-2 border-gray-200 dark:border-gray-700 p-3 transition-all hover:border-gray-300 dark:hover:border-gray-600 peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/10">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400">
+                                            <i class="fas fa-user-tie text-sm"></i>
                                         </div>
                                         <div class="flex-1">
-                                            <p class="font-medium text-gray-900 dark:text-white">Manager</p>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400">Sistem yönetici rolü</p>
+                                            <p class="font-medium text-gray-900 dark:text-white text-sm">Manager</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">Yönetici rolü</p>
                                         </div>
                                         <div class="opacity-0 peer-checked:opacity-100 transition-opacity">
-                                            <i class="fas fa-check-circle text-primary-500"></i>
+                                            <i class="fas fa-check-circle text-primary-500 text-sm"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -212,17 +217,17 @@
                                        checked="@(User.Role == "Driver")"
                                        @onchange='@(() => User.Role = "Driver")'
                                        class="sr-only peer" />
-                                <div class="rounded-xl border-2 border-gray-200 dark:border-gray-700 p-4 transition-all hover:border-gray-300 dark:hover:border-gray-600 peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/10">
-                                    <div class="flex items-start space-x-3">
-                                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-100 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400">
-                                            <i class="fas fa-truck"></i>
+                                <div class="rounded-lg border-2 border-gray-200 dark:border-gray-700 p-3 transition-all hover:border-gray-300 dark:hover:border-gray-600 peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/10">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400">
+                                            <i class="fas fa-truck text-sm"></i>
                                         </div>
                                         <div class="flex-1">
-                                            <p class="font-medium text-gray-900 dark:text-white">Driver</p>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400">Sürücü rolü</p>
+                                            <p class="font-medium text-gray-900 dark:text-white text-sm">Driver</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">Sürücü rolü</p>
                                         </div>
                                         <div class="opacity-0 peer-checked:opacity-100 transition-opacity">
-                                            <i class="fas fa-check-circle text-primary-500"></i>
+                                            <i class="fas fa-check-circle text-primary-500 text-sm"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -231,15 +236,15 @@
                     </div>
                 </div>
 
-                <!-- Footer -->
-                <div class="flex items-center justify-end gap-3 border-t border-gray-200 dark:border-gray-700 px-6 py-4">
-                    <button class="px-5 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium transition-colors"
+                <!-- Footer - Fixed -->
+                <div class="flex items-center justify-end gap-2 sm:gap-3 border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0">
+                    <button class="px-3 sm:px-5 py-2 sm:py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium transition-colors text-sm"
                             @onclick="OnClose">
                         İptal
                     </button>
-                    <button class="px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
+                    <button class="px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-sm"
                             @onclick="OnSave">
-                        <i class="fas fa-save mr-2"></i>
+                        <i class="fas fa-save mr-1 sm:mr-2 text-xs"></i>
                         Kullanıcı Ekle
                     </button>
                 </div>

@@ -43,7 +43,7 @@ namespace EcoRoute.Reports.Services
             var client = _httpClientFactory.CreateClient("RouteOptimizationClient");
             AddAuthHeader(client);
 
-            var response = await client.GetAsync("routeoptimization/route/performance");
+            var response = await client.GetAsync("routeoptimization/route/performance-report");
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
@@ -92,7 +92,7 @@ namespace EcoRoute.Reports.Services
             }) ?? new();
         }
 
-        public async Task<List<CO2EmissionReportDto>> GetCO2EmissionReportAsync()
+        public async Task<List<CO2EmissionReportDto>> GetCO2EmissionReportAsync(int days = 30)
         {
             var client = _httpClientFactory.CreateClient("RouteOptimizationClient");
             var token = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"].ToString();
@@ -102,7 +102,7 @@ namespace EcoRoute.Reports.Services
                     new AuthenticationHeaderValue("Bearer", token.Replace("Bearer ", ""));
             }
 
-            var response = await client.GetAsync("api/route/co2-stats");
+            var response = await client.GetAsync($"routeoptimization/route/co2-stats?days={days}");
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();

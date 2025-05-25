@@ -318,7 +318,7 @@ namespace EcoRoute.RouteOptimization.Services
             var startTime = dto.StartTime;
             if (startTime == DateTime.MinValue)
             {
-                startTime = DateTime.UtcNow;
+                startTime = DateTime.Now;
             }
 
             // Create RouteTask entity
@@ -337,7 +337,7 @@ namespace EcoRoute.RouteOptimization.Services
                 EstimatedDurationMin = totalDuration / 60,
                 Notes = dto.Notes,
                 RouteName = dto.RouteName,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.Now,
                 OverviewPolyline = overviewPolyline
             };
 
@@ -684,7 +684,7 @@ namespace EcoRoute.RouteOptimization.Services
 
         public async Task<CO2StatsDto> GetCO2StatsAsync(int days)
         {
-            var endDate = DateTime.UtcNow.Date;
+            var endDate = DateTime.Now.Date;
             var startDate = endDate.AddDays(-days);
 
             var routes = await _context.RouteTasks
@@ -722,20 +722,34 @@ namespace EcoRoute.RouteOptimization.Services
         public async Task<List<RoutePerformanceReportDto>> GetRoutePerformanceReportAsync()
         {
             var routes = await _context.RouteTasks
-                .Include(r => r.Steps)
-                .ToListAsync();
+                              .Include(r => r.Steps)
+                              .ToListAsync();
 
-            return routes.Select(route => new RoutePerformanceReportDto
+            return routes.Select(r =>
             {
-                RouteId = route.Id,
-                DriverId = route.DriverId,
-                TotalDistanceKm = route.TotalDistanceKm,
-                EstimatedDurationMin = route.EstimatedDurationMin,
-                EstimatedFuelL = route.EstimatedFuelL,
-                EstimatedCO2Kg = route.EstimatedCO2Kg,
-                StepCount = route.Steps.Count,
-                CompletedStepCount = route.Steps.Count(s => s.IsCompleted)
-            }).ToList();
+                var completedSteps = r.Steps.Count(s => s.IsCompleted);
+
+                // İstersen EfficiencyScore’u kendi formülünle hesapla
+                double efficiency = r.TotalDistanceKm == 0
+                    ? 0
+                    : Math.Round(r.TotalDistanceKm / Math.Max(1, completedSteps), 2);
+
+                return new RoutePerformanceReportDto
+                {
+                    RouteId = r.Id,
+                    DriverId = r.DriverId,
+                    DistanceKm = r.TotalDistanceKm,
+                    Duration = TimeSpan.FromMinutes(r.EstimatedDurationMin),
+                    EfficiencyScore = efficiency,
+                    CompletedAt = r.Status == RouteStatus.Completed ? r.UpdatedAt : null,
+
+                    EstimatedFuelL = r.EstimatedFuelL,
+                    EstimatedCO2Kg = r.EstimatedCO2Kg,
+                    StepCount = r.Steps.Count,
+                    CompletedStepCount = completedSteps
+                };
+            })
+            .ToList();
         }
 
         // *** SIMÜLASYON METODLARI ***

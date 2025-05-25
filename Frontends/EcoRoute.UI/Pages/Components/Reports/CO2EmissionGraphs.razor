@@ -1,6 +1,7 @@
 ﻿@using EcoRoute.DtoLayer.ReportsDtos
 @inject EcoRoute.UI.Services.ReportsServices.IReportService ReportService
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <div class="space-y-6 animate-fadeIn">
     <!-- Statistik Özet Kartları -->
@@ -58,15 +59,21 @@
                 Günlük CO₂ Emisyon Grafiği
             </h3>
             <div class="flex items-center gap-2">
-                <button @onclick='() => ChangeTimeframe("weekly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "weekly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors">
+                <button @onclick='() => ChangeTimeframe("weekly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "weekly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors" disabled="@IsLoading">
                     <i class="fas fa-calendar-week mr-1"></i> Haftalık
                 </button>
-                <button @onclick='() => ChangeTimeframe("monthly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "monthly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors">
+                <button @onclick='() => ChangeTimeframe("monthly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "monthly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors" disabled="@IsLoading">
                     <i class="fas fa-calendar-alt mr-1"></i> Aylık
                 </button>
             </div>
         </div>
-        <div class="h-64">
+        <div class="h-64 relative">
+            @if (IsLoading)
+            {
+                <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                    <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }
             <canvas id="co2Chart" class="transition-all duration-500"></canvas>
         </div>
     </div>
@@ -79,12 +86,18 @@
                 CO₂ ve Rota Sayısı Karşılaştırması
             </h3>
             <div>
-                <button class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors">
+                <button class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors" disabled="@IsLoading">
                     <i class="fas fa-file-export mr-1"></i> Dışa Aktar
                 </button>
             </div>
         </div>
-        <div class="h-64">
+        <div class="h-64 relative">
+            @if (IsLoading)
+            {
+                <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                    <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }
             <canvas id="co2CompareChart" class="transition-all duration-500"></canvas>
         </div>
     </div>
@@ -93,6 +106,8 @@
 @code {
     private List<CO2EmissionReportDto> ReportList = new();
     private string Timeframe = "monthly";
+    private bool IsLoading = true;
+    private CancellationTokenSource? _cancellationTokenSource;
 
     private double TotalCO2 => ReportList.Sum(r => r.CO2Kg);
     private double AverageDailyCO2 => ReportList.Count > 0 ? ReportList.Average(r => r.CO2Kg) : 0;
@@ -101,259 +116,379 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ReportList = await ReportService.GetCO2EmissionReportAsync();
-        await RenderCharts();
+        _cancellationTokenSource = new CancellationTokenSource();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            IsLoading = true;
+            StateHasChanged();
+
+            ReportList = await ReportService.GetCO2EmissionReportAsync();
+
+            // DOM'un hazır olmasını bekle
+            await Task.Delay(100, _cancellationTokenSource?.Token ?? CancellationToken.None);
+
+            await RenderCharts();
+        }
+        catch (OperationCanceledException)
+        {
+            // İptal edildi, hiçbir şey yapma
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"CO2 emission data loading error: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
     }
 
     private async Task ChangeTimeframe(string timeframe)
     {
+        if (IsLoading) return;
+
         Timeframe = timeframe;
         await RenderCharts();
     }
 
     private async Task RenderCharts()
     {
-        var chartData = ReportList.OrderBy(r => r.Date).ToList();
-
-        // Zaman aralığına göre verileri filtrele
-        if (Timeframe == "weekly")
+        try
         {
-            chartData = chartData.TakeLast(7).ToList();
+            var chartData = ReportList.OrderBy(r => r.Date).ToList();
+
+            // Zaman aralığına göre verileri filtrele
+            if (Timeframe == "weekly")
+            {
+                chartData = chartData.TakeLast(7).ToList();
+            }
+
+            var chartLabels = chartData.Select(r => r.Date.ToString("dd.MM.yyyy")).ToArray();
+            var co2Values = chartData.Select(r => r.CO2Kg).ToArray();
+            var routeCounts = chartData.Select(r => r.RouteCount).ToArray();
+
+            // CO2 Alan Grafiği - Güvenli çağrı
+            await SafeJSInvoke("renderCO2Chart", chartLabels, co2Values);
+
+            // CO2 ve Rota Sayısı Karşılaştırma Grafiği - Güvenli çağrı
+            await SafeJSInvoke("renderCO2CompareChart", chartLabels, co2Values, routeCounts);
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Chart rendering error: {ex.Message}");
+        }
+    }
 
-        var chartLabels = chartData.Select(r => r.Date.ToString("dd.MM.yyyy")).ToArray();
-        var co2Values = chartData.Select(r => r.CO2Kg).ToArray();
-        var routeCounts = chartData.Select(r => r.RouteCount).ToArray();
+    private async Task SafeJSInvoke(string functionName, params object[] parameters)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync(functionName, parameters);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"JS function '{functionName}' error: {ex.Message}");
+        }
+    }
 
-        // CO2 Alan Grafiği
-        await JS.InvokeVoidAsync("renderCO2Chart", chartLabels, co2Values);
+    public async ValueTask DisposeAsync()
+    {
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
 
-        // CO2 ve Rota Sayısı Karşılaştırma Grafiği
-        await JS.InvokeVoidAsync("renderCO2CompareChart", chartLabels, co2Values, routeCounts);
+        // Chart instance'larını temizle
+        try
+        {
+            await JS.InvokeVoidAsync("cleanupCO2Charts");
+        }
+        catch
+        {
+            // Sessizce göz ardı et
+        }
     }
 }
 
 <script>
-    // CO2 Alan Grafiği
+    // CO2 Alan Grafiği - Null check ile geliştirilmiş
     window.renderCO2Chart = (labels, data) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('co2Chart').getContext('2d');
-
-        // Define gradient fill
-        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(59,130,246,0.3)');
-        gradient.addColorStop(1, 'rgba(59,130,246,0.02)');
-
-        if (window._co2ChartInstance) {
-            window._co2ChartInstance.destroy();
-        }
-
-        window._co2ChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'CO₂ (kg)',
-                    data: data,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    borderColor: 'rgba(59,130,246,1)',
-                    backgroundColor: gradient,
-                    fill: true,
-                    pointRadius: 3,
-                    pointBackgroundColor: 'white',
-                    pointBorderColor: 'rgba(59,130,246,1)',
-                    pointBorderWidth: 2,
-                    pointHoverRadius: 5,
-                    pointHoverBackgroundColor: 'white',
-                    pointHoverBorderColor: 'rgba(59,130,246,1)',
-                    pointHoverBorderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        borderColor: 'rgba(59,130,246,0.3)',
-                        borderWidth: 1,
-                        cornerRadius: 6,
-                        displayColors: false,
-                        callbacks: {
-                            title: function(tooltipItems) {
-                                return tooltipItems[0].label;
-                            },
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.raw.toFixed(2)} kg`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
-                }
+        try {
+            if (!window.Chart) {
+                console.warn('Chart.js is not loaded');
+                return;
             }
-        });
-    };
 
-    // CO2 ve Rota Sayısı Karşılaştırma Grafiği
-    window.renderCO2CompareChart = (labels, co2Data, routeData) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('co2CompareChart').getContext('2d');
+            const canvas = document.getElementById('co2Chart');
+            if (!canvas) {
+                console.warn('CO2 chart canvas not found');
+                return;
+            }
 
-        if (window._co2CompareChartInstance) {
-            window._co2CompareChartInstance.destroy();
-        }
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.warn('Could not get 2D context for CO2 chart');
+                return;
+            }
 
-        window._co2CompareChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
+            // Define gradient fill
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(59,130,246,0.3)');
+            gradient.addColorStop(1, 'rgba(59,130,246,0.02)');
+
+            if (window._co2ChartInstance) {
+                window._co2ChartInstance.destroy();
+                window._co2ChartInstance = null;
+            }
+
+            window._co2ChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
                         label: 'CO₂ (kg)',
-                        data: co2Data,
-                        backgroundColor: 'rgba(59,130,246,0.7)',
-                        borderColor: 'rgba(59,130,246,1)',
-                        borderWidth: 1,
-                        borderRadius: 4,
-                        yAxisID: 'y'
-                    },
-                    {
-                        label: 'Rota Sayısı',
-                        data: routeData,
-                        type: 'line',
-                        backgroundColor: 'rgba(16,185,129,0.7)',
-                        borderColor: 'rgba(16,185,129,1)',
+                        data: data,
+                        tension: 0.4,
                         borderWidth: 2,
+                        borderColor: 'rgba(59,130,246,1)',
+                        backgroundColor: gradient,
+                        fill: true,
                         pointRadius: 3,
                         pointBackgroundColor: 'white',
-                        pointBorderColor: 'rgba(16,185,129,1)',
+                        pointBorderColor: 'rgba(59,130,246,1)',
                         pointBorderWidth: 2,
-                        tension: 0.4,
-                        yAxisID: 'y1'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: 'white',
+                        pointHoverBorderColor: 'rgba(59,130,246,1)',
+                        pointHoverBorderWidth: 2
+                    }]
                 },
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            padding: 15,
-                            boxWidth: 8,
-                            font: { size: 11 }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: {
+                                size: 13,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 12
+                            },
+                            borderColor: 'rgba(59,130,246,0.3)',
+                            borderWidth: 1,
+                            cornerRadius: 6,
+                            displayColors: false,
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    return tooltipItems[0].label;
+                                },
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw.toFixed(2)} kg`;
+                                }
+                            }
                         }
                     },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                padding: 8,
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                color: 'rgba(156, 163, 175, 0.1)'
+                            }
                         },
-                        bodyFont: {
-                            size: 12
-                        },
-                        borderColor: 'rgba(107, 114, 128, 0.3)',
-                        borderWidth: 1,
-                        cornerRadius: 6
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        type: 'linear',
-                        position: 'left',
-                        title: {
-                            display: true,
-                            text: 'CO₂ (kg)',
-                            font: { size: 11 }
-                        },
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
+                        x: {
+                            ticks: {
+                                padding: 8,
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                display: false
+                            }
                         }
                     },
-                    y1: {
-                        beginAtZero: true,
-                        type: 'linear',
-                        position: 'right',
-                        title: {
-                            display: true,
-                            text: 'Rota Sayısı',
-                            font: { size: 11 }
-                        },
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            drawOnChartArea: false
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            display: false
-                        }
+                    animation: {
+                        duration: 800,
+                        easing: 'easeOutQuart'
                     }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
                 }
+            });
+        } catch (error) {
+            console.error('Error rendering CO2 chart:', error);
+        }
+    };
+
+    // CO2 ve Rota Sayısı Karşılaştırma Grafiği - Null check ile geliştirilmiş
+    window.renderCO2CompareChart = (labels, co2Data, routeData) => {
+        try {
+            if (!window.Chart) {
+                console.warn('Chart.js is not loaded');
+                return;
             }
-        });
+
+            const canvas = document.getElementById('co2CompareChart');
+            if (!canvas) {
+                console.warn('CO2 compare chart canvas not found');
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.warn('Could not get 2D context for CO2 compare chart');
+                return;
+            }
+
+            if (window._co2CompareChartInstance) {
+                window._co2CompareChartInstance.destroy();
+                window._co2CompareChartInstance = null;
+            }
+
+            window._co2CompareChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'CO₂ (kg)',
+                            data: co2Data,
+                            backgroundColor: 'rgba(59,130,246,0.7)',
+                            borderColor: 'rgba(59,130,246,1)',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Rota Sayısı',
+                            data: routeData,
+                            type: 'line',
+                            backgroundColor: 'rgba(16,185,129,0.7)',
+                            borderColor: 'rgba(16,185,129,1)',
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            pointBackgroundColor: 'white',
+                            pointBorderColor: 'rgba(16,185,129,1)',
+                            pointBorderWidth: 2,
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                boxWidth: 8,
+                                font: { size: 11 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: {
+                                size: 13,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 12
+                            },
+                            borderColor: 'rgba(107, 114, 128, 0.3)',
+                            borderWidth: 1,
+                            cornerRadius: 6
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'CO₂ (kg)',
+                                font: { size: 11 }
+                            },
+                            ticks: {
+                                padding: 8,
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                color: 'rgba(156, 163, 175, 0.1)'
+                            }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            type: 'linear',
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Rota Sayısı',
+                                font: { size: 11 }
+                            },
+                            ticks: {
+                                padding: 8,
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                padding: 8,
+                                font: { size: 11 }
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 800,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        } catch (error) {
+            console.error('Error rendering CO2 compare chart:', error);
+        }
+    };
+
+    // Chart cleanup function
+    window.cleanupCO2Charts = () => {
+        try {
+            if (window._co2ChartInstance) {
+                window._co2ChartInstance.destroy();
+                window._co2ChartInstance = null;
+            }
+            if (window._co2CompareChartInstance) {
+                window._co2CompareChartInstance.destroy();
+                window._co2CompareChartInstance = null;
+            }
+        } catch (error) {
+            console.error('Error cleaning up CO2 charts:', error);
+        }
     };
 </script>

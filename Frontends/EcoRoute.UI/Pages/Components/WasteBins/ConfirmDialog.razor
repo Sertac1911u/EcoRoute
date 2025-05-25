@@ -1,0 +1,54 @@
+﻿@if (IsVisible)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl p-6 animate-modal-show">
+            <div class="text-center mb-6">
+                @if (!string.IsNullOrEmpty(IconClass))
+                {
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full @GetIconBgColor() mb-4">
+                        <i class="@IconClass text-2xl"></i>
+                    </div>
+                }
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">@Title</h3>
+                <p class="text-gray-500 dark:text-gray-400">@Message</p>
+            </div>
+            <div class="flex justify-between">
+                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="TriggerCancel">
+                    @CancelButtonText
+                </button>
+                <button class="px-4 py-2 rounded-lg text-white transition-colors @ConfirmButtonClass" @onclick="TriggerConfirm">
+                    @ConfirmButtonText
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public string Title { get; set; }
+    [Parameter] public string Message { get; set; }
+    [Parameter] public string ConfirmButtonText { get; set; } = "Confirm";
+    [Parameter] public string ConfirmButtonClass { get; set; } = "bg-primary-500 hover:bg-primary-600";
+    [Parameter] public string CancelButtonText { get; set; } = "İptal";
+    [Parameter] public string IconClass { get; set; } // e.g., "fas fa-exclamation-triangle"
+    // IconColorClass is implicitly derived from IconClass often, or pass explicitly if needed
+
+    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private async Task TriggerConfirm() => await OnConfirm.InvokeAsync();
+    private async Task TriggerCancel() => await OnCancel.InvokeAsync();
+
+    private string GetIconBgColor()
+    {
+        if (IconClass != null)
+        {
+            if (IconClass.Contains("text-red-500")) return "bg-red-100";
+            if (IconClass.Contains("text-blue-500")) return "bg-blue-100";
+            if (IconClass.Contains("text-green-500")) return "bg-green-100";
+            if (IconClass.Contains("text-yellow-500")) return "bg-yellow-100";
+        }
+        return "bg-gray-100";
+    }
+}

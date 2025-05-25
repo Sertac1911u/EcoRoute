@@ -7,7 +7,7 @@ namespace EcoRoute.Reports.Services
         Task<List<WasteBinReportDto>> GetWasteBinReportAsync();
         Task<List<SensorReportDto>> GetSensorReportAsync();
         Task<List<RouteReportDto>> GetRouteReportAsync(); 
-        Task<List<CO2EmissionReportDto>> GetCO2EmissionReportAsync();
+        Task<List<CO2EmissionReportDto>> GetCO2EmissionReportAsync(int days = 30);
         Task<List<RoutePerformanceReportDto>> GetRoutePerformanceReportAsync(); 
         Task<List<UserActivityReportDto>> GetUserActivityReportAsync();
         Task<WasteBinStatsDto> GetWasteBinStatsAsync();

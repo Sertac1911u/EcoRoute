@@ -1,6 +1,7 @@
 ﻿@using EcoRoute.DtoLayer.ReportsDtos
 @inject EcoRoute.UI.Services.ReportsServices.IReportService ReportService
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <div class="space-y-6 animate-fadeIn">
     <!-- Statistik Özet Kartları -->
@@ -12,7 +13,9 @@
                 </div>
                 <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Toplam Rota</p>
             </div>
-            <h3 class="text-2xl font-bold text-slate-800 dark:text-white">@ReportList?.Count ?? 0</h3>
+            <h3 class="text-2xl font-bold text-slate-800 dark:text-white">
+                @(ReportList?.Count ?? 0)
+            </h3>
             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">son 30 gün</span>
         </div>
 
@@ -58,15 +61,21 @@
                 Rota Verimlilik Skoru (Tarih Bazlı)
             </h3>
             <div class="flex items-center gap-2">
-                <button @onclick='() => ChangeTimeframe("weekly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "weekly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors">
+                <button @onclick='() => ChangeTimeframe("weekly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "weekly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors" disabled="@IsLoading">
                     <i class="fas fa-calendar-week mr-1"></i> Haftalık
                 </button>
-                <button @onclick='() => ChangeTimeframe("monthly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "monthly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors">
+                <button @onclick='() => ChangeTimeframe("monthly")' class="text-sm px-3 py-1.5 rounded-lg @(Timeframe == "monthly" ? "bg-primary-500 text-white" : "bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600") transition-colors" disabled="@IsLoading">
                     <i class="fas fa-calendar-alt mr-1"></i> Aylık
                 </button>
             </div>
         </div>
-        <div class="h-64">
+        <div class="h-64 relative">
+            @if (IsLoading)
+            {
+                <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                    <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }
             <canvas id="routePerfChart" class="transition-all duration-500"></canvas>
         </div>
     </div>
@@ -79,12 +88,18 @@
                 Sürücü Bazlı Verimlilik Performansı
             </h3>
             <div>
-                <button class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors">
+                <button class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors" disabled="@IsLoading">
                     <i class="fas fa-file-export mr-1"></i> Dışa Aktar
                 </button>
             </div>
         </div>
-        <div class="h-72">
+        <div class="h-72 relative">
+            @if (IsLoading)
+            {
+                <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                    <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }
             <canvas id="driverPerfChart" class="transition-all duration-500"></canvas>
         </div>
     </div>
@@ -100,7 +115,13 @@
                 Her bir nokta bir rotayı temsil eder
             </div>
         </div>
-        <div class="h-64">
+        <div class="h-64 relative">
+            @if (IsLoading)
+            {
+                <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                    <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }
             <canvas id="distanceDurationChart" class="transition-all duration-500"></canvas>
         </div>
     </div>
@@ -109,6 +130,8 @@
 @code {
     private List<RoutePerformanceReportDto> ReportList = new();
     private string Timeframe = "monthly";
+    private bool IsLoading = true;
+    private CancellationTokenSource? _cancellationTokenSource;
 
     private double AverageDistance => ReportList.Any() ? ReportList.Average(r => r.DistanceKm) : 0;
     private double AverageDurationMinutes => ReportList.Any() ? ReportList.Average(r => r.Duration.TotalMinutes) : 0;
@@ -116,354 +139,413 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ReportList = await ReportService.GetRoutePerformanceReportAsync();
-        await RenderCharts();
+        _cancellationTokenSource = new CancellationTokenSource();
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            IsLoading = true;
+            StateHasChanged();
+
+            ReportList = await ReportService.GetRoutePerformanceReportAsync();
+
+            await Task.Delay(100, _cancellationTokenSource?.Token ?? CancellationToken.None);
+            await RenderCharts();
+        }
+        catch (OperationCanceledException)
+        {
+            // İptal edildi
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Route performance data loading error: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
     }
 
     private async Task ChangeTimeframe(string timeframe)
     {
+        if (IsLoading) return;
+
         Timeframe = timeframe;
         await RenderCharts();
     }
 
     private async Task RenderCharts()
     {
-        var orderedReports = ReportList.OrderBy(r => r.CompletedAt).ToList();
+        try
+        {
+            var orderedReports = ReportList.OrderBy(r => r.CompletedAt).ToList();
 
-        // Zaman aralığına göre filtreleme
-        var filteredData = Timeframe == "weekly"
-            ? orderedReports.TakeLast(7).ToList()
-            : orderedReports;
+            var filteredData = Timeframe == "weekly"
+                ? orderedReports.TakeLast(7).ToList()
+                : orderedReports;
 
-        // Tarih bazlı verimlilik grafiği için
-        var dateLabels = filteredData.Select(r => r.CompletedAt.ToString("dd.MM.yyyy")).ToArray();
-        var efficiencyData = filteredData.Select(r => r.EfficiencyScore).ToArray();
-        await JS.InvokeVoidAsync("renderRoutePerfChart", dateLabels, efficiencyData);
+            var dateLabels = filteredData.Select(r => $"{r.CompletedAt:dd.MM.yyyy}").ToArray();
+            var efficiencyData = filteredData.Select(r => r.EfficiencyScore).ToArray();
+            await SafeJSInvoke("renderRoutePerfChart", dateLabels, efficiencyData);
 
-        // Sürücü bazlı verimlilik radar grafiği için
-        var driverData = ReportList
-            .GroupBy(r => r.DriverName)
-            .Select(g => new
-            {
-                DriverName = g.Key,
-                AverageEfficiency = g.Average(r => r.EfficiencyScore),
-                Count = g.Count()
-            })
-            .OrderByDescending(x => x.AverageEfficiency)
-            .Take(5)
-            .ToList();
+            var driverData = ReportList
+                .GroupBy(r => r.DriverName)
+                .Select(g => new
+                {
+                    DriverName = g.Key,
+                    AverageEfficiency = g.Average(r => r.EfficiencyScore),
+                    Count = g.Count()
+                })
+                .OrderByDescending(x => x.AverageEfficiency)
+                .Take(5)
+                .ToList();
 
-        var driverNames = driverData.Select(d => d.DriverName).ToArray();
-        var driverEfficiencies = driverData.Select(d => d.AverageEfficiency).ToArray();
-        await JS.InvokeVoidAsync("renderDriverPerfChart", driverNames, driverEfficiencies);
+            var driverNames = driverData.Select(d => d.DriverName).ToArray();
+            var driverEfficiencies = driverData.Select(d => d.AverageEfficiency).ToArray();
+            await SafeJSInvoke("renderDriverPerfChart", driverNames, driverEfficiencies);
 
-        // Mesafe ve süre karşılaştırması için
-        var distances = ReportList.Select(r => r.DistanceKm).ToArray();
-        var durations = ReportList.Select(r => r.Duration.TotalMinutes).ToArray();
-        var pointColors = ReportList.Select(r => GetColorForEfficiency(r.EfficiencyScore)).ToArray();
-        await JS.InvokeVoidAsync("renderDistanceDurationChart", distances, durations, pointColors);
+            var distances = ReportList.Select(r => r.DistanceKm).ToArray();
+            var durations = ReportList.Select(r => r.Duration.TotalMinutes).ToArray();
+            var pointColors = ReportList.Select(r => GetColorForEfficiency(r.EfficiencyScore)).ToArray();
+            await SafeJSInvoke("renderDistanceDurationChart", distances, durations, pointColors);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Chart rendering error: {ex.Message}");
+        }
+    }
+
+    private async Task SafeJSInvoke(string functionName, params object[] parameters)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync(functionName, parameters);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"JS function '{functionName}' error: {ex.Message}");
+        }
     }
 
     private string GetColorForEfficiency(double score)
     {
-        if (score >= 8) return "rgba(16,185,129,0.7)"; // emerald (green)
-        if (score >= 6) return "rgba(59,130,246,0.7)"; // blue
-        if (score >= 4) return "rgba(245,158,11,0.7)"; // amber
-        return "rgba(239,68,68,0.7)"; // red
+        if (score >= 8) return "rgba(16,185,129,0.7)";
+        if (score >= 6) return "rgba(59,130,246,0.7)";
+        if (score >= 4) return "rgba(245,158,11,0.7)";
+        return "rgba(239,68,68,0.7)";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
+
+        try
+        {
+            await JS.InvokeVoidAsync("cleanupRoutePerformanceCharts");
+        }
+        catch { }
     }
 }
 
 <script>
-    // Rota Verimlilik Çizgi Grafiği
-    window.renderRoutePerfChart = (labels, data) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('routePerfChart').getContext('2d');
+    window.renderRoutePerfChart = async function(labels, data) {
+        try {
+            if (!window.ChartHelper) {
+                console.warn('ChartHelper not available, using fallback');
+            }
 
-        // Define gradient fill
-        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(16,185,129,0.3)');
-        gradient.addColorStop(1, 'rgba(16,185,129,0.02)');
+            await (window.ChartHelper?.waitForElement('routePerfChart') ?? Promise.resolve());
 
-        if (window._routePerfChartInstance) {
-            window._routePerfChartInstance.destroy();
-        }
-
-        window._routePerfChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Verimlilik Skoru',
-                    data: data,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    borderColor: 'rgba(16,185,129,0.9)',
-                    backgroundColor: gradient,
-                    fill: true,
-                    pointRadius: 3,
-                    pointBackgroundColor: 'white',
-                    pointBorderColor: 'rgba(16,185,129,0.9)',
-                    pointBorderWidth: 2,
-                    pointHoverRadius: 5,
-                    pointHoverBackgroundColor: 'white',
-                    pointHoverBorderColor: 'rgba(16,185,129,0.9)',
-                    pointHoverBorderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
+            const chartConfig = {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Verimlilik Skoru',
+                        data: data,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        borderColor: 'rgba(16,185,129,0.9)',
+                        backgroundColor: function(context) {
+                            const ctx = context.chart.ctx;
+                            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                            gradient.addColorStop(0, 'rgba(16,185,129,0.3)');
+                            gradient.addColorStop(1, 'rgba(16,185,129,0.02)');
+                            return gradient;
+                        },
+                        fill: true,
+                        pointRadius: 3,
+                        pointBackgroundColor: 'white',
+                        pointBorderColor: 'rgba(16,185,129,0.9)',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: 'white',
+                        pointHoverBorderColor: 'rgba(16,185,129,0.9)',
+                        pointHoverBorderWidth: 2
+                    }]
                 },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            borderColor: 'rgba(16,185,129,0.3)',
+                            borderWidth: 1,
+                            cornerRadius: 6,
+                            displayColors: false,
+                            callbacks: {
+                                title: function(tooltipItems) {
+                                    return tooltipItems[0].label;
+                                },
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 10,
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' }
                         },
-                        bodyFont: {
-                            size: 12
-                        },
-                        borderColor: 'rgba(16,185,129,0.3)',
+                        x: {
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { display: false }
+                        }
+                    },
+                    animation: { duration: 800, easing: 'easeOutQuart' }
+                }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('routePerfChart', chartConfig, '_routePerfChartInstance');
+            } else {
+                // Fallback
+                const canvas = document.getElementById('routePerfChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._routePerfChartInstance) {
+                    window._routePerfChartInstance.destroy();
+                }
+
+                window._routePerfChartInstance = new Chart(ctx, chartConfig);
+                return true;
+            }
+        } catch (error) {
+            console.error('Error in renderRoutePerfChart:', error);
+            return false;
+        }
+    };
+
+    window.renderDriverPerfChart = async function(drivers, efficiencies) {
+        try {
+            await (window.ChartHelper?.waitForElement('driverPerfChart') ?? Promise.resolve());
+
+            const chartConfig = {
+                type: 'bar',
+                data: {
+                    labels: drivers,
+                    datasets: [{
+                        label: 'Ortalama Verimlilik',
+                        data: efficiencies,
+                        backgroundColor: [
+                            'rgba(16,185,129,0.7)',
+                            'rgba(59,130,246,0.7)',
+                            'rgba(139,92,246,0.7)',
+                            'rgba(245,158,11,0.7)',
+                            'rgba(239,68,68,0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(16,185,129,1)',
+                            'rgba(59,130,246,1)',
+                            'rgba(139,92,246,1)',
+                            'rgba(245,158,11,1)',
+                            'rgba(239,68,68,1)'
+                        ],
                         borderWidth: 1,
-                        cornerRadius: 6,
-                        displayColors: false,
-                        callbacks: {
-                            title: function(tooltipItems) {
-                                return tooltipItems[0].label;
-                            },
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.raw.toFixed(2)}`;
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            borderColor: 'rgba(107, 114, 128, 0.3)',
+                            borderWidth: 1,
+                            cornerRadius: 6,
+                            callbacks: {
+                                label: function(context) {
+                                    return `Verimlilik: ${context.raw.toFixed(2)}`;
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        min: 0,
-                        max: 10,
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { display: false }
                         },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
+                        x: {
+                            min: 0,
+                            max: 10,
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' },
+                            title: { display: true, text: 'Verimlilik Skoru (1-10)', font: { size: 11 } }
                         }
                     },
-                    x: {
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('driverPerfChart', chartConfig, '_driverPerfChartInstance');
+            } else {
+                const canvas = document.getElementById('driverPerfChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._driverPerfChartInstance) {
+                    window._driverPerfChartInstance.destroy();
+                }
+
+                window._driverPerfChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderDriverPerfChart:', error);
+            return false;
+        }
     };
 
-    // Sürücü Bazlı Radar Grafiği
-    window.renderDriverPerfChart = (drivers, efficiencies) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('driverPerfChart').getContext('2d');
+    window.renderDistanceDurationChart = async function(distances, durations, colors) {
+        try {
+            await (window.ChartHelper?.waitForElement('distanceDurationChart') ?? Promise.resolve());
 
-        if (window._driverPerfChartInstance) {
-            window._driverPerfChartInstance.destroy();
-        }
+            const data = [];
+            for (let i = 0; i < distances.length; i++) {
+                data.push({
+                    x: distances[i],
+                    y: durations[i]
+                });
+            }
 
-        window._driverPerfChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: drivers,
-                datasets: [{
-                    label: 'Ortalama Verimlilik',
-                    data: efficiencies,
-                    backgroundColor: [
-                        'rgba(16,185,129,0.7)',
-                        'rgba(59,130,246,0.7)',
-                        'rgba(139,92,246,0.7)',
-                        'rgba(245,158,11,0.7)',
-                        'rgba(239,68,68,0.7)'
-                    ],
-                    borderColor: [
-                        'rgba(16,185,129,1)',
-                        'rgba(59,130,246,1)',
-                        'rgba(139,92,246,1)',
-                        'rgba(245,158,11,1)',
-                        'rgba(239,68,68,1)'
-                    ],
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        borderColor: 'rgba(107, 114, 128, 0.3)',
+            const chartConfig = {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Rotalar',
+                        data: data,
+                        backgroundColor: colors,
+                        borderColor: 'rgba(255,255,255,0.7)',
                         borderWidth: 1,
-                        cornerRadius: 6,
-                        callbacks: {
-                            label: function(context) {
-                                return `Verimlilik: ${context.raw.toFixed(2)}`;
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                title: function() {
+                                    return 'Rota Detayı';
+                                },
+                                label: function(context) {
+                                    return [
+                                        `Mesafe: ${context.raw.x.toFixed(2)} km`,
+                                        `Süre: ${context.raw.y.toFixed(2)} dk`
+                                    ];
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
+                    },
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Süre (dakika)', font: { size: 11 } },
+                            beginAtZero: true,
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' }
                         },
-                        grid: {
-                            display: false
+                        x: {
+                            title: { display: true, text: 'Mesafe (km)', font: { size: 11 } },
+                            beginAtZero: true,
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' }
                         }
                     },
-                    x: {
-                        min: 0,
-                        max: 10,
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
-                        },
-                        title: {
-                            display: true,
-                            text: 'Verimlilik Skoru (1-10)',
-                            font: { size: 11 }
-                        }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('distanceDurationChart', chartConfig, '_distanceDurationChartInstance');
+            } else {
+                const canvas = document.getElementById('distanceDurationChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._distanceDurationChartInstance) {
+                    window._distanceDurationChartInstance.destroy();
+                }
+
+                window._distanceDurationChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderDistanceDurationChart:', error);
+            return false;
+        }
     };
 
-    // Mesafe ve Süre Dağılım Grafiği
-    window.renderDistanceDurationChart = (distances, durations, colors) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('distanceDurationChart').getContext('2d');
-
-        if (window._distanceDurationChartInstance) {
-            window._distanceDurationChartInstance.destroy();
-        }
-
-        // Veri noktalarını oluştur
-        const data = [];
-        for (let i = 0; i < distances.length; i++) {
-            data.push({
-                x: distances[i],
-                y: durations[i]
-            });
-        }
-
-        window._distanceDurationChartInstance = new Chart(ctx, {
-            type: 'scatter',
-            data: {
-                datasets: [{
-                    label: 'Rotalar',
-                    data: data,
-                    backgroundColor: colors,
-                    borderColor: 'rgba(255,255,255,0.7)',
-                    borderWidth: 1,
-                    pointRadius: 6,
-                    pointHoverRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            title: function() {
-                                return 'Rota Detayı';
-                            },
-                            label: function(context) {
-                                return [
-                                    `Mesafe: ${context.raw.x.toFixed(2)} km`,
-                                    `Süre: ${context.raw.y.toFixed(2)} dk`
-                                ];
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        title: {
-                            display: true,
-                            text: 'Süre (dakika)',
-                            font: { size: 11 }
-                        },
-                        beginAtZero: true,
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
-                        }
-                    },
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Mesafe (km)',
-                            font: { size: 11 }
-                        },
-                        beginAtZero: true,
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
-                        }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
-                }
+    window.cleanupRoutePerformanceCharts = function() {
+        try {
+            if (window._routePerfChartInstance) {
+                window._routePerfChartInstance.destroy();
+                window._routePerfChartInstance = null;
             }
-        });
+            if (window._driverPerfChartInstance) {
+                window._driverPerfChartInstance.destroy();
+                window._driverPerfChartInstance = null;
+            }
+            if (window._distanceDurationChartInstance) {
+                window._distanceDurationChartInstance.destroy();
+                window._distanceDurationChartInstance = null;
+            }
+        } catch (error) {
+            console.error('Error cleaning up route performance charts:', error);
+        }
     };
-</script> 
+</script>

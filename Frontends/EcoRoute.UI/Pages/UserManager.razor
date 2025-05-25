@@ -38,7 +38,7 @@
                     <p class="text-gray-500 dark:text-gray-400 text-sm">Toplam Kullanıcı</p>
                     <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">@(users?.Count ?? 0)</p>
                 </div>
-                <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-xl flex items-center justify-center">
+                <div class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center">
                     <i class="fas fa-users text-white"></i>
                 </div>
             </div>
@@ -62,7 +62,7 @@
                     <p class="text-gray-500 dark:text-gray-400 text-sm">Yöneticiler</p>
                     <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">@(users?.Count(u => u.Roles.Contains("Manager")) ?? 0)</p>
                 </div>
-                <div class="w-12 h-12 bg-gradient-to-br from-purple-400 to-purple-600 rounded-xl flex items-center justify-center">
+                <div class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center">
                     <i class="fas fa-user-tie text-white"></i>
                 </div>
             </div>
@@ -74,7 +74,7 @@
                     <p class="text-gray-500 dark:text-gray-400 text-sm">Sürücüler</p>
                     <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">@(users?.Count(u => u.Roles.Contains("Driver")) ?? 0)</p>
                 </div>
-                <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center">
+                <div class="w-12 h-12 bg-gradient-to-br from-primary-300 to-primary-500 rounded-xl flex items-center justify-center">
                     <i class="fas fa-truck text-white"></i>
                 </div>
             </div>
@@ -83,13 +83,12 @@
 
     <!-- Users Table -->
     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700 animate-slideIn">
-        <UsersTable 
-            Users="users" 
-            SortColumn="@sortColumn" 
-            Ascending="@ascending" 
-            OnSort="SortTable" 
-            OnEditUser="ShowEditModal" 
-            OnDeleteUser="DeleteUserConfirmation" />
+        <UsersTable Users="users"
+                    SortColumn="@sortColumn"
+                    Ascending="@ascending"
+                    OnSort="SortTable"
+                    OnEditUser="ShowEditModal"
+                    OnDeleteUser="DeleteUserConfirmation" />
     </div>
 </div>
 
@@ -99,6 +98,7 @@
             opacity: 0;
             transform: translateY(20px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
@@ -110,6 +110,7 @@
             opacity: 0;
             transform: translateX(-20px);
         }
+
         to {
             opacity: 1;
             transform: translateX(0);
@@ -129,9 +130,11 @@
         0% {
             background-position: 0% 50%;
         }
+
         50% {
             background-position: 100% 50%;
         }
+
         100% {
             background-position: 0% 50%;
         }
@@ -144,58 +147,56 @@
 </style>
 
 <!-- Edit User Modal -->
-<EditUser 
-    User="editingUser" 
-    IsOpen="editingUser != null" 
-    OnClose="() => editingUser = null" 
-    OnSave="ShowUpdateConfirmation" 
-    PasswordError="@passwordError" 
-    ConfirmPassword="@confirmPassword" 
-    ConfirmPasswordChanged="(value) => confirmPassword = value" />
+<EditUser User="editingUser"
+          IsOpen="editingUser != null"
+          OnClose="() => editingUser = null"
+          OnSave="ShowUpdateConfirmation"
+          PasswordError="@passwordError"
+          ConfirmPassword="@confirmPassword"
+          ConfirmPasswordChanged="(value) => confirmPassword = value" />
 
 <!-- Create User Modal -->
-<CreateUser 
-    User="newUser" 
-    IsOpen="isCreateModalOpen" 
-    OnClose="CloseCreateModal" 
-    OnSave="ShowCreateConfirmation" 
-    PasswordError="@newPasswordError" 
-    ConfirmPassword="@newConfirmPassword" 
-    ConfirmPasswordChanged="(value) => newConfirmPassword = value" />
+<CreateUser User="newUser"
+            IsOpen="isCreateModalOpen"
+            OnClose="CloseCreateModal"
+            OnSave="ShowCreateConfirmation"
+            PasswordError="@newPasswordError"
+            ConfirmPassword="@newConfirmPassword"
+            ConfirmPasswordChanged="(value) => newConfirmPassword = value" />
 
 <!-- Confirmation Dialogs -->
-<ConfirmationDialog 
-    IsOpen="showDeleteConfirmation" 
-    Title="Kullanıcıyı Sil" 
-    Message="Bu kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz." 
-    ConfirmButtonText="Sil" 
-    ConfirmButtonClass="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700" 
-    OnConfirm="ConfirmDelete" 
-    OnCancel="CancelDelete" 
-    Icon="fa-exclamation-triangle" 
-    IconClass="bg-red-100 text-red-500 dark:bg-red-900/20 dark:text-red-400" />
+<ConfirmationDialog IsOpen="showDeleteConfirmation"
+                    Title="Kullanıcıyı Sil"
+                    Message="Bu kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
+                    ConfirmButtonText="Sil"
+                    ConfirmButtonClass="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                    OnConfirm="ConfirmDelete"
+                    OnCancel="CancelDelete"
+                    Icon="fa-exclamation-triangle"
+                    IconClass="bg-red-100 text-red-500 dark:bg-red-900/20 dark:text-red-400"
+                    IsLoading="@isDeleting" />
 
-<ConfirmationDialog 
-    IsOpen="showUpdateConfirmation" 
-    Title="Kullanıcıyı Güncelle" 
-    Message="Kullanıcı bilgilerini güncellemek istediğinize emin misiniz?" 
-    ConfirmButtonText="Güncelle" 
-    ConfirmButtonClass="bg-gradient-to-r from-secondary-500 to-secondary-600 hover:from-secondary-600 hover:to-secondary-700" 
-    OnConfirm="UpdateUser" 
-    OnCancel="() => showUpdateConfirmation = false" 
-    Icon="fa-question-circle" 
-    IconClass="bg-blue-100 text-blue-500 dark:bg-blue-900/20 dark:text-blue-400" />
+<ConfirmationDialog IsOpen="showUpdateConfirmation"
+                    Title="Kullanıcıyı Güncelle"
+                    Message="Kullanıcı bilgilerini güncellemek istediğinize emin misiniz?"
+                    ConfirmButtonText="Güncelle"
+                    ConfirmButtonClass="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700"
+                    OnConfirm="UpdateUser"
+                    OnCancel="() => showUpdateConfirmation = false"
+                    Icon="fa-question-circle"
+                    IconClass="bg-primary-100 text-primary-500 dark:bg-primary-900/20 dark:text-primary-400"
+                    IsLoading="@isUpdating" />
 
-<ConfirmationDialog 
-    IsOpen="showCreateConfirmation" 
-    Title="Yeni Kullanıcı Ekle" 
-    Message="Yeni kullanıcı eklemek istediğinize emin misiniz?" 
-    ConfirmButtonText="Ekle" 
-    ConfirmButtonClass="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700" 
-    OnConfirm="CreateUser" 
-    OnCancel="() => showCreateConfirmation = false" 
-    Icon="fa-user-plus" 
-    IconClass="bg-green-100 text-green-500 dark:bg-green-900/20 dark:text-green-400" />
+<ConfirmationDialog IsOpen="showCreateConfirmation"
+                    Title="Yeni Kullanıcı Ekle"
+                    Message="Yeni kullanıcı eklemek istediğinize emin misiniz?"
+                    ConfirmButtonText="Ekle"
+                    ConfirmButtonClass="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700"
+                    OnConfirm="CreateUser"
+                    OnCancel="() => showCreateConfirmation = false"
+                    Icon="fa-user-plus"
+                    IconClass="bg-primary-100 text-primary-500 dark:bg-primary-900/20 dark:text-primary-400"
+                    IsLoading="@isCreating" />
 
 @code {
     private List<ResultUserDto> users;
@@ -210,6 +211,11 @@
     private bool showUpdateConfirmation = false;
     private bool showCreateConfirmation = false;
     private string userIdToDelete;
+
+    // Loading states
+    private bool isDeleting = false;
+    private bool isUpdating = false;
+    private bool isCreating = false;
 
     // Sorting properties
     private string sortColumn = "Id";
@@ -244,28 +250,28 @@
         confirmPassword = "";
         passwordError = "";
         editingUser = new ResultUserDto
-        {
-            Id = user.Id,
-            Name = user.Name,
-            Surname = user.Surname,
-            Email = user.Email,
-            UserName = user.UserName,
-            Roles = user.Roles,
-            SelectedRole = user.Roles.FirstOrDefault(),
-            Password = "",
-            PhoneNumber = user.PhoneNumber,
-            LastLoginDate = user.LastLoginDate,
-            CreateDate = user.CreateDate,
-            IsActive = user.IsActive
-        };
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Surname = user.Surname,
+                Email = user.Email,
+                UserName = user.UserName,
+                Roles = user.Roles,
+                SelectedRole = user.Roles.FirstOrDefault(),
+                Password = "",
+                PhoneNumber = user.PhoneNumber,
+                LastLoginDate = user.LastLoginDate,
+                CreateDate = user.CreateDate,
+                IsActive = user.IsActive
+            };
     }
 
     private void OpenCreateModal()
     {
         newUser = new CreateUserDto
-        {
-            IsActive = true
-        };
+            {
+                IsActive = true
+            };
         newConfirmPassword = "";
         newPasswordError = "";
         isCreateModalOpen = true;
@@ -319,7 +325,7 @@
             toastService.ShowWarning("Lütfen tüm alanları doldurun");
             return;
         }
-        
+
         if (!IsValidEmail(newUser.Email))
         {
             toastService.ShowWarning("Lütfen geçerli bir e-posta adresi girin");
@@ -380,62 +386,95 @@
     {
         if (editingUser != null)
         {
-            var updateDto = new UpdateUserDto
-            {
-                Id = editingUser.Id,
-                Name = editingUser.Name,
-                Surname = editingUser.Surname,
-                Email = editingUser.Email,
-                UserName = editingUser.UserName,
-                Role = editingUser.SelectedRole,
-                Password = editingUser.Password,
-                PhoneNumber = editingUser.PhoneNumber,
-                IsActive = editingUser.IsActive
-            };
+            isUpdating = true;
+            StateHasChanged();
 
-            var success = await UserService.UpdateUserAsync(updateDto);
-            if (success)
+            try
             {
-                toastService.ShowSuccess("Kullanıcı başarıyla güncellendi");
-                showUpdateConfirmation = false;
-                editingUser = null;
-                await LoadUsers();
+                var updateDto = new UpdateUserDto
+                    {
+                        Id = editingUser.Id,
+                        Name = editingUser.Name,
+                        Surname = editingUser.Surname,
+                        Email = editingUser.Email,
+                        UserName = editingUser.UserName,
+                        Role = editingUser.SelectedRole,
+                        Password = editingUser.Password,
+                        PhoneNumber = editingUser.PhoneNumber,
+                        IsActive = editingUser.IsActive
+                    };
+
+                var success = await UserService.UpdateUserAsync(updateDto);
+                if (success)
+                {
+                    toastService.ShowSuccess("Kullanıcı başarıyla güncellendi");
+                    showUpdateConfirmation = false;
+                    editingUser = null;
+                    await LoadUsers();
+                }
+                else
+                {
+                    toastService.ShowError("Kullanıcı güncellenirken hata oluştu");
+                    showUpdateConfirmation = false;
+                }
             }
-            else
+            finally
             {
-                toastService.ShowError("Kullanıcı güncellenirken hata oluştu");
-                showUpdateConfirmation = false;
+                isUpdating = false;
+                StateHasChanged();
             }
         }
     }
 
     private async Task CreateUser()
     {
-        if (await UserService.CreateUserAsync(newUser))
+        isCreating = true;
+        StateHasChanged();
+
+        try
         {
-            toastService.ShowSuccess("Kullanıcı başarıyla eklendi.");
-            await LoadUsers();
-            showCreateConfirmation = false;
-            CloseCreateModal();
+            if (await UserService.CreateUserAsync(newUser))
+            {
+                toastService.ShowSuccess("Kullanıcı başarıyla eklendi.");
+                await LoadUsers();
+                showCreateConfirmation = false;
+                CloseCreateModal();
+            }
+            else
+            {
+                toastService.ShowError("Kullanıcı eklenirken hata oluştu");
+                showCreateConfirmation = false;
+            }
         }
-        else
+        finally
         {
-            toastService.ShowError("Kullanıcı eklenirken hata oluştu");
-            showCreateConfirmation = false;
+            isCreating = false;
+            StateHasChanged();
         }
     }
 
     private async Task ConfirmDelete()
     {
-        if (await UserService.DeleteUserAsync(userIdToDelete))
+        isDeleting = true;
+        StateHasChanged();
+
+        try
         {
-            toastService.ShowSuccess("Kullanıcı başarıyla silindi.");
-            await LoadUsers();
+            if (await UserService.DeleteUserAsync(userIdToDelete))
+            {
+                toastService.ShowSuccess("Kullanıcı başarıyla silindi.");
+                await LoadUsers();
+            }
+            else
+            {
+                toastService.ShowError("Kullanıcı silinirken hata oluştu");
+            }
+            showDeleteConfirmation = false;
         }
-        else
+        finally
         {
-            toastService.ShowError("Kullanıcı silinirken hata oluştu");
+            isDeleting = false;
+            StateHasChanged();
         }
-        showDeleteConfirmation = false;
     }
 }

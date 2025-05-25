@@ -1,6 +1,7 @@
-﻿ @using EcoRoute.DtoLayer.ReportsDtos
+﻿@using EcoRoute.DtoLayer.ReportsDtos
 @inject EcoRoute.UI.Services.ReportsServices.IReportService ReportService
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 <div class="space-y-6 animate-fadeIn">
     <!-- İstatistik Kartları -->
@@ -76,7 +77,13 @@
                     En Aktif Sürücüler (Rota Sayısı)
                 </h3>
             </div>
-            <div class="h-64">
+            <div class="h-64 relative">
+                @if (IsLoading)
+                {
+                    <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                        <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                }
                 <canvas id="driverRoutesChart" class="transition-all duration-500"></canvas>
             </div>
         </div>
@@ -89,7 +96,13 @@
                     Sürücü Mesafe Performansı
                 </h3>
             </div>
-            <div class="h-64">
+            <div class="h-64 relative">
+                @if (IsLoading)
+                {
+                    <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                        <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                }
                 <canvas id="driverDistanceChart" class="transition-all duration-500"></canvas>
             </div>
         </div>
@@ -105,7 +118,13 @@
                     Kullanıcı Rolleri Dağılımı
                 </h3>
             </div>
-            <div class="h-64">
+            <div class="h-64 relative">
+                @if (IsLoading)
+                {
+                    <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                        <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                }
                 <canvas id="userRolesChart" class="transition-all duration-500"></canvas>
             </div>
         </div>
@@ -119,22 +138,31 @@
                 </h3>
             </div>
             <div class="space-y-3 max-h-64 overflow-y-auto">
-                @foreach (var driver in RecentActiveDrivers.Take(8))
+                @if (!IsLoading)
                 {
-                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-sm font-semibold">
-                                @(driver.DriverName?.Substring(0, 1).ToUpper() ?? "?")
+                    @foreach (var driver in RecentActiveDrivers.Take(8))
+                    {
+                        <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center text-white text-sm font-semibold">
+                                    @(driver.DriverName?.Substring(0, 1).ToUpper() ?? "?")
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-slate-800 dark:text-white">@driver.DriverName</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">@driver.RouteCount rota</p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="text-sm font-medium text-slate-800 dark:text-white">@driver.DriverName</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">@driver.RouteCount rota</p>
+                            <div class="text-right">
+                                <p class="text-xs text-gray-500 dark:text-gray-400">@GetTimeAgo(driver.LastRouteDate)</p>
+                                <p class="text-xs text-blue-500 dark:text-blue-400">@($"{driver.TotalDistance:N1}") km</p>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <p class="text-xs text-gray-500 dark:text-gray-400">@GetTimeAgo(driver.LastRouteDate)</p>
-                            <p class="text-xs text-blue-500 dark:text-blue-400">@($"{driver.TotalDistance:N1}") km</p>
-                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="flex items-center justify-center h-32">
+                        <div class="w-6 h-6 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
                 }
             </div>
@@ -149,12 +177,26 @@
                 Son Giriş Aktivite Zaman Çizelgesi
             </h3>
             <div>
-                <button @onclick="RefreshData" class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors">
-                    <i class="fas fa-sync-alt mr-1"></i> Yenile
+                <button @onclick="RefreshData" class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors" disabled="@IsLoading">
+                    @if (IsLoading)
+                    {
+                        <div class="inline-block w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin mr-1"></div>
+                    }
+                    else
+                    {
+                        <i class="fas fa-sync-alt mr-1"></i>
+                    }
+                    Yenile
                 </button>
             </div>
         </div>
-        <div class="h-64">
+        <div class="h-64 relative">
+            @if (IsLoading)
+            {
+                <div class="absolute inset-0 flex items-center justify-center bg-white/50 dark:bg-slate-800/50">
+                    <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            }
             <canvas id="loginTimelineChart" class="transition-all duration-500"></canvas>
         </div>
     </div>
@@ -163,8 +205,9 @@
 @code {
     private List<RouteReportDto> RouteList = new();
     private List<UserActivityReportDto> UserList = new();
+    private bool IsLoading = true;
+    private CancellationTokenSource? _cancellationTokenSource;
 
-    // Sürücü istatistikleri için yardımcı sınıf
     public class DriverStats
     {
         public string DriverName { get; set; }
@@ -189,10 +232,7 @@
             })
         .ToList();
 
-    // Kullanıcı Metrikleri
     private int RecentLoginCount => UserList.Count(u => u.LastLoginDate.HasValue && (DateTime.Now - u.LastLoginDate.Value).TotalHours <= 24);
-
-    // Sürücü Metrikleri
     private DriverStats? TopDriverByRoutes => DriverStatsList.OrderByDescending(d => d.RouteCount).FirstOrDefault();
     private DriverStats? TopDriverByDistance => DriverStatsList.OrderByDescending(d => d.TotalDistance).FirstOrDefault();
     private List<DriverStats> RecentActiveDrivers => DriverStatsList.OrderByDescending(d => d.LastRouteDate).ToList();
@@ -207,14 +247,36 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _cancellationTokenSource = new CancellationTokenSource();
         await LoadData();
     }
 
     private async Task LoadData()
     {
-        RouteList = await ReportService.GetRouteReportAsync();
-        UserList = await ReportService.GetUserActivityReportAsync();
-        await RenderCharts();
+        try
+        {
+            IsLoading = true;
+            StateHasChanged();
+
+            RouteList = await ReportService.GetRouteReportAsync();
+            UserList = await ReportService.GetUserActivityReportAsync();
+
+            await Task.Delay(100, _cancellationTokenSource?.Token ?? CancellationToken.None);
+            await RenderCharts();
+        }
+        catch (OperationCanceledException)
+        {
+            // İptal edildi
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"User activity data loading error: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
     }
 
     private async Task RefreshData()
@@ -240,49 +302,60 @@
 
     private async Task RenderCharts()
     {
-        // En aktif sürücüler (rota sayısına göre)
-        var topDriversByRoutes = DriverStatsList
-            .OrderByDescending(d => d.RouteCount)
-            .Take(10)
-            .ToList();
+        try
+        {
+            var topDriversByRoutes = DriverStatsList
+                .OrderByDescending(d => d.RouteCount)
+                .Take(10)
+                .ToList();
 
-        var driverNames1 = topDriversByRoutes.Select(d => d.DriverName).ToArray();
-        var routeCounts = topDriversByRoutes.Select(d => d.RouteCount).ToArray();
+            var driverNames1 = topDriversByRoutes.Select(d => d.DriverName).ToArray();
+            var routeCounts = topDriversByRoutes.Select(d => d.RouteCount).ToArray();
+            await SafeJSInvoke("renderDriverRoutesChart", driverNames1, routeCounts);
 
-        await JS.InvokeVoidAsync("renderDriverRoutesChart", driverNames1, routeCounts);
+            var topDriversByDistance = DriverStatsList
+                .OrderByDescending(d => d.TotalDistance)
+                .Take(10)
+                .ToList();
 
-        // Sürücü mesafe performansı
-        var topDriversByDistance = DriverStatsList
-            .OrderByDescending(d => d.TotalDistance)
-            .Take(10)
-            .ToList();
+            var driverNames2 = topDriversByDistance.Select(d => d.DriverName).ToArray();
+            var distances = topDriversByDistance.Select(d => d.TotalDistance).ToArray();
+            await SafeJSInvoke("renderDriverDistanceChart", driverNames2, distances);
 
-        var driverNames2 = topDriversByDistance.Select(d => d.DriverName).ToArray();
-        var distances = topDriversByDistance.Select(d => d.TotalDistance).ToArray();
+            var roleGroups = UserList
+                .GroupBy(u => string.IsNullOrEmpty(u.Role) ? "Bilinmeyen" : u.Role)
+                .Select(g => new { Role = g.Key, Count = g.Count() })
+                .OrderByDescending(x => x.Count)
+                .ToList();
 
-        await JS.InvokeVoidAsync("renderDriverDistanceChart", driverNames2, distances);
+            var roleLabels = roleGroups.Select(g => g.Role).ToArray();
+            var roleCounts = roleGroups.Select(g => g.Count).ToArray();
+            var roleColors = GetRoleColors(roleLabels);
+            await SafeJSInvoke("renderUserRolesChart", roleLabels, roleCounts, roleColors);
 
-        // Kullanıcı rolleri dağılımı
-        var roleGroups = UserList
-            .GroupBy(u => string.IsNullOrEmpty(u.Role) ? "Bilinmeyen" : u.Role)
-            .Select(g => new { Role = g.Key, Count = g.Count() })
-            .OrderByDescending(x => x.Count)
-            .ToList();
+            var loginData = GetLoginTimelineData();
+            await SafeJSInvoke("renderLoginTimelineChart", loginData.Labels, loginData.Counts);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Chart rendering error: {ex.Message}");
+        }
+    }
 
-        var roleLabels = roleGroups.Select(g => g.Role).ToArray();
-        var roleCounts = roleGroups.Select(g => g.Count).ToArray();
-        var roleColors = GetRoleColors(roleLabels);
-
-        await JS.InvokeVoidAsync("renderUserRolesChart", roleLabels, roleCounts, roleColors);
-
-        // Giriş aktivite zaman çizelgesi
-        var loginData = GetLoginTimelineData();
-        await JS.InvokeVoidAsync("renderLoginTimelineChart", loginData.Labels, loginData.Counts);
+    private async Task SafeJSInvoke(string functionName, params object[] parameters)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync(functionName, parameters);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"JS function '{functionName}' error: {ex.Message}");
+        }
     }
 
     private (string[] Labels, int[] Counts) GetLoginTimelineData()
     {
-        // Son 14 günün giriş verilerini alıyoruz
         var now = DateTime.Now;
         var days = Enumerable.Range(0, 14)
             .Select(i => now.AddDays(-i))
@@ -305,327 +378,287 @@
     {
         var colorMap = new Dictionary<string, string>
         {
-            { "SuperAdmin", "rgba(239,68,68,0.7)" }, // red
-            { "Admin", "rgba(245,158,11,0.7)" },    // amber
-            { "Manager", "rgba(59,130,246,0.7)" },   // blue
-            { "User", "rgba(16,185,129,0.7)" },      // emerald
-            { "Driver", "rgba(139,92,246,0.7)" },    // violet
-            { "Operator", "rgba(236,72,153,0.7)" },  // pink
-            { "Bilinmeyen", "rgba(156,163,175,0.7)" } // gray
+            { "SuperAdmin", "rgba(239,68,68,0.7)" },
+            { "Admin", "rgba(245,158,11,0.7)" },
+            { "Manager", "rgba(59,130,246,0.7)" },
+            { "User", "rgba(16,185,129,0.7)" },
+            { "Driver", "rgba(139,92,246,0.7)" },
+            { "Operator", "rgba(236,72,153,0.7)" },
+            { "Bilinmeyen", "rgba(156,163,175,0.7)" }
         };
 
         return roles.Select(role => colorMap.ContainsKey(role) ? colorMap[role] : "rgba(107,114,128,0.7)").ToArray();
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
+
+        try
+        {
+            await JS.InvokeVoidAsync("cleanupUserActivityCharts");
+        }
+        catch { }
+    }
 }
 
 <script>
-    // Sürücü Rota Sayısı Grafiği
-    window.renderDriverRoutesChart = (driverNames, routeCounts) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('driverRoutesChart').getContext('2d');
+    window.renderDriverDistanceChart = async function(driverNames, distances) {
+        try {
+            await (window.ChartHelper?.waitForElement('driverDistanceChart') ?? Promise.resolve());
 
-        if (window._driverRoutesChartInstance) {
-            window._driverRoutesChartInstance.destroy();
-        }
-
-        window._driverRoutesChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: driverNames,
-                datasets: [{
-                    label: 'Rota Sayısı',
-                    data: routeCounts,
-                    backgroundColor: 'rgba(16,185,129,0.7)',
-                    borderColor: 'rgba(16,185,129,1)',
-                    borderWidth: 1,
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
-                        padding: 12,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `Toplam Rota: ${context.raw}`;
+            const chartConfig = {
+                type: 'bar',
+                data: {
+                    labels: driverNames,
+                    datasets: [{
+                        label: 'Toplam Mesafe (km)',
+                        data: distances,
+                        backgroundColor: 'rgba(59,130,246,0.7)',
+                        borderColor: 'rgba(59,130,246,1)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                            padding: 12,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return `Toplam Mesafe: ${context.raw.toFixed(1)} km`;
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { display: false }
                         },
-                        grid: {
-                            display: false
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                padding: 8,
+                                font: { size: 11 },
+                                callback: function(value) {
+                                    return value.toFixed(1) + ' km';
+                                }
+                            },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' },
+                            title: { display: true, text: 'Mesafe (km)', font: { size: 11 } }
                         }
                     },
-                    x: {
-                        beginAtZero: true,
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
-                        },
-                        title: {
-                            display: true,
-                            text: 'Rota Sayısı',
-                            font: { size: 11 }
-                        }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('driverDistanceChart', chartConfig, '_driverDistanceChartInstance');
+            } else {
+                const canvas = document.getElementById('driverDistanceChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._driverDistanceChartInstance) {
+                    window._driverDistanceChartInstance.destroy();
+                }
+
+                window._driverDistanceChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderDriverDistanceChart:', error);
+            return false;
+        }
     };
 
-    // Sürücü Mesafe Performansı Grafiği
-    window.renderDriverDistanceChart = (driverNames, distances) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('driverDistanceChart').getContext('2d');
+    window.renderUserRolesChart = async function(roles, counts, colors) {
+        try {
+            await (window.ChartHelper?.waitForElement('userRolesChart') ?? Promise.resolve());
 
-        if (window._driverDistanceChartInstance) {
-            window._driverDistanceChartInstance.destroy();
-        }
-
-        window._driverDistanceChartInstance = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: driverNames,
-                datasets: [{
-                    label: 'Toplam Mesafe (km)',
-                    data: distances,
-                    backgroundColor: 'rgba(59,130,246,0.7)',
-                    borderColor: 'rgba(59,130,246,1)',
-                    borderWidth: 1,
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                indexAxis: 'y',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
-                        padding: 12,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `Toplam Mesafe: ${context.raw.toFixed(1)} km`;
-                            }
-                        }
-                    }
+            const chartConfig = {
+                type: 'doughnut',
+                data: {
+                    labels: roles,
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: colors,
+                        borderColor: 'white',
+                        borderWidth: 2,
+                        hoverOffset: 10
+                    }]
                 },
-                scales: {
-                    y: {
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '60%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                padding: 15,
+                                boxWidth: 10,
+                                font: { size: 11 }
+                            }
                         },
-                        grid: {
-                            display: false
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    const value = context.raw;
+                                    const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${context.label}: ${value} kullanıcı (${percentage}%)`;
+                                }
+                            }
                         }
                     },
-                    x: {
-                        beginAtZero: true,
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 },
-                            callback: function(value) {
-                                return value.toFixed(1) + ' km';
-                            }
-                        },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
-                        },
-                        title: {
-                            display: true,
-                            text: 'Mesafe (km)',
-                            font: { size: 11 }
-                        }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('userRolesChart', chartConfig, '_userRolesChartInstance');
+            } else {
+                const canvas = document.getElementById('userRolesChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._userRolesChartInstance) {
+                    window._userRolesChartInstance.destroy();
+                }
+
+                window._userRolesChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderUserRolesChart:', error);
+            return false;
+        }
     };
 
-    // Kullanıcı Rolleri Dağılımı
-    window.renderUserRolesChart = (roles, counts, colors) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('userRolesChart').getContext('2d');
+    window.renderLoginTimelineChart = async function(dates, counts) {
+        try {
+            await (window.ChartHelper?.waitForElement('loginTimelineChart') ?? Promise.resolve());
 
-        if (window._userRolesChartInstance) {
-            window._userRolesChartInstance.destroy();
-        }
-
-        window._userRolesChartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: roles,
-                datasets: [{
-                    data: counts,
-                    backgroundColor: colors,
-                    borderColor: 'white',
-                    borderWidth: 2,
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '60%',
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            padding: 15,
-                            boxWidth: 10,
-                            font: { size: 11 }
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
+            const chartConfig = {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Giriş Yapan Kullanıcı Sayısı',
+                        data: counts,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        borderColor: 'rgba(16,185,129,0.9)',
+                        backgroundColor: function(context) {
+                            const ctx = context.chart.ctx;
+                            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+                            gradient.addColorStop(0, 'rgba(16,185,129,0.3)');
+                            gradient.addColorStop(1, 'rgba(16,185,129,0.02)');
+                            return gradient;
                         },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                const value = context.raw;
-                                const total = context.dataset.data.reduce((acc, curr) => acc + curr, 0);
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${context.label}: ${value} kullanıcı (${percentage}%)`;
+                        fill: true,
+                        pointRadius: 3,
+                        pointBackgroundColor: 'white',
+                        pointBorderColor: 'rgba(16,185,129,0.9)',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: 'white',
+                        pointHoverBorderColor: 'rgba(16,185,129,0.9)',
+                        pointHoverBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                            padding: 10,
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
                             }
                         }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                        },
+                        x: {
+                            ticks: { padding: 8, font: { size: 11 } },
+                            grid: { display: false }
+                        }
+                    },
+                    animation: { duration: 800, easing: 'easeOutQuart' }
                 }
+            };
+
+            if (window.ChartHelper) {
+                return window.ChartHelper.safeRenderChart('loginTimelineChart', chartConfig, '_loginTimelineChartInstance');
+            } else {
+                const canvas = document.getElementById('loginTimelineChart');
+                if (!canvas || !window.Chart) return false;
+
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return false;
+
+                if (window._loginTimelineChartInstance) {
+                    window._loginTimelineChartInstance.destroy();
+                }
+
+                window._loginTimelineChartInstance = new Chart(ctx, chartConfig);
+                return true;
             }
-        });
+        } catch (error) {
+            console.error('Error in renderLoginTimelineChart:', error);
+            return false;
+        }
     };
 
-    // Giriş Aktivite Zaman Çizelgesi
-    window.renderLoginTimelineChart = (dates, counts) => {
-        if (!window.Chart) return;
-        const ctx = document.getElementById('loginTimelineChart').getContext('2d');
-
-        if (window._loginTimelineChartInstance) {
-            window._loginTimelineChartInstance.destroy();
-        }
-
-        // Define gradient fill
-        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-        gradient.addColorStop(0, 'rgba(16,185,129,0.3)');
-        gradient.addColorStop(1, 'rgba(16,185,129,0.02)');
-
-        window._loginTimelineChartInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [{
-                    label: 'Giriş Yapan Kullanıcı Sayısı',
-                    data: counts,
-                    tension: 0.4,
-                    borderWidth: 2,
-                    borderColor: 'rgba(16,185,129,0.9)',
-                    backgroundColor: gradient,
-                    fill: true,
-                    pointRadius: 3,
-                    pointBackgroundColor: 'white',
-                    pointBorderColor: 'rgba(16,185,129,0.9)',
-                    pointBorderWidth: 2,
-                    pointHoverRadius: 5,
-                    pointHoverBackgroundColor: 'white',
-                    pointHoverBorderColor: 'rgba(16,185,129,0.9)',
-                    pointHoverBorderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
-                        padding: 10,
-                        titleFont: {
-                            size: 13,
-                            weight: 'bold'
-                        },
-                        bodyFont: {
-                            size: 12
-                        },
-                        callbacks: {
-                            label: function(context) {
-                                return `${context.dataset.label}: ${context.raw}`;
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            color: 'rgba(156, 163, 175, 0.1)'
-                        }
-                    },
-                    x: {
-                        ticks: {
-                            padding: 8,
-                            font: { size: 11 }
-                        },
-                        grid: {
-                            display: false
-                        }
-                    }
-                },
-                animation: {
-                    duration: 800,
-                    easing: 'easeOutQuart'
-                }
+    window.cleanupUserActivityCharts = function() {
+        try {
+            if (window._driverRoutesChartInstance) {
+                window._driverRoutesChartInstance.destroy();
+                window._driverRoutesChartInstance = null;
             }
-        });
+            if (window._driverDistanceChartInstance) {
+                window._driverDistanceChartInstance.destroy();
+                window._driverDistanceChartInstance = null;
+            }
+            if (window._userRolesChartInstance) {
+                window._userRolesChartInstance.destroy();
+                window._userRolesChartInstance = null;
+            }
+            if (window._loginTimelineChartInstance) {
+                window._loginTimelineChartInstance.destroy();
+                window._loginTimelineChartInstance = null;
+            }
+        } catch (error) {
+            console.error('Error cleaning up user activity charts:', error);
+        }
     };
 </script>

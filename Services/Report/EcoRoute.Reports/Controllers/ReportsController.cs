@@ -55,7 +55,7 @@ namespace EcoRoute.Reports.Controllers
         }
 
         [Authorize(Policy = "ReportsAccess")]
-        [HttpGet("routes/co2")]
+        [HttpGet("routes/co2-stats")]
         public async Task<IActionResult> GetCO2EmissionReport()
         {
             var result = await _reportService.GetCO2EmissionReportAsync();

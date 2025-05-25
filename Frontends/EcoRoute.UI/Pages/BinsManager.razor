@@ -973,10 +973,11 @@
     let userLocationMarker = null;
     let isDarkMode = false;
 
-    // Constants
+    // Constants - Zoom seviyelerini güncellendi
     const DEFAULT_CENTER = { lat: 41.1634, lng: 27.7951 }; // Çorlu merkez
     const DEFAULT_ZOOM = 13; // Initial zoom level for overview
-    const FOCUS_ZOOM = 18; // Zoom level when focusing on a bin
+    const FOCUS_ZOOM = 16; // Zoom level when focusing on a bin (18 yerine 16)
+    const MAX_FOCUS_ZOOM = 18; // Maximum zoom for detailed view
     const DEFAULT_TILT = 67.7; // Default tilt for 3D view
     const MAP_ID = '8b70db4a26fb9f4cd11929e3'; // Your custom map style ID
     const PRIMARY_COLOR = '#3B82F6'; // Primary blue color
@@ -1229,7 +1230,7 @@
      */
     window.googleMapsInterop = {
         /**
-         * Initialize the main 3D map
+         * Initialize the main 3D map - Geliştirilmiş versiyon
          * @@param {string} mapElementId - HTML element ID for the map container
          */
         initializeMainMap: function (mapElementId) {
@@ -1261,6 +1262,12 @@
                     rotateControl: true,
                     zoomControl: true,
                     fullscreenControl: true,
+                    // Etkileşim kontrollerini güçlendir
+                    draggable: true,
+                    scrollwheel: true,
+                    disableDoubleClickZoom: false,
+                    gestureHandling: 'auto',
+                    clickableIcons: true,
                     styles: getMapStyles()
                 });
 
@@ -1268,17 +1275,40 @@
                 this.add3DToggle(mainMap);
                 this.addUserLocationButton(mainMap);
 
-                // Add map loaded event
+                // Map loaded event
                 google.maps.event.addListenerOnce(mainMap, 'tilesloaded', () => {
                     hideLoading();
+                    this.ensureMapInteractivity(); // Harita yüklendikinde etkileşimi sağla
+
                     if (dotNetRef) {
                         dotNetRef.invokeMethodAsync('OnMapInitialized');
                     }
                 });
 
+                // Harita boyutu değiştiğinde kontrollerini koru
+                google.maps.event.addListener(mainMap, 'resize', () => {
+                    this.ensureMapInteractivity();
+                });
+
             } catch (error) {
                 console.error("Error initializing main map:", error);
                 hideLoading();
+            }
+        },
+
+        /**
+         * Harita etkileşimlerinin aktif kalmasını sağla - YENİ FONKSİYON
+         */
+        ensureMapInteractivity: function() {
+            if (mainMap) {
+                mainMap.setOptions({
+                    draggable: true,
+                    scrollwheel: true,
+                    disableDoubleClickZoom: false,
+                    zoomControl: true,
+                    gestureHandling: 'auto',
+                    clickableIcons: true
+                });
             }
         },
 
@@ -1762,7 +1792,7 @@
         },
 
         /**
-         * Handle marker click with enhanced animations
+         * Handle marker click with enhanced animations - GELİŞTİRİLMİŞ VERSİYON
          * @@param {google.maps.Marker} marker - Clicked marker
          * @@param {object} bin - Bin data
          */
@@ -1776,41 +1806,31 @@
             // Get position from marker
             const position = marker.getPosition();
 
-            // Enhanced zoom animation
+            // Daha yumuşak zoom - mevcut zoom seviyesini koru veya az artır
             const currentZoom = mainMap.getZoom();
-            if (currentZoom < FOCUS_ZOOM) {
-                // Smooth zoom animation
-                let zoom = currentZoom;
-                const zoomInterval = setInterval(() => {
-                    if (zoom >= FOCUS_ZOOM) {
-                        clearInterval(zoomInterval);
-                        mainMap.setZoom(FOCUS_ZOOM);
-                    } else {
-                        zoom += 1;
-                        mainMap.setZoom(zoom);
-                    }
-                }, 100);
-            }
+            const targetZoom = currentZoom < 15 ? 15 : Math.min(currentZoom + 1, 17);
 
-            // Ensure 3D mode with correct tilt
+            this.smoothZoomTo(mainMap, targetZoom);
+
+            // Tilt ayarla
             mainMap.setTilt(DEFAULT_TILT);
 
-            // Enhanced smooth pan to marker position
+            // Daha yumuşak pan
             this.smoothPanTo(mainMap, {
                 lat: position.lat(),
                 lng: position.lng()
             });
 
-            // Enhanced marker animation
+            // Kısa marker animasyonu
             marker.setAnimation(google.maps.Animation.BOUNCE);
             setTimeout(() => {
                 marker.setAnimation(null);
-                // Add pulsing effect
-                this.addMarkerPulseEffect(marker, bin);
-            }, 1500);
+            }, 800);
 
-            // Open enhanced sidebar with detailed information
-            this.openEnhancedBinSidebar(bin);
+            // Sidebar aç
+            setTimeout(() => {
+                this.openEnhancedBinSidebar(bin);
+            }, 900);
 
             // Store selected bin ID
             selectedBinId = bin.Id;
@@ -1843,13 +1863,16 @@
         },
 
         /**
-         * Open enhanced sidebar with better animations and content
+         * Open enhanced sidebar with better animations and content - GELİŞTİRİLMİŞ VERSİYON
          * @@param {object} bin - Bin data
          */
         openEnhancedBinSidebar: function (bin) {
             // Get sidebar element
             const sidebar = document.getElementById('bin-sidebar');
             if (!sidebar) return;
+
+            // Harita kontrollerini koru
+            this.ensureMapInteractivity();
 
             // Calculate estimates with improved algorithm
             const getEstimatedFillDate = (fillLevel) => {
@@ -2033,9 +2056,14 @@
                 </div>
             `;
 
-            // Show sidebar
+            // Show sidebar with better animation
             sidebar.classList.add('active');
-            document.body.classList.add('sidebar-active');
+
+            // Harita boyutunu güncelle ama etkileşimi koru
+            setTimeout(() => {
+                google.maps.event.trigger(mainMap, 'resize');
+                this.ensureMapInteractivity();
+            }, 450);
         },
 
         /**
@@ -2237,7 +2265,7 @@
         },
 
         /**
-         * Smooth zoom animation
+         * Geliştirilmiş smooth zoom animasyonu
          * @@param {google.maps.Map} map - Map object
          * @@param {number} targetZoom - Target zoom level
          */
@@ -2245,21 +2273,29 @@
             const currentZoom = map.getZoom();
             if (currentZoom === targetZoom) return;
 
-            const zoomStep = currentZoom < targetZoom ? 1 : -1;
+            // Zoom farkı çok büyükse kademeli yap
+            const zoomDifference = Math.abs(targetZoom - currentZoom);
+            const stepSize = zoomDifference > 3 ? 1 : 0.5;
+            const zoomStep = currentZoom < targetZoom ? stepSize : -stepSize;
+
             let zoom = currentZoom;
+            const duration = zoomDifference > 3 ? 200 : 150; // Daha hızlı animasyon
 
             const zoomInterval = setInterval(() => {
-                zoom += zoomStep;
-                map.setZoom(zoom);
-
-                if (zoom === targetZoom) {
+                if ((zoomStep > 0 && zoom >= targetZoom) || (zoomStep < 0 && zoom <= targetZoom)) {
                     clearInterval(zoomInterval);
+                    map.setZoom(targetZoom);
+                    this.ensureMapInteractivity(); // Zoom işlemi bittiğinde etkileşimi sağla
+                    return;
                 }
-            }, 150);
+
+                zoom += zoomStep;
+                map.setZoom(Math.round(zoom * 2) / 2); // Yarım zoom seviyelerine izin ver
+            }, duration);
         },
 
         /**
-         * Smoothly pan to a location with enhanced easing
+         * Geliştirilmiş smooth pan fonksiyonu
          * @@param {google.maps.Map} map - Map object
          * @@param {google.maps.LatLng} position - Position to pan to
          */
@@ -2281,15 +2317,23 @@
                 return;
             }
 
-            // Enhanced animation with better easing
-            const frames = 60;
-            const duration = 1200;
+            // Mesafeyi hesapla
+            const distance = google.maps.geometry.spherical.computeDistanceBetween(
+                new google.maps.LatLng(currentLat, currentLng),
+                new google.maps.LatLng(targetLat, targetLng)
+            );
+
+            // Kısa mesafelerde daha hızlı animasyon
+            const frames = distance > 1000 ? 60 : 30;
+            const duration = distance > 1000 ? 1200 : 800;
             let frame = 0;
 
             const animate = () => {
                 if (frame >= frames) {
                     try {
                         map.panTo(position);
+                        // Pan işlemi bittiğinde harita kontrollerini sağlamlaştır
+                        this.ensureMapInteractivity();
                     } catch (e) {
                         console.error("Error in final panTo:", e);
                     }
@@ -2358,7 +2402,7 @@
         },
 
         /**
-         * Focus on a specific bin in the main map
+         * Focus on a specific bin in the main map - GELİŞTİRİLMİŞ VERSİYON
          * @@param {string} binId - ID of the bin to focus on
          */
         focusOnBin: function (binId) {
@@ -2382,21 +2426,40 @@
                     return;
                 }
 
-                // Enhanced focus animation
-                this.smoothZoomTo(mainMap, FOCUS_ZOOM);
-                mainMap.setTilt(DEFAULT_TILT);
+                // Mevcut zoom seviyesini al
+                const currentZoom = mainMap.getZoom();
 
+                // Daha yumuşak ve kullanıcı dostu zoom
+                const targetZoom = currentZoom < FOCUS_ZOOM ? FOCUS_ZOOM : Math.min(currentZoom + 1, MAX_FOCUS_ZOOM);
+
+                // Haritayı yumuşak bir şekilde hareket ettir
                 this.smoothPanTo(mainMap, {
                     lat: position.lat(),
                     lng: position.lng()
                 });
 
-                // Enhanced marker animation
-                marker.setAnimation(google.maps.Animation.BOUNCE);
+                // Zoom'u kademeli olarak yap
                 setTimeout(() => {
-                    marker.setAnimation(null);
-                    google.maps.event.trigger(marker, 'click');
-                }, 1500);
+                    this.smoothZoomTo(mainMap, targetZoom);
+                }, 500);
+
+                // 3D modu ayarla ama daha yumuşak
+                setTimeout(() => {
+                    mainMap.setTilt(DEFAULT_TILT);
+                }, 800);
+
+                // Marker animasyonu - daha kısa süreli
+                setTimeout(() => {
+                    marker.setAnimation(google.maps.Animation.BOUNCE);
+                    setTimeout(() => {
+                        marker.setAnimation(null);
+                        // Sidebar'ı aç ama harita kontrollerini kısıtlama
+                        this.openEnhancedBinSidebar(marker.binData);
+                    }, 1000); // 1.5 saniye yerine 1 saniye
+                }, 1000);
+
+                // Harita kontrollerinin aktif kalmasını sağla
+                this.ensureMapInteractivity();
 
             } catch (e) {
                 console.error("Error in focusOnBin:", e);
@@ -2404,7 +2467,7 @@
         },
 
         /**
-         * Reset the map state
+         * Reset the map state - GELİŞTİRİLMİŞ VERSİYON
          */
         resetMapState: function () {
             if (currentInfoWindow) {
@@ -2414,6 +2477,18 @@
 
             this.closeBinSidebar();
             selectedBinId = null;
+
+            // Haritayı varsayılan duruma döndür
+            if (mainMap) {
+                // Yumuşak zoom-out
+                const currentZoom = mainMap.getZoom();
+                if (currentZoom > DEFAULT_ZOOM + 2) {
+                    this.smoothZoomTo(mainMap, DEFAULT_ZOOM + 1);
+                }
+
+                // Harita kontrollerini sağlamlaştır
+                this.ensureMapInteractivity();
+            }
         },
 
         /**
@@ -2432,14 +2507,19 @@
         },
 
         /**
-         * Close the bin sidebar
+         * Close the bin sidebar - GELİŞTİRİLMİŞ VERSİYON
          */
         closeBinSidebar: function () {
             const sidebar = document.getElementById('bin-sidebar');
             if (sidebar) {
                 sidebar.classList.remove('active');
-                document.body.classList.remove('sidebar-active');
             }
+
+            // Harita boyutunu güncelle ve kontrollerini koru
+            setTimeout(() => {
+                google.maps.event.trigger(mainMap, 'resize');
+                this.ensureMapInteractivity();
+            }, 450);
         },
 
         /**
@@ -2595,119 +2675,7 @@
         if (statusDropdown) statusDropdown.value = '';
         if (fillLevelDropdown) fillLevelDropdown.value = '';
     };
-
-    /**
-     * Enhanced search functionality for Blazor integration has been removed.
-     * Map search feature is no longer available.
-     *
-     * To fix search functionality in Blazor table, use this pattern:
-     *
-     * HTML:
-     * <input type="text"
-     *        placeholder="Etiket veya adres ara..."
-     *        class="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-     *        @@bind="searchText"
-     *        @@bind:event="oninput"
-     *        @@oninput="OnSearchChanged" />
-     *
-     * C#:
-     * private void OnSearchChanged(ChangeEventArgs e)
-     * {
-     *     searchText = e.Value?.ToString() ?? string.Empty;
-     *     ApplyFilters();
-     * }
-     *
-     * private void ApplyFilters()
-     * {
-     *     if (wasteBins == null)
-     *     {
-     *         filteredBins = new List<ResultWasteBinDto>();
-     *         return;
-     *     }
-     *
-     *     var query = wasteBins.AsEnumerable();
-     *
-     *     // Apply search text with Turkish culture support
-     *     if (!string.IsNullOrEmpty(searchText))
-     *     {
-     *         var search = searchText.ToLower(new CultureInfo("tr-TR"));
-     *         query = query.Where(b =>
-     *             (b.Label?.ToLower(new CultureInfo("tr-TR")).Contains(search) == true) ||
-     *             (b.Address?.ToLower(new CultureInfo("tr-TR")).Contains(search) == true));
-     *     }
-     *
-     *     // Apply other filters...
-     *     filteredBins = query.ToList();
-     *     StateHasChanged();
-     * }
-     *
-     * For the "Yakındaki Atık Kutuları" section, update the container as follows:
-     *
-     * <!-- Yakındaki Noktalar -->
-     * <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
-     *     <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3 flex items-center">
-     *         <i class="fas fa-map-marked-alt mr-2 text-amber-500"></i> Yakındaki Atık Kutuları
-     *     </h3>
-     *
-     *     <!-- Add overflow-x-hidden to prevent horizontal scrolling -->
-     *     <div class="space-y-2 max-h-48 overflow-y-auto overflow-x-hidden">
-     *         @* JS-generated list content *@
-     *     </div>
-     * </div>
-     *
-     * Enhanced Dark Mode Styles:
-     * Dark mode now provides a much darker map experience with:
-     * - Very dark backgrounds (#0f0f0f)
-     * - Dark roads and highways
-     * - Dark water bodies (#0a1a2a)
-     * - Reduced visual clutter
-     * - Better contrast for markers and text
-     *
-     * Additional CSS for smooth animations (add to your main CSS file):
-     *
-     * .group:hover .group-hover\:scale-110 {
-     *     transform: scale(1.1);
-     * }
-     *
-     * .group:hover .group-hover\:translate-x-1 {
-     *     transform: translateX(0.25rem);
-     * }
-     *
-     * .transition-all {
-     *     transition-property: all;
-     *     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-     * }
-     *
-     * .duration-300 {
-     *     transition-duration: 300ms;
-     * }
-     *
-     * .ease-out {
-     *     transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
-     * }
-     *
-     * @@keyframes pulse {
-     *     0%, 100% { opacity: 1; }
-     *     50% { opacity: 0.5; }
-     * }
-     *
-     * @@keyframes ping {
-     *     75%, 100% {
-     *         transform: scale(2);
-     *         opacity: 0;
-     *     }
-     * }
-     *
-     * .animate-pulse {
-     *     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-     * }
-     *
-     * .animate-ping {
-     *     animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-     * }
-     */
 </script>
-
 @code {
     private List<ResultWasteBinDto> wasteBins;
     private List<ResultWasteBinDto> filteredBins = new List<ResultWasteBinDto>();
