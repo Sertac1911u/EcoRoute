@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <Folder Include="Pages\Components\Routes\" />
+    <Folder Include="Pages\Components\WasteBins\" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,86 @@
+﻿/* Custom Map Controls (3D Toggle, User Location) */
+.custom-map-control-button {
+    border-radius: 6px;
+    box-shadow: 0 3px 8px rgba(0,0,0,.2);
+    cursor: pointer;
+    font-family: 'Inter', -apple-system, sans-serif; /* Ensure font matches UI */
+    font-size: 14px;
+    font-weight: 500;
+    margin: 10px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+    .custom-map-control-button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    }
+
+.toggle-view-button {
+    padding: 10px 16px;
+    background-color: #fff; /* Light mode default */
+    border: 2px solid #fff; /* Light mode default */
+    color: #555; /* Light mode default */
+}
+
+    .toggle-view-button i {
+        margin-right: 6px;
+    }
+
+.location-button {
+    border-radius: 50%;
+    height: 44px;
+    width: 44px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #fff; /* Light mode default */
+    border: 2px solid #fff; /* Light mode default */
+    color: #666; /* Light mode default */
+}
+
+    .location-button i {
+        font-size: 16px;
+    }
+
+/* Dark mode styles for custom map controls */
+/* These will be applied by JS when dark mode is detected */
+.dark .toggle-view-button {
+    background-color: #1F2937; /* gray-800 */
+    border: 2px solid #374151; /* gray-700 */
+    color: #E5E7EB; /* gray-200 */
+}
+
+    .dark .toggle-view-button:hover {
+        background-color: #374151; /* gray-700 */
+    }
+
+.dark .location-button {
+    background-color: #1F2937; /* gray-800 */
+    border: 2px solid #374151; /* gray-700 */
+    color: #E5E7EB; /* gray-200 */
+}
+
+    .dark .location-button:hover {
+        background-color: #374151; /* gray-700 */
+    }
+
+
+/* Map InfoWindow Styles */
+/* :global is not needed here as this is a global CSS file */
+.gm-style .gm-style-iw-c { /* Outer container */
+    padding: 0 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15) !important;
+    max-width: none !important; /* Allow content to define width */
+}
+
+.gm-style .gm-style-iw-d { /* Inner content container */
+    overflow: hidden !important; /* Crucial for custom styling */
+    padding: 0 !important;
+}
+
+.gm-style .gm-style-iw-t::after { /* Arrow */
+    display: none; /* Often good to hide default arrow for fully custom popups */
+}

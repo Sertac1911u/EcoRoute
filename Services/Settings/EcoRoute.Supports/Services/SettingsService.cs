@@ -71,7 +71,7 @@ namespace EcoRoute.Settings.Services
             {
                 // Reset to default values but keep the user ID
                 settings.DarkMode = false;
-                settings.ThemeColor = "#3B82F6"; // default blue
+                settings.ThemeColor = "#2ba86d"; // default blue
                 settings.TwoFactorEnabled = false;
                 settings.LocationTracking = false;
                 settings.SessionTimeout = 0;
@@ -82,7 +82,9 @@ namespace EcoRoute.Settings.Services
                 settings.SmsNotifications = false;
                 settings.PushNotifications = true;
                 settings.GoogleMapsApiKey = "";
-
+                settings.FontTypeId = Guid.Parse("11111111-1111-1111-1111-111111111111"); // Reset to default font
+                settings.LanguageId = Guid.Parse("22222222-2222-2222-2222-222222222222"); // Reset to default language
+                settings.DateFormatId = Guid.Parse("33333333-3333-3333-3333-333333333333"); // Reset to default date format
                 // Save changes
                 await _context.SaveChangesAsync();
             }
@@ -138,7 +140,7 @@ namespace EcoRoute.Settings.Services
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 DarkMode = false,
-                ThemeColor = "#3B82F6", // default blue
+                ThemeColor = "#2ba86d", // default blue
                 EnableAnimations = true,
                 LocationTracking=false,
                 SessionTimeout=0,
@@ -148,7 +150,10 @@ namespace EcoRoute.Settings.Services
                 EmailNotifications = true,
                 SmsNotifications = false,
                 PushNotifications = true,
-                GoogleMapsApiKey = ""
+                GoogleMapsApiKey = "",
+                FontTypeId = Guid.Parse("11111111-1111-1111-1111-111111111111"), // Default font
+                LanguageId = Guid.Parse("22222222-2222-2222-2222-222222222222"), // Default language
+                DateFormatId = Guid.Parse("33333333-3333-3333-3333-333333333333"), // Default date format
             };
 
             // Add the new settings

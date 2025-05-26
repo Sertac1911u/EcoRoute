@@ -1,8 +1,11 @@
 ﻿@inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NotificationService notificationService
+
 @inject ILocalStorageService localStorage
 @using System.Security.Claims
 @using Blazored.LocalStorage
+@using EcoRoute.UI.Services.NotificationServices
 @using Microsoft.AspNetCore.Components.Authorization
 
 @code {
@@ -59,7 +62,23 @@
         isExpanded = savedState ?? false;
 
         // Bildirim sayısını al
+        notificationService.OnNotificationsUpdated += OnNotificationsUpdated;
+        await notificationService.InitializeAsync();
+        notificationCount = notificationService.UnreadCount;
+
         await GetNotificationCount();
+
+
+    }
+    private void OnNotificationsUpdated()
+    {
+        notificationCount = notificationService.UnreadCount;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        notificationService.OnNotificationsUpdated -= OnNotificationsUpdated;
     }
 
     private async Task GetNotificationCount()
@@ -83,7 +102,7 @@
     <div class="flex flex-col bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 shadow-lg transition-all duration-300 ease-out @(isExpanded ? "w-64" : "w-16")">
 
         <!-- Sidebar Header -->
-        <div class="flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 px-4">
+        <div class="navbar flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 px-4">
             <div class="flex items-center @(isExpanded ? "" : "justify-center w-full")">
                 <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 shadow-md">
                     <i class="fas fa-recycle text-white text-lg logo-icon"></i>
@@ -272,16 +291,13 @@
     }
 
     @@keyframes logoSpin {
-        from
+        from {
+            transform: rotate(0deg);
+        }
 
-    {
-        transform: rotate(0deg);
-    }
-
-    to {
-        transform: rotate(360deg);
-    }
-
+        to {
+            transform: rotate(360deg);
+        }
     }
 
     /* NavLink aktif durumu için özel stil */
@@ -353,16 +369,13 @@
     }
 
     @@keyframes pulse {
-        0%, 100%
+        0%, 100% {
+            opacity: 1;
+        }
 
-    {
-        opacity: 1;
-    }
-
-    50% {
-        opacity: 0.8;
-    }
-
+        50% {
+            opacity: 0.8;
+        }
     }
 
     /* Performans için will-change */
@@ -391,13 +404,14 @@
         }
 
     /* Blazor NavLink active class override */
-    .active {
+    .navbar .active {
         background: linear-gradient(135deg, #2ba86d, #1f8c58) !important;
         color: white !important;
     }
 
-        .active i,
-        .active span {
+        .navbar .active i,
+        .navbar .active span {
             color: white !important;
         }
+
 </style>

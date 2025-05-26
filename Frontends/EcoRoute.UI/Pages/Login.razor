@@ -19,7 +19,7 @@
                    id="username"
                    class="block px-2.5 pb-2.5 pt-4 w-full text-gray-900 bg-transparent rounded-lg border @(string.IsNullOrEmpty(usernameError) ? "border-gray-300 dark:border-gray-600" : "border-red-500 dark:border-red-400") appearance-none dark:text-white dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer"
                    @bind="username"
-                   @oninput="ClearUsernameError"
+                   @bind:event="oninput"
                    placeholder=" "
                    disabled="@isLoading" />
             <label for="username"
@@ -40,7 +40,7 @@
                    id="password"
                    class="block px-2.5 pb-2.5 pt-4 w-full text-gray-900 bg-transparent rounded-lg border @(string.IsNullOrEmpty(passwordError) ? "border-gray-300 dark:border-gray-600" : "border-red-500 dark:border-red-400") appearance-none dark:text-white dark:focus:border-primary-500 focus:outline-none focus:ring-0 focus:border-primary-600 peer pr-10"
                    @bind="password"
-                   @oninput="ClearPasswordError"
+                   @bind:event="oninput"
                    @onkeypress="OnKeyPress"
                    placeholder=" "
                    disabled="@isLoading" />
@@ -98,13 +98,32 @@
 </div>
 
 @code {
-    private string username;
-    private string password;
     private string errorMessage;
     private string usernameError;
     private string passwordError;
     private bool showPassword = false;
     private bool isLoading = false;
+    private string _username;
+    private string username
+    {
+        get => _username;
+        set
+        {
+            _username = value;
+            usernameError = string.Empty;
+        }
+    }
+
+    private string _password;
+    private string password
+    {
+        get => _password;
+        set
+        {
+            _password = value;
+            passwordError = string.Empty;
+        }
+    }
 
     private void TogglePasswordVisibility()
     {
