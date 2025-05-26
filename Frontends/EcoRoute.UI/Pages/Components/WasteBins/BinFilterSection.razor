@@ -1,0 +1,64 @@
+﻿<!-- Filtre Bölümü -->
+<div class="p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Durum</label>
+            <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    @onchange="OnStatusFilterChanged" value="@StatusFilter">
+                <option value="">Tümü</option>
+                <option value="Active">Aktif</option>
+                <option value="Inactive">Pasif</option>
+                <option value="Maintenance">Bakımda</option>
+                <option value="Faulty">Arızalı</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Doluluk Oranı</label>
+            <select class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                    value="@FillLevelFilter"
+                    @onchange="OnFillLevelFilterChanged">
+                <option value="">Tümü</option>
+                <option value="0-30">0-30% (Boş)</option>
+                <option value="30-50">30-50% (Az Dolu)</option>
+                <option value="50-70">50-70% (Orta Dolu)</option>
+                <option value="70-90">70-90% (Fazla Dolu)</option>
+                <option value="90-100">90-100% (Kritik)</option>
+            </select>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arama</label>
+            <div class="relative">
+                <input type="text" placeholder="Etiket veya adres ara..."
+                       class="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                       value="@SearchText"
+                       @oninput="HandleSearchInput" />
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fas fa-search text-gray-400"></i>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-end">
+            <button class="flex items-center justify-center w-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-300"
+                    @onclick="OnClearFilters">
+                <i class="fas fa-filter-circle-xmark mr-2"></i> Filtreleri Temizle
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string SearchText { get; set; } = "";
+    [Parameter] public string StatusFilter { get; set; } = "";
+    [Parameter] public string FillLevelFilter { get; set; } = "";
+
+    [Parameter] public EventCallback<string> OnSearchChanged { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnStatusFilterChanged { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnFillLevelFilterChanged { get; set; }
+    [Parameter] public EventCallback OnClearFilters { get; set; }
+
+    private async Task HandleSearchInput(ChangeEventArgs e)
+    {
+        var searchValue = e.Value?.ToString() ?? "";
+        await OnSearchChanged.InvokeAsync(searchValue);
+    }
+}

@@ -1,0 +1,287 @@
+﻿@using EcoRoute.DtoLayer.WasteBinDtos
+
+<!-- Tablo Bölümü -->
+<div class="p-6">
+    <div class="overflow-x-auto">
+        <table class="min-w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+            <thead class="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSort.InvokeAsync("Index")'>
+                        <div class="flex items-center">
+                            No
+                            @if (SortField == "Index")
+                            {
+                                <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-sort ml-1 text-gray-400"></i>
+                            }
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSort.InvokeAsync("Label")'>
+                        <div class="flex items-center">
+                            Etiket
+                            @if (SortField == "Label")
+                            {
+                                <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-sort ml-1 text-gray-400"></i>
+                            }
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSort.InvokeAsync("Address")'>
+                        <div class="flex items-center">
+                            Adres
+                            @if (SortField == "Address")
+                            {
+                                <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-sort ml-1 text-gray-400"></i>
+                            }
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSort.InvokeAsync("LastUpdate")'>
+                        <div class="flex items-center">
+                            Son Güncelleme
+                            @if (SortField == "LastUpdate")
+                            {
+                                <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-sort ml-1 text-gray-400"></i>
+                            }
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSort.InvokeAsync("DeviceStatus")'>
+                        <div class="flex items-center">
+                            Cihaz Durumu
+                            @if (SortField == "DeviceStatus")
+                            {
+                                <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-sort ml-1 text-gray-400"></i>
+                            }
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSort.InvokeAsync("FillLevel")'>
+                        <div class="flex items-center">
+                            Doluluk Oranı
+                            @if (SortField == "FillLevel")
+                            {
+                                <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                            }
+                            else
+                            {
+                                <i class="fas fa-sort ml-1 text-gray-400"></i>
+                            }
+                        </div>
+                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                @if (WasteBins == null)
+                {
+                    <tr>
+                        <td colspan="7" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                            <div class="flex justify-center items-center">
+                                <i class="fas fa-circle-notch fa-spin mr-2"></i> Yükleniyor...
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else if (WasteBins.Count == 0)
+                {
+                    <tr>
+                        <td colspan="7" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                            <div class="flex flex-col justify-center items-center p-6">
+                                <i class="fas fa-trash-alt text-4xl mb-2 text-gray-400"></i>
+                                <p>Atık kutusu bulunamadı veya hiç atık kutusu bulunmamaktadır.</p>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @for (int i = 0; i < DisplayedBins.Count; i++)
+                    {
+                        var bin = DisplayedBins[i];
+                        var rowIndex = ((CurrentPage - 1) * PageSize) + i + 1;
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer @(ExpandedRowId == bin.Id ? "bg-gray-50 dark:bg-gray-700" : "")"
+                            @onclick="() => OnRowExpand.InvokeAsync(bin.Id)">
+                            <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">@rowIndex</td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                                <div class="flex items-center">
+                                    <i class="fas fa-dumpster text-lg mr-3 @GetBinIconColor(bin)"></i>
+                                    <span>@bin.Label</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300 truncate max-w-xs">
+                                <i class="fas fa-map-marker-alt mr-2 text-red-500"></i>
+                                @bin.Address
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@bin.UpdatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm">
+                                <span class="@GetDeviceStatusColor(bin.DeviceStatus) px-2 py-1 rounded-full text-xs">
+                                    @GetDeviceStatusText(bin.DeviceStatus)
+                                </span>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap">
+                                <div class="relative w-full h-5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden bg-stripes">
+                                    <div class="@GetFillLevelColor(bin.FillLevel) h-full transition-all duration-500 ease-in-out flex items-center justify-center"
+                                         style="width: @(bin.FillLevel ?? 0)%">
+                                        <span class="text-xs font-bold text-white">@(bin.FillLevel ?? 0)%</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 whitespace-nowrap text-sm">
+                                <div class="flex space-x-3" @onclick:stopPropagation>
+                                    <button class="text-blue-500 hover:text-blue-700 text-lg tooltip-container" @onclick="() => OnEdit.InvokeAsync(bin)">
+                                        <i class="fas fa-edit"></i>
+                                        <span class="tooltip">Düzenle</span>
+                                    </button>
+                                    <button class="text-primary-500 hover:text-primary-700 text-lg tooltip-container"
+                                            @onclick="() => OnFocusOnBin.InvokeAsync(bin.Id)">
+                                        <i class="fas fa-map-marker"></i>
+                                        <span class="tooltip">Haritada Göster</span>
+                                    </button>
+                                    <button class="text-red-500 hover:text-red-700 text-lg tooltip-container"
+                                            @onclick="() => OnDelete.InvokeAsync(bin.Id)">
+                                        <i class="fas fa-trash-alt"></i>
+                                        <span class="tooltip">Sil</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+
+                        @if (ExpandedRowId == bin.Id)
+                        {
+                            <BinExpandedRow Bin="@bin" />
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (WasteBins != null && TotalPages > 1)
+    {
+        <div class="flex justify-center mt-4">
+            <div class="flex space-x-1">
+                <button @onclick="() => OnPageChange.InvokeAsync(1)"
+                        disabled="@(CurrentPage == 1)"
+                        class="@(CurrentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                    <i class="fas fa-angle-double-left"></i>
+                </button>
+                <button @onclick="() => OnPageChange.InvokeAsync(CurrentPage - 1)"
+                        disabled="@(CurrentPage == 1)"
+                        class="@(CurrentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                    <i class="fas fa-angle-left"></i>
+                </button>
+
+                @for (int i = StartPage; i <= EndPage; i++)
+                {
+                    var pageNumber = i;
+                    <button @onclick="() => OnPageChange.InvokeAsync(pageNumber)"
+                            class="@(CurrentPage == pageNumber ? "bg-primary-500 text-white" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                        @pageNumber
+                    </button>
+                }
+
+                <button @onclick="() => OnPageChange.InvokeAsync(CurrentPage + 1)"
+                        disabled="@(CurrentPage == TotalPages)"
+                        class="@(CurrentPage == TotalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                    <i class="fas fa-angle-right"></i>
+                </button>
+                <button @onclick="() => OnPageChange.InvokeAsync(TotalPages)"
+                        disabled="@(CurrentPage == TotalPages)"
+                        class="@(CurrentPage == TotalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                    <i class="fas fa-angle-double-right"></i>
+                </button>
+            </div>
+        </div>
+    }
+
+    <div class="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
+        Toplam @(WasteBins?.Count ?? 0) atık kutusu
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<ResultWasteBinDto> WasteBins { get; set; }
+    [Parameter] public List<ResultWasteBinDto> DisplayedBins { get; set; }
+    [Parameter] public Guid ExpandedRowId { get; set; }
+    [Parameter] public string SortField { get; set; }
+    [Parameter] public bool SortAscending { get; set; }
+    [Parameter] public int CurrentPage { get; set; }
+    [Parameter] public int PageSize { get; set; }
+    [Parameter] public int TotalPages { get; set; }
+    [Parameter] public int StartPage { get; set; }
+    [Parameter] public int EndPage { get; set; }
+
+    [Parameter] public EventCallback<string> OnSort { get; set; }
+    [Parameter] public EventCallback<Guid> OnRowExpand { get; set; }
+    [Parameter] public EventCallback<ResultWasteBinDto> OnEdit { get; set; }
+    [Parameter] public EventCallback<Guid> OnDelete { get; set; }
+    [Parameter] public EventCallback<Guid> OnFocusOnBin { get; set; }
+    [Parameter] public EventCallback<int> OnPageChange { get; set; }
+
+    // Helper methods for UI styling
+    private string GetDeviceStatusColor(string status)
+    {
+        return status switch
+        {
+            "Active" => "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300",
+            "Inactive" => "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300",
+            "Maintenance" => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300",
+            "Faulty" => "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300",
+            _ => "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+        };
+    }
+
+    private string GetDeviceStatusText(string status)
+    {
+        return status switch
+        {
+            "Active" => "Aktif",
+            "Inactive" => "Pasif",
+            "Maintenance" => "Bakımda",
+            "Faulty" => "Arızalı",
+            _ => status
+        };
+    }
+
+    private string GetFillLevelColor(double? fillLevel)
+    {
+        if (!fillLevel.HasValue) return "bg-gray-500";
+
+        return fillLevel switch
+        {
+            >= 90 => "bg-red-500",
+            >= 70 => "bg-orange-500",
+            >= 50 => "bg-yellow-500",
+            >= 30 => "bg-blue-500",
+            _ => "bg-green-500"
+        };
+    }
+
+    private string GetBinIconColor(ResultWasteBinDto bin)
+    {
+        return bin.DeviceStatus switch
+        {
+            "Active" => "text-green-500",
+            "Inactive" => "text-gray-500",
+            "Maintenance" => "text-yellow-500",
+            "Faulty" => "text-red-500",
+            _ => "text-gray-500"
+        };
+    }
+}
