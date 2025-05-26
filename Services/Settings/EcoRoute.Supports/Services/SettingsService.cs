@@ -77,7 +77,7 @@ namespace EcoRoute.Settings.Services
                 settings.SessionTimeout = 0;
                 settings.ActiveSessionLimit = 0;
                 settings.EnableAnimations = true;
-                settings.AvatarUrl = "https://ui-avatars.com/api/?name=Sertaç+Kara\r\n"; // default avatar
+                settings.AvatarUrl = "https://api.dicebear.com/9.x/shapes/svg?seed=TEST"; // default avatar
                 settings.EmailNotifications = true;
                 settings.SmsNotifications = false;
                 settings.PushNotifications = true;
@@ -146,7 +146,7 @@ namespace EcoRoute.Settings.Services
                 SessionTimeout=0,
                 ActiveSessionLimit=0,
                 TwoFactorEnabled=false,
-                AvatarUrl = "https://ui-avatars.com/api/?name=Sertaç+Kara\r\n", // default avatar
+                AvatarUrl = "https://api.dicebear.com/9.x/shapes/svg?seed=TEST", // default avatar
                 EmailNotifications = true,
                 SmsNotifications = false,
                 PushNotifications = true,

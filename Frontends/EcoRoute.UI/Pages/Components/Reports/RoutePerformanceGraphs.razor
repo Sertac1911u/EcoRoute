@@ -1,4 +1,5 @@
 ﻿@using EcoRoute.DtoLayer.ReportsDtos
+@using System.Text
 @inject EcoRoute.UI.Services.ReportsServices.IReportService ReportService
 @inject IJSRuntime JS
 @implements IAsyncDisposable
@@ -88,7 +89,9 @@
                 Sürücü Bazlı Verimlilik Performansı
             </h3>
             <div>
-                <button class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors" disabled="@IsLoading">
+                <button @onclick="ExportDriverEfficiency"
+                        class="text-sm px-3 py-1.5 rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 hover:bg-primary-200 transition-colors"
+                        disabled="@IsLoading">
                     <i class="fas fa-file-export mr-1"></i> Dışa Aktar
                 </button>
             </div>
@@ -249,6 +252,41 @@
             await JS.InvokeVoidAsync("cleanupRoutePerformanceCharts");
         }
         catch { }
+    }
+    private async Task ExportDriverEfficiency()
+    {
+        try
+        {
+            var csvData = GenerateDriverEfficiencyCsv();
+            await JS.InvokeVoidAsync("downloadFile", "driver-efficiency.csv", "text/csv", csvData);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Export error: {ex.Message}");
+        }
+    }
+    private string GenerateDriverEfficiencyCsv()
+    {
+        var csv = new StringBuilder();
+        csv.AppendLine("Sürücü Adı,Ortalama Verimlilik,Rota Sayısı,Toplam Mesafe");
+
+        var driverData = ReportList
+            .GroupBy(r => r.DriverName)
+            .Select(g => new
+            {
+                DriverName = g.Key,
+                AverageEfficiency = g.Average(r => r.EfficiencyScore),
+                RouteCount = g.Count(),
+                TotalDistance = g.Sum(r => r.DistanceKm)
+            })
+            .OrderByDescending(x => x.AverageEfficiency);
+
+        foreach (var driver in driverData)
+        {
+            csv.AppendLine($"{driver.DriverName},{driver.AverageEfficiency:F2},{driver.RouteCount},{driver.TotalDistance:F1}");
+        }
+
+        return csv.ToString();
     }
 }
 

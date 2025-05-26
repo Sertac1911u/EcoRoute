@@ -76,7 +76,7 @@ namespace EcoRoute.Supports.Controllers
 
                 if (string.IsNullOrEmpty(updateDto.AvatarUrl))
                 {
-                    updateDto.AvatarUrl = "https://ui-avatars.com/api/?name=Sertaç+Kara\r\n";
+                    updateDto.AvatarUrl = "https://api.dicebear.com/9.x/shapes/svg?seed=TEST";
                 }
 
                 var updatedSettings = await _settingsService.UpdateSettingsAsync(updateDto, userId);

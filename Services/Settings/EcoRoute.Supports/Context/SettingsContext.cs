@@ -74,12 +74,21 @@ namespace EcoRoute.Supports.Context
 
             // AVATARLAR
             modelBuilder.Entity<Avatar>().HasData(
-                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 1", Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Luis" },
-                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 2", Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Avery" },
-                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 3", Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Jude" },
-                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 4", Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Jack" },
-                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 5", Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Jocelyn" },
-                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 6", Url = "https://api.dicebear.com/9.x/adventurer/svg?seed=Easton" }
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 1", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Can" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 2", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Olivia" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 3", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Atlas" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 4", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Deniz" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 5", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Nova" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 6", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Emir" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 7", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Jasper" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 8", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Lina" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 9", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Arda" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 10", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Felix" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 11", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Zeynep" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 12", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Leo" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 13", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Selin" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 14", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Riley" },
+                new Avatar { Id = Guid.NewGuid(), Name = "Avatar 15", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Ayaz" }
             );
 
             // SYSTEM SETTING - Default seed (FK'ler sabit!)

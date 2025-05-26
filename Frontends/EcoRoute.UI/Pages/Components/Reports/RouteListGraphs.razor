@@ -226,7 +226,7 @@
         var active = RouteList.Count(r => r.Status == 0);
         var unknown = RouteList.Count(r => r.Status != 0 && r.Status != 1);
 
-        var statusLabels = new[] { "Tamamlandı", "Aktif", "Diğer" };
+        var statusLabels = new[] { "Tamamlandı", "Aktif", "İşlemde" };
         var statusCounts = new[] { completed, active, unknown };
         var statusColors = new[] { "rgba(16,185,129,0.7)", "rgba(245,158,11,0.7)", "rgba(156,163,175,0.7)" };
 
