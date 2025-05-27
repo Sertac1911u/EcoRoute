@@ -1,0 +1,448 @@
+﻿@using EcoRoute.DtoLayer.IdentityDtos
+@using EcoRoute.DtoLayer.RouteOptimizationDtos
+@using EcoRoute.DtoLayer.WasteBinDtos
+@inject IJSRuntime JS
+
+@if (IsVisible)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-modal-show">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
+                    <i class="fas fa-route mr-3 text-primary-500"></i> Yeni Rota Oluştur
+                </h2>
+                <button class="text-gray-500 hover:text-red-600" @onclick="CloseModal">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6">
+                <EditForm Model="newRoute" OnValidSubmit="CreateRouteSubmit">
+                    <!-- Temel Bilgiler -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg mb-5">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center border-b border-gray-200 dark:border-gray-600 pb-2">
+                            <i class="fas fa-info-circle mr-2 text-blue-500"></i> Temel Bilgiler
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rota Adı</label>
+                                <InputText class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" @bind-Value="newRoute.RouteName" placeholder="Örn: Sabah Rotası" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Atık Türü</label>
+                                <InputSelect class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                                             @bind-Value="newRoute.WasteType">
+                                    <option value="">Seçiniz</option>
+                                    @foreach (WasteType wt in Enum.GetValues(typeof(WasteType)))
+                                    {
+                                        <option value="@wt">@GetWasteTypeText(wt)</option>
+                                    }
+                                </InputSelect>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Başlangıç Zamanı</label>
+                                <InputDate class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" @bind-Value="newRoute.ScheduledStart" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Optimizasyon Türü</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="relative">
+                                        <input type="radio" id="opt-shortest" name="optimization-type" value="@OptimizationType.EnKisaMesafe"
+                                               checked="@(newRoute.OptimizationType == OptimizationType.EnKisaMesafe)"
+                                               @onchange='@(() => newRoute.OptimizationType = OptimizationType.EnKisaMesafe)'
+                                               class="hidden peer" />
+                                        <label for="opt-shortest" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-400 peer-checked:border-blue-600 peer-checked:text-blue-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                            <i class="fas fa-route mr-2 text-blue-500"></i>
+                                            <span class="font-medium text-sm">En Kısa Mesafe</span>
+                                        </label>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="radio" id="opt-fill" name="optimization-type" value="@OptimizationType.DolulukOncelikli"
+                                               checked="@(newRoute.OptimizationType == OptimizationType.DolulukOncelikli)"
+                                               @onchange='@(() => newRoute.OptimizationType = OptimizationType.DolulukOncelikli)'
+                                               class="hidden peer" />
+                                        <label for="opt-fill" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-green-400 peer-checked:border-green-600 peer-checked:text-green-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                            <i class="fas fa-fill-drip mr-2 text-green-500"></i>
+                                            <span class="font-medium text-sm">Doluluk Öncelikli</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Başlangıç Noktası -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg mb-5">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center border-b border-gray-200 dark:border-gray-600 pb-2">
+                            <i class="fas fa-map-marker-alt mr-2 text-red-500"></i> Başlangıç/Bitiş Noktası
+                        </h3>
+
+                        <div class="flex items-center mb-3 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-3 rounded-lg">
+                            <i class="fas fa-info-circle mr-2 text-xl"></i>
+                            <p class="text-sm">Tüm rotalar aynı noktadan başlayıp aynı noktada bitecektir.</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-map-marker-alt text-red-500 mr-2 text-xl"></i>
+                                <div>
+                                    <span class="text-gray-700 dark:text-gray-300 font-medium">Çorlu Belediyesi</span>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">@fixedStartLat.ToString("F6"), @fixedStartLng.ToString("F6")</p>
+                                </div>
+                            </div>
+                            <div id="start-point-mini-map" class="h-24 rounded-md overflow-hidden border border-gray-300 dark:border-gray-600"></div>
+                        </div>
+                    </div>
+
+                    <!-- Sürücü ve Araç Seçimi -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg mb-5">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center border-b border-gray-200 dark:border-gray-600 pb-2">
+                            <i class="fas fa-users mr-2 text-amber-500"></i> Sürücü ve Araç
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Sürücü Seçimi -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Sürücü Seçimi</label>
+                                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    @if (Drivers != null && Drivers.Any())
+                                    {
+                                        foreach (var driver in Drivers)
+                                        {
+                                            <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800 @(newRoute.DriverId == driver.Id ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "")"
+                                                 @onclick="@(() => newRoute.DriverId = driver.Id)">
+                                                <input type="radio"
+                                                       id="driver-@driver.Id"
+                                                       name="driver-selection"
+                                                       value="@driver.Id"
+                                                       checked="@(newRoute.DriverId == driver.Id)"
+                                                       @onchange="@(e => newRoute.DriverId = driver.Id)"
+                                                       class="w-4 h-4 mr-3 text-primary-600 bg-gray-100 border-gray-300 rounded-full focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                                                <div class="flex items-center">
+                                                    <div class="w-8 h-8 bg-primary-500 rounded-full text-white flex items-center justify-center mr-3">
+                                                        <i class="fas fa-user"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="font-medium text-gray-800 dark:text-white">@driver.Name @driver.Surname</p>
+                                                        <p class="text-xs text-gray-500 dark:text-gray-400">@driver.PhoneNumber</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                            <i class="fas fa-users-slash text-3xl mb-2"></i>
+                                            <p>Kullanılabilir sürücü bulunamadı</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Araç Seçimi -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Araç Seçimi</label>
+                                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                    @if (Vehicles != null && Vehicles.Any())
+                                    {
+                                        foreach (var vehicle in Vehicles)
+                                        {
+                                            <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800 @(newRoute.VehicleId == vehicle.Id.ToString() ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "")"
+                                                 @onclick="@(() => newRoute.VehicleId = vehicle.Id.ToString())">
+                                                <input type="radio"
+                                                       id="vehicle-@vehicle.Id"
+                                                       name="vehicle-selection"
+                                                       value="@vehicle.Id.ToString()"
+                                                       checked="@(newRoute.VehicleId == vehicle.Id.ToString())"
+                                                       @onchange="@(e => newRoute.VehicleId = vehicle.Id.ToString())"
+                                                       class="w-4 h-4 mr-3 text-primary-600 bg-gray-100 border-gray-300 rounded-full focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                                                <div class="flex items-center">
+                                                    <div class="w-8 h-8 bg-blue-500 rounded-full text-white flex items-center justify-center mr-3">
+                                                        <i class="fas fa-truck"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="font-medium text-gray-800 dark:text-white">@vehicle.Plate</p>
+                                                        <p class="text-xs text-gray-500 dark:text-gray-400">@vehicle.Description</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                                            <i class="fas fa-truck-slash text-3xl mb-2"></i>
+                                            <p>Kullanılabilir araç bulunamadı</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Atık Kutuları Seçimi -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg mb-5">
+                        <div class="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-gray-600 pb-2">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                                <i class="fas fa-dumpster mr-2 text-green-500"></i> Atık Kutuları
+                            </h3>
+                            <span class="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 text-xs px-2 py-1 rounded-full">
+                                @newRoute.WasteBinIds.Count adet seçildi
+                            </span>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg max-h-72 overflow-y-auto">
+                            <div class="mb-3 relative">
+                                <input type="text" placeholder="Atık kutusu ara..."
+                                       @bind="binSearchText" @bind:event="oninput" @onkeyup="FilterBinsWithDebounce"
+                                       class="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" />
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                                @foreach (var bin in filteredBins)
+                                {
+                                    <div class="flex items-center space-x-2 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors @(newRoute.WasteBinIds.Contains(bin.Id) ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "")"
+                                         @onclick="e => ToggleBin(bin.Id, !newRoute.WasteBinIds.Contains(bin.Id))">
+                                        <input type="checkbox"
+                                               id="bin-@bin.Id"
+                                               value="@bin.Id"
+                                               checked="@newRoute.WasteBinIds.Contains(bin.Id)"
+                                               @onchange="e => ToggleBin(bin.Id, e.Value)"
+                                               class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:bg-gray-700 dark:border-gray-600" />
+                                        <div class="flex-1">
+                                            <div class="flex justify-between">
+                                                <span class="font-medium text-gray-800 dark:text-white text-sm">@bin.Label</span>
+                                                <span class="@GetFillLevelBadgeClass(bin.FillLevel) text-xs px-2 py-0.5 rounded-full">
+                                                    @(bin.FillLevel?.ToString("F0") ?? "0")%
+                                                </span>
+                                            </div>
+                                            <span class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">@bin.Address</span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notlar -->
+                    <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg mb-5">
+                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center border-b border-gray-200 dark:border-gray-600 pb-2">
+                            <i class="fas fa-sticky-note mr-2 text-yellow-500"></i> Notlar
+                        </h3>
+
+                        <textarea class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                                  @bind="newRoute.Notes"
+                                  rows="3"
+                                  placeholder="Rotayla ilgili notlarınızı buraya ekleyebilirsiniz..."></textarea>
+                    </div>
+
+                    <!-- Özet ve Butonlar -->
+                    <div class="flex flex-col-reverse md:flex-row justify-between items-start md:items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                        <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                            <div class="flex items-center">
+                                <i class="fas fa-route text-primary-500 mr-2"></i>
+                                <span>Optimizasyon: @GetOptimizationTypeText(newRoute.OptimizationType)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-dumpster text-green-500 mr-2"></i>
+                                <span>Seçilen Atık Kutusu: @newRoute.WasteBinIds.Count adet</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-map-marker-alt text-red-500 mr-2"></i>
+                                <span>Başlangıç Noktası: Çorlu Belediyesi</span>
+                            </div>
+                        </div>
+                        <div class="flex space-x-3">
+                            <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" @onclick="CloseModal">
+                                İptal
+                            </button>
+                            <button type="submit" class="px-5 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors shadow-sm">
+                                <i class="fas fa-check mr-2"></i> Rota Oluştur
+                            </button>
+                        </div>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    /* Line clamp for address text */
+    .line-clamp-1 {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
+    [Parameter] public List<ResultUserDto> Drivers { get; set; } = new();
+    [Parameter] public List<ResultVehicleDto> Vehicles { get; set; } = new();
+    [Parameter] public List<ResultWasteBinDto> WasteBins { get; set; } = new();
+    [Parameter] public EventCallback<CreateRouteDto> OnCreateRoute { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private CreateRouteDto newRoute = new CreateRouteDto();
+    private string binSearchText = "";
+    private List<ResultWasteBinDto> filteredBins = new List<ResultWasteBinDto>();
+    private CancellationTokenSource _debounceTokenSource = new CancellationTokenSource();
+
+    // Fixed start/end point (Çorlu Belediyesi)
+    private double fixedStartLat = 41.1634;
+    private double fixedStartLng = 27.7951;
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible && newRoute.WasteBinIds.Count == 0)
+        {
+            // Initialize new route
+            newRoute = new CreateRouteDto
+                {
+                    ScheduledStart = DateTime.Now.AddHours(1),
+                    StartLatitude = fixedStartLat,
+                    StartLongitude = fixedStartLng,
+                    EndLatitude = fixedStartLat,
+                    EndLongitude = fixedStartLng,
+                    OptimizationType = OptimizationType.EnKisaMesafe,
+                    WasteType = WasteType.GeriDonusum,
+                    WasteBinIds = new List<Guid>(),
+                    AutoOptimize = true
+                };
+
+            FilterBins();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsVisible)
+        {
+            await Task.Yield();
+            await JS.InvokeVoidAsync("googleMapsInterop.initializeStartPointMap");
+        }
+    }
+
+    private void FilterBins()
+    {
+        if (WasteBins == null)
+        {
+            filteredBins = new List<ResultWasteBinDto>();
+            return;
+        }
+
+        var query = WasteBins.AsEnumerable();
+
+        if (!string.IsNullOrEmpty(binSearchText))
+        {
+            var search = binSearchText.ToLower();
+            query = query.Where(b =>
+                (b.Label?.ToLower().Contains(search) == true) ||
+                (b.Address?.ToLower().Contains(search) == true));
+        }
+
+        filteredBins = query.ToList();
+    }
+
+    private async Task FilterBinsWithDebounce()
+    {
+        try
+        {
+            _debounceTokenSource.Cancel();
+            _debounceTokenSource = new CancellationTokenSource();
+
+            await Task.Delay(250, _debounceTokenSource.Token);
+
+            FilterBins();
+            StateHasChanged();
+        }
+        catch (TaskCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Filter error: {ex.Message}");
+        }
+    }
+
+    private void ToggleBin(Guid binId, object isChecked)
+    {
+        if ((bool)isChecked)
+        {
+            if (!newRoute.WasteBinIds.Contains(binId))
+            {
+                newRoute.WasteBinIds.Add(binId);
+            }
+        }
+        else
+        {
+            newRoute.WasteBinIds.Remove(binId);
+        }
+    }
+
+    private async Task CreateRouteSubmit()
+    {
+        await OnCreateRoute.InvokeAsync(newRoute);
+    }
+
+    private async Task CloseModal()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+        await OnClose.InvokeAsync();
+
+        // Reset form
+        newRoute = new CreateRouteDto();
+        binSearchText = "";
+        filteredBins.Clear();
+    }
+
+    public string GetWasteTypeText(WasteType type)
+    {
+        return type switch
+        {
+            WasteType.Cop => "Çöp",
+            WasteType.GeriDonusum => "Geri Dönüşüm",
+            WasteType.Organik => "Organik Atık",
+            WasteType.Cam => "Cam",
+            WasteType.Metal => "Metal",
+            WasteType.Elektronik => "Elektronik Atık",
+            WasteType.Tehlikeli => "Tehlikeli Atık",
+            _ => type.ToString()
+        };
+    }
+
+    private string GetOptimizationTypeText(OptimizationType type)
+    {
+        return type switch
+        {
+            OptimizationType.EnKisaMesafe => "En Kısa Mesafe",
+            OptimizationType.DolulukOncelikli => "Doluluk Öncelikli",
+            _ => type.ToString()
+        };
+    }
+
+    private string GetFillLevelBadgeClass(double? fillLevel)
+    {
+        if (!fillLevel.HasValue) return "bg-gray-100 text-gray-800";
+
+        return fillLevel switch
+        {
+            >= 90 => "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
+            >= 70 => "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400",
+            >= 50 => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
+            _ => "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+        };
+    }
+}
