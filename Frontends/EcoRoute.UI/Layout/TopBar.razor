@@ -9,164 +9,208 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime JS
 
+@code {
+    [Parameter] public EventCallback OnDataLoaded { get; set; }
+
+    private string username = "";
+    private string formattedUserName = "";
+    private string avatarUrl = "";
+    private bool isUserMenuOpen = false;
+    private bool isAvatarLoading = true;
+    private bool isDarkMode = false;
+    private bool isDataLoaded = false;
+}
+
 <header class="flex-shrink-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm dark:shadow-gray-900/10 sticky top-0 z-40">
     <div class="flex items-center justify-between h-16 px-4 lg:px-6">
-        <!-- Left Section -->
-        <div class="flex items-center flex-1">
-            <!-- Mobile menu button -->
-            <button type="button"
-                    class="md:hidden relative group p-2 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
-                    id="mobile-menu-button">
-                <div class="relative">
-                    <i class="fas fa-bars text-lg transition-transform duration-200 group-hover:scale-110"></i>
-                    <span class="absolute -inset-1 rounded-lg bg-primary-400 opacity-0 group-hover:opacity-20 blur transition-all duration-200"></span>
-                </div>
-            </button>
-
-            <!-- Search bar -->
-            <div class="hidden md:flex flex-1 max-w-xl ml-6">
-                <div class="relative w-full group">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <i class="fas fa-search text-gray-400 dark:text-gray-500 transition-colors duration-200 group-focus-within:text-primary-500"></i>
-                    </div>
-                    <input type="search"
-                           class="block w-full pl-10 pr-12 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400
-                                  focus:bg-white dark:focus:bg-gray-800 focus:border-primary-500 dark:focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20 dark:focus:ring-primary-400/20 focus:outline-none
-                                  transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-600"
-                           placeholder="Ara...">
-                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                        <kbd class="hidden lg:inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md">
-                            <span>⌘</span>
-                            <span>K</span>
-                        </kbd>
-                    </div>
-                    <!-- Search suggestions overlay -->
-                    <div class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 transform group-focus-within:translate-y-0 translate-y-[-10px]">
-                        <!-- This would show search suggestions -->
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Section -->
-        <div class="flex items-center gap-2 ml-4">
-            <!-- Mobile Search Button -->
-            <button class="md:hidden p-2 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-                <i class="fas fa-search"></i>
-            </button>
-
-            <!-- Notification Menu -->
-            <div class="relative">
-                <NotificationMenu />
-            </div>
-
-            <!-- User Menu -->
-            <div class="relative ml-2">
-                <button type="button"
-                        class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
-                        id="user-menu-button"
-                        @onclick="ToggleUserMenu">
-
-                    <!-- User name - hidden on mobile -->
-                    <div class="hidden sm:block text-right">
-                        <p class="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
-                            @formattedUserName
-                        </p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                            @GetUserRole()
-                        </p>
-                    </div>
-
-                    <!-- Avatar -->
-                    <div class="relative">
-                        @if (isAvatarLoading)
-                        {
-                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 animate-pulse"></div>
-                        }
-                        else if (!string.IsNullOrEmpty(avatarUrl))
-                        {
-                            <div class="relative group/avatar">
-                                <img src="@avatarUrl"
-                                     alt="@formattedUserName"
-                                     class="w-10 h-10 rounded-full object-cover ring-2 ring-white dark:ring-gray-800 shadow-sm transition-all duration-300 group-hover:ring-primary-500 dark:group-hover:ring-primary-400 group-hover:shadow-md">
-                                <div class="absolute inset-0 rounded-full bg-gradient-to-br from-primary-500/0 to-secondary-500/0 group-hover/avatar:from-primary-500/20 group-hover/avatar:to-secondary-500/20 transition-all duration-300"></div>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="relative group/avatar">
-                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-sm transition-all duration-300 group-hover:from-primary-500 group-hover:to-primary-700 group-hover:shadow-md">
-                                    <span class="text-white font-bold text-sm">
-                                        @(!string.IsNullOrEmpty(formattedUserName) && formattedUserName.Length > 0 ? formattedUserName[0].ToString().ToUpper() : "U")
-                                    </span>
-                                </div>
-                                <div class="absolute inset-0 rounded-full ring-2 ring-white dark:ring-gray-800 group-hover:ring-primary-500 dark:group-hover:ring-primary-400 transition-all duration-300"></div>
-                            </div>
-                        }
-
-                        <!-- Online status indicator -->
-                        <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-800
-                                     @(isUserMenuOpen ? "animate-pulse" : "")"></span>
-                    </div>
-
-                    <!-- Dropdown arrow -->
-                    <i class="fas fa-chevron-down text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200
-                              @(isUserMenuOpen ? "rotate-180" : "")"></i>
-                </button>
-
-                <!-- User Dropdown Menu -->
-                @if (isUserMenuOpen)
-                {
-                    <div class="absolute right-0 mt-2 w-64 origin-top-right animate-slideDown"
-                         @onclick:stopPropagation="true">
-                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-                            <!-- User info header -->
-                            <div class="bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-gray-700 dark:to-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                                <div class="flex items-center gap-3">
-                                    @if (!string.IsNullOrEmpty(avatarUrl))
-                                    {
-                                        <img src="@avatarUrl" alt="@formattedUserName" class="w-12 h-12 rounded-full object-cover ring-2 ring-white dark:ring-gray-700">
-                                    }
-                                    else
-                                    {
-                                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center ring-2 ring-white dark:ring-gray-700">
-                                            <span class="text-white font-bold">
-                                                @(!string.IsNullOrEmpty(formattedUserName) && formattedUserName.Length > 0 ? formattedUserName[0].ToString().ToUpper() : "U")
-                                            </span>
-                                        </div>
-                                    }
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">@formattedUserName</p>
-                                        <p class="text-xs text-gray-600 dark:text-gray-400 truncate">@GetUserEmail()</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Menu items -->
-                            <div class="py-1">
-                                <a href="/settings"
-                                   class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 group">
-                                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/20 transition-colors duration-200">
-                                        <i class="fas fa-cog text-gray-500 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200"></i>
-                                    </div>
-                                    <span class="font-medium group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">Ayarlar</span>
-                                </a>
-
-                                <div class="my-1 border-t border-gray-200 dark:border-gray-700"></div>
-
-                                <button @onclick="Logout"
-                                        class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 group">
-                                    <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-red-100 dark:group-hover:bg-red-900/20 transition-colors duration-200">
-                                        <i class="fas fa-sign-out-alt text-gray-500 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors duration-200"></i>
-                                    </div>
-                                    <span class="font-medium group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors duration-200">Çıkış Yap</span>
-                                </button>
-                            </div>
+        @if (!isDataLoaded)
+        {
+            <!-- TopBar Loading State -->
+            <div class="flex items-center justify-between w-full animate-pulse">
+                <!-- Left Section Skeleton -->
+                <div class="flex items-center flex-1">
+                    <div class="md:hidden w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
+                    <div class="hidden md:flex flex-1 max-w-xl ml-6">
+                        <div class="relative w-full">
+                            <div class="h-10 bg-gray-300 dark:bg-gray-600 rounded-xl w-full"></div>
                         </div>
                     </div>
-                }
+                </div>
+
+                <!-- Right Section Skeleton -->
+                <div class="flex items-center gap-2 ml-4">
+                    <div class="md:hidden w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
+                    <div class="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
+                    <div class="flex items-center gap-3 px-3 py-2">
+                        <div class="hidden sm:block text-right space-y-1">
+                            <div class="h-4 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
+                            <div class="h-3 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
+                        </div>
+                        <div class="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                        <div class="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                    </div>
+                </div>
             </div>
-        </div>
+        }
+        else
+        {
+            <!-- Left Section -->
+            <div class="flex items-center flex-1">
+                <!-- Mobile menu button -->
+                <button type="button"
+                        class="md:hidden relative group p-2 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+                        id="mobile-menu-button">
+                    <div class="relative">
+                        <i class="fas fa-bars text-lg transition-transform duration-200 group-hover:scale-110"></i>
+                        <span class="absolute -inset-1 rounded-lg bg-primary-400 opacity-0 group-hover:opacity-20 blur transition-all duration-200"></span>
+                    </div>
+                </button>
+
+                <!-- Search bar -->
+                <div class="hidden md:flex flex-1 max-w-xl ml-6">
+                    <div class="relative w-full group">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400 dark:text-gray-500 transition-colors duration-200 group-focus-within:text-primary-500"></i>
+                        </div>
+                        <input type="search"
+                               class="block w-full pl-10 pr-12 py-2.5 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400
+                                      focus:bg-white dark:focus:bg-gray-800 focus:border-primary-500 dark:focus:border-primary-400 focus:ring-2 focus:ring-primary-500/20 dark:focus:ring-primary-400/20 focus:outline-none
+                                      transition-all duration-200 hover:border-gray-300 dark:hover:border-gray-600"
+                               placeholder="Ara...">
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                            <kbd class="hidden lg:inline-flex items-center gap-1 px-2 py-1 text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md">
+                                <span>⌘</span>
+                                <span>K</span>
+                            </kbd>
+                        </div>
+                        <!-- Search suggestions overlay -->
+                        <div class="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 opacity-0 invisible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-200 transform group-focus-within:translate-y-0 translate-y-[-10px]">
+                            <!-- This would show search suggestions -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Section -->
+            <div class="flex items-center gap-2 ml-4">
+                <!-- Mobile Search Button -->
+                <button class="md:hidden p-2 text-gray-500 dark:text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-all duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <i class="fas fa-search"></i>
+                </button>
+
+                <!-- Notification Menu -->
+                <div class="relative">
+                    <NotificationMenu />
+                </div>
+
+                <!-- User Menu -->
+                <div class="relative ml-2">
+                    <button type="button"
+                            class="flex items-center gap-3 px-3 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
+                            id="user-menu-button"
+                            @onclick="ToggleUserMenu">
+
+                        <!-- User name - hidden on mobile -->
+                        <div class="hidden sm:block text-right">
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-200 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">
+                                @formattedUserName
+                            </p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                @GetUserRole()
+                            </p>
+                        </div>
+
+                        <!-- Avatar -->
+                        <div class="relative">
+                            @if (isAvatarLoading)
+                            {
+                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 animate-pulse"></div>
+                            }
+                            else if (!string.IsNullOrEmpty(avatarUrl))
+                            {
+                                <div class="relative group/avatar">
+                                    <img src="@avatarUrl"
+                                         alt="@formattedUserName"
+                                         class="w-10 h-10 rounded-full object-cover ring-2 ring-white dark:ring-gray-800 shadow-sm transition-all duration-300 group-hover:ring-primary-500 dark:group-hover:ring-primary-400 group-hover:shadow-md">
+                                    <div class="absolute inset-0 rounded-full bg-gradient-to-br from-primary-500/0 to-secondary-500/0 group-hover/avatar:from-primary-500/20 group-hover/avatar:to-secondary-500/20 transition-all duration-300"></div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="relative group/avatar">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-sm transition-all duration-300 group-hover:from-primary-500 group-hover:to-primary-700 group-hover:shadow-md">
+                                        <span class="text-white font-bold text-sm">
+                                            @(!string.IsNullOrEmpty(formattedUserName) && formattedUserName.Length > 0 ? formattedUserName[0].ToString().ToUpper() : "U")
+                                        </span>
+                                    </div>
+                                    <div class="absolute inset-0 rounded-full ring-2 ring-white dark:ring-gray-800 group-hover:ring-primary-500 dark:group-hover:ring-primary-400 transition-all duration-300"></div>
+                                </div>
+                            }
+
+                            <!-- Online status indicator -->
+                            <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white dark:ring-gray-800
+                                         @(isUserMenuOpen ? "animate-pulse" : "")"></span>
+                        </div>
+
+                        <!-- Dropdown arrow -->
+                        <i class="fas fa-chevron-down text-xs text-gray-400 dark:text-gray-500 transition-transform duration-200
+                                  @(isUserMenuOpen ? "rotate-180" : "")"></i>
+                    </button>
+
+                    <!-- User Dropdown Menu -->
+                    @if (isUserMenuOpen)
+                    {
+                        <div class="absolute right-0 mt-2 w-64 origin-top-right animate-slideDown"
+                             @onclick:stopPropagation="true">
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                                <!-- User info header -->
+                                <div class="bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-gray-700 dark:to-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                    <div class="flex items-center gap-3">
+                                        @if (!string.IsNullOrEmpty(avatarUrl))
+                                        {
+                                            <img src="@avatarUrl" alt="@formattedUserName" class="w-12 h-12 rounded-full object-cover ring-2 ring-white dark:ring-gray-700">
+                                        }
+                                        else
+                                        {
+                                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center ring-2 ring-white dark:ring-gray-700">
+                                                <span class="text-white font-bold">
+                                                    @(!string.IsNullOrEmpty(formattedUserName) && formattedUserName.Length > 0 ? formattedUserName[0].ToString().ToUpper() : "U")
+                                                </span>
+                                            </div>
+                                        }
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">@formattedUserName</p>
+                                            <p class="text-xs text-gray-600 dark:text-gray-400 truncate">@GetUserEmail()</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Menu items -->
+                                <div class="py-1">
+                                    <a href="/settings"
+                                       class="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 group">
+                                        <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/20 transition-colors duration-200">
+                                            <i class="fas fa-cog text-gray-500 dark:text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200"></i>
+                                        </div>
+                                        <span class="font-medium group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors duration-200">Ayarlar</span>
+                                    </a>
+
+                                    <div class="my-1 border-t border-gray-200 dark:border-gray-700"></div>
+
+                                    <button @onclick="Logout"
+                                            class="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/10 transition-all duration-200 group">
+                                        <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 group-hover:bg-red-100 dark:group-hover:bg-red-900/20 transition-colors duration-200">
+                                            <i class="fas fa-sign-out-alt text-gray-500 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors duration-200"></i>
+                                        </div>
+                                        <span class="font-medium group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors duration-200">Çıkış Yap</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
     </div>
 </header>
 
@@ -176,89 +220,22 @@
     <div class="fixed inset-0 z-30" @onclick="CloseUserMenu"></div>
 }
 
-<style>
-    /* Search input styling */
-    input[type="search"]::-webkit-search-cancel-button {
-        appearance: none;
-        height: 1.2em;
-        width: 1.2em;
-        border-radius: 50%;
-        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M18 6L6 18M6 6l12 12' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
-        background-size: contain;
-        opacity: 0.5;
-        cursor: pointer;
-        transition: opacity 0.2s;
-    }
-
-        input[type="search"]::-webkit-search-cancel-button:hover {
-            opacity: 1;
-        }
-
-    /* Animations */
-    @@keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .animate-slideDown {
-        animation: slideDown 0.2s ease-out;
-    }
-
-    /* Keyboard shortcut styling */
-    kbd {
-        font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
-    }
-
-    /* Custom scrollbar for dropdown */
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: rgba(156, 163, 175, 0.5);
-        border-radius: 2px;
-    }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background-color: rgba(156, 163, 175, 0.8);
-        }
-
-    /* Smooth hover transitions */
-    .group:hover .group-hover\:scale-110 {
-        transform: scale(1.1);
-    }
-
-    /* Premium gradient text */
-    .gradient-text {
-        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-</style>
-
 @code {
-    private string username = "";
-    private string formattedUserName = "";
-    private string avatarUrl = "";
-    private bool isUserMenuOpen = false;
-    private bool isAvatarLoading = true;
-    private bool isDarkMode = false;
-
     protected override async Task OnInitializedAsync()
     {
-        await LoadUserData();
+        try
+        {
+            await LoadUserData();
+            isDataLoaded = true;
+            await OnDataLoaded.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"TopBar initialization error: {ex.Message}");
+            // Hata durumunda da yüklenmiş olarak işaretle
+            isDataLoaded = true;
+            await OnDataLoaded.InvokeAsync();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -302,7 +279,6 @@
 
     private string GetUserRole()
     {
-        // Get the user's role from claims or return a default
         return "Yönetici";
     }
 
@@ -377,3 +353,78 @@
         NavigationManager.NavigateTo("/login", true);
     }
 }
+
+<!-- Aynı stil kodları -->
+
+
+<style>
+    /* Search input styling */
+    input[type="search"]::-webkit-search-cancel-button {
+        appearance: none;
+        height: 1.2em;
+        width: 1.2em;
+        border-radius: 50%;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M18 6L6 18M6 6l12 12' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
+        background-size: contain;
+        opacity: 0.5;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+
+        input[type="search"]::-webkit-search-cancel-button:hover {
+            opacity: 1;
+        }
+
+    /* Animations */
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-slideDown {
+        animation: slideDown 0.2s ease-out;
+    }
+
+    /* Keyboard shortcut styling */
+    kbd {
+        font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+
+    /* Custom scrollbar for dropdown */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.5);
+        border-radius: 2px;
+    }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(156, 163, 175, 0.8);
+        }
+
+    /* Smooth hover transitions */
+    .group:hover .group-hover\:scale-110 {
+        transform: scale(1.1);
+    }
+
+    /* Premium gradient text */
+    .gradient-text {
+        background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+</style>

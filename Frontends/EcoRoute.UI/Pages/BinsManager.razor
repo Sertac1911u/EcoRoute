@@ -10,65 +10,132 @@
 @inject IJSRuntime JS
 @attribute [Authorize(Roles = "SuperAdmin, Manager")]
 
-<!-- Main Kısmı -->
-<div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden mb-6">
+<!-- Main Container -->
+<div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden mb-6 relative">
+    <!-- Beautiful Loading Overlay -->
+    @if (isLoading)
+    {
+        <div class="absolute inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-40 flex items-center justify-center">
+            <div class="text-center max-w-sm">
+                <!-- Modern Loading Animation -->
+                <div class="relative mb-6 flex justify-center">
+                    <div class="relative w-20 h-20">
+                        <div class="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-primary-500 rounded-full animate-spin border-t-transparent"></div>
+                    </div>
+                </div>
+
+                <!-- Loading Text with Animation -->
+                <div class="space-y-3">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white">
+                        Atık Kutuları Yükleniyor
+                    </h3>
+                    <div class="flex items-center justify-center space-x-1">
+                        <div class="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
+                        <div class="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                        <div class="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Harita ve sensör bilgileri hazırlanıyor...
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Header Section -->
     <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Atık Kutusu Yönetimi</h2>
-        <div class="flex space-x-2">
-            <button class="flex items-center bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+        <div>
+            <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Atık Kutusu Yönetimi</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                @if (wasteBins != null)
+                {
+                    <span>@wasteBins.Count adet atık kutusu yönetiliyor</span>
+                }
+                else if (!isLoading)
+                {
+                    <span>Atık kutusu bilgileri yükleniyor...</span>
+                }
+            </p>
+        </div>
+        <div class="flex space-x-3">
+            <button class="flex items-center bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                     @onclick="RefreshData"
-                    disabled="@isRefreshing">
+                    disabled="@(isRefreshing || isLoading)">
                 @if (isRefreshing)
                 {
-                    <i class="fas fa-circle-notch fa-spin mr-2"></i>
+                    <div class="flex items-center">
+                        <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                        <span>Yenileniyor...</span>
+                    </div>
                 }
                 else
                 {
                     <i class="fas fa-sync-alt mr-2"></i>
+                    <span>Yenile</span>
                 }
-                Yenile
             </button>
-            <button class="flex items-center bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 transition duration-300" @onclick="OpenCreateModal">
-                <i class="fas fa-plus mr-2"></i> Yeni Atık Kutusu Ekle
+            <button class="flex items-center bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    @onclick="OpenCreateModal"
+                    disabled="@(isLoading || isSaving)">
+                <i class="fas fa-plus mr-2"></i>
+                Yeni Atık Kutusu Ekle
             </button>
         </div>
     </div>
 
+    <!-- Content Area - Always Rendered for Map -->
     <!-- Harita Bölümü -->
     <BinMapSection OnBinDetail="OpenBinDetail"
                    OnEditBin="EditBin"
                    OnBinSidebar="OpenBinSidebar" />
 
-    <!-- Filtre Bölümü -->
-    <BinFilterSection SearchText="@searchText"
-                      StatusFilter="@statusFilter"
-                      FillLevelFilter="@fillLevelFilter"
-                      OnSearchChanged="@((searchValue) => OnSearchChanged(searchValue))"
-                      OnStatusFilterChanged="@((e) => FilterByStatus(e))"
-                      OnFillLevelFilterChanged="@((e) => FilterByFillLevel(e))"
-                      OnClearFilters="@(() => ClearFilters())" />
+    <!-- Filtre ve Tablo - Only Show When Not Loading -->
+    @if (!isLoading)
+    {
+        <!-- Filtre Bölümü -->
+        <BinFilterSection SearchText="@searchText"
+                          StatusFilter="@statusFilter"
+                          FillLevelFilter="@fillLevelFilter"
+                          OnSearchChanged="@((searchValue) => OnSearchChanged(searchValue))"
+                          OnStatusFilterChanged="@((e) => FilterByStatus(e))"
+                          OnFillLevelFilterChanged="@((e) => FilterByFillLevel(e))"
+                          OnClearFilters="@(() => ClearFilters())" />
 
-    <!-- Tablo Bölümü -->
-    <BinTable WasteBins="@filteredBins"
-              DisplayedBins="@displayedBins"
-              ExpandedRowId="@expandedRowId"
-              SortField="@sortField"
-              SortAscending="@sortAscending"
-              CurrentPage="@currentPage"
-              PageSize="@pageSize"
-              TotalPages="@totalPages"
-              StartPage="@startPage"
-              EndPage="@endPage"
-              IsDeleting="@isDeleting"
-              LoadingSensorIds="@loadingSensorIds"
-              OnSort="@((field) => SortTable(field))"
-              OnRowExpand="@((id) => ToggleRowExpansion(id))"
-              OnEdit="@((bin) => OpenEditModal(bin))"
-              OnDelete="@((id) => DeleteBinConfirmation(id))"
-              OnFocusOnBin="@(async (id) => await FocusOnBin(id))"
-              OnPageChange="@((page) => ChangePage(page))"
-              OnToggleSensorStatus="@(async (tuple) => await ToggleSensorStatus(tuple.Item1, tuple.Item2, tuple.Item3))"
-              OnToggleSensorWorking="@(async (tuple) => await ToggleSensorWorking(tuple.Item1, tuple.Item2, tuple.Item3))" />
+        <!-- Tablo Bölümü -->
+        <BinTable WasteBins="@filteredBins"
+                  DisplayedBins="@displayedBins"
+                  ExpandedRowId="@expandedRowId"
+                  SortField="@sortField"
+                  SortAscending="@sortAscending"
+                  CurrentPage="@currentPage"
+                  PageSize="@pageSize"
+                  TotalPages="@totalPages"
+                  StartPage="@startPage"
+                  EndPage="@endPage"
+                  IsDeleting="@isDeleting"
+                  LoadingSensorIds="@loadingSensorIds"
+                  OnSort="@((field) => SortTable(field))"
+                  OnRowExpand="@((id) => ToggleRowExpansion(id))"
+                  OnEdit="@((bin) => OpenEditModal(bin))"
+                  OnDelete="@((id) => DeleteBinConfirmation(id))"
+                  OnFocusOnBin="@(async (id) => await FocusOnBin(id))"
+                  OnPageChange="@((page) => ChangePage(page))"
+                  OnToggleSensorStatus="@(async (tuple) => await ToggleSensorStatus(tuple.Item1, tuple.Item2, tuple.Item3))"
+                  OnToggleSensorWorking="@(async (tuple) => await ToggleSensorWorking(tuple.Item1, tuple.Item2, tuple.Item3))" />
+    }
+    else
+    {
+        <!-- Loading State for Table Area -->
+        <div class="p-8">
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+                <div class="flex items-center justify-center space-x-3">
+                    <div class="animate-spin rounded-full h-6 w-6 border-2 border-primary-500 border-t-transparent"></div>
+                    <span class="text-gray-600 dark:text-gray-400">Tablo verileri hazırlanıyor...</span>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 <!-- Sidebar for bin details -->
@@ -76,7 +143,7 @@
     <!-- Sidebar content will be dynamically populated by JavaScript -->
 </div>
 
-<!-- Modals -->
+<!-- Enhanced Modals with Loading States -->
 <BinDeleteConfirmModal ShowModal="@showDeleteConfirmation"
                        IsDeleting="@isDeleting"
                        OnCancel="@(() => CancelDelete())"
@@ -108,13 +175,37 @@
               OnFillLevelChange="OnFillLevelInput"
               OnSensorCountChange="OnSensorCountChange" />
 
+<style>
+    /* Enhanced Loading Animations */
+    @@keyframes bounce {
+        0%, 80%, 100%
+
+    {
+        transform: translateY(0);
+    }
+
+    40% {
+        transform: translateY(-10px);
+    }
+
+    }
+
+    .animate-bounce {
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    /* Smooth transitions */
+    .transition-all {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+</style>
+
 @code {
     private List<ResultWasteBinDto> wasteBins;
     private List<ResultWasteBinDto> filteredBins = new List<ResultWasteBinDto>();
     private List<ResultWasteBinDto> displayedBins => GetDisplayedBins();
     private CreateWasteBinDto binModel = new();
     private ResultWasteBinDto selectedBin;
-
     private Guid editingId;
     private Guid expandedRowId;
     private Guid binIdToDelete;
@@ -129,10 +220,11 @@
     private bool showDeleteConfirmation = false;
     private bool showSaveConfirmation = false;
 
-    // Loading states
-    private bool isRefreshing = false;
-    private bool isSaving = false;
-    private bool isDeleting = false;
+    // Loading states - Enhanced
+    private bool isLoading = false;         // Ana veri yükleme
+    private bool isRefreshing = false;      // Sayfa yenileme
+    private bool isSaving = false;          // Kaydetme işlemi
+    private bool isDeleting = false;        // Silme işlemi
     private HashSet<Guid> loadingSensorIds = new HashSet<Guid>();
 
     // Pagination
@@ -152,7 +244,18 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadData();
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            await LoadData();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -165,7 +268,6 @@
                 await Task.Delay(500);
                 await InitializeMainMap();
             }
-
             if (expandedRowId != Guid.Empty && expandedRowId != _lastExpandedRowId)
             {
                 _lastExpandedRowId = expandedRowId;
@@ -196,7 +298,6 @@
     private List<ResultWasteBinDto> GetDisplayedBins()
     {
         if (filteredBins == null) return new List<ResultWasteBinDto>();
-
         return filteredBins
             .Skip((currentPage - 1) * pageSize)
             .Take(pageSize)
@@ -205,8 +306,16 @@
 
     private async Task LoadData()
     {
-        wasteBins = await WasteBinService.GetAllWasteBinsAsync();
-        ApplyFilters();
+        try
+        {
+            wasteBins = await WasteBinService.GetAllWasteBinsAsync();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError($"Veri yükleme hatası: {ex.Message}");
+            Console.Error.WriteLine($"Error loading data: {ex}");
+        }
     }
 
     private void ApplyFilters()
@@ -281,15 +390,17 @@
 
     private async Task RefreshData()
     {
-        if (isRefreshing) return;
+        if (isRefreshing || isLoading) return;
 
         try
         {
             isRefreshing = true;
             expandedRowId = Guid.Empty;
+            StateHasChanged();
+
             await LoadData();
             await ShowAllBinsOnMap();
-            toastService.ShowSuccess("Veriler yenilendi");
+            toastService.ShowSuccess("Veriler başarıyla yenilendi");
         }
         catch (Exception ex)
         {
@@ -303,7 +414,6 @@
     }
 
     #region Sensor Management
-
     private async Task ToggleSensorStatus(Guid sensorId, bool currentIsActive, bool currentIsWorking)
     {
         if (loadingSensorIds.Contains(sensorId)) return;
@@ -365,10 +475,9 @@
             StateHasChanged();
         }
     }
-
     #endregion
 
-    // Rest of the existing methods remain the same...
+    #region Filter and Search Methods
     private void FilterByStatus(ChangeEventArgs e)
     {
         statusFilter = e.Value?.ToString() ?? "";
@@ -396,11 +505,12 @@
         ApplyFilters();
         StateHasChanged();
     }
+    #endregion
 
+    #region Table Operations
     private void SortTable(string field)
     {
         expandedRowId = Guid.Empty;
-
         if (sortField == field)
         {
             sortAscending = !sortAscending;
@@ -410,7 +520,6 @@
             sortField = field;
             sortAscending = true;
         }
-
         ApplyFilters();
     }
 
@@ -432,7 +541,9 @@
         }
         _lastExpandedRowId = Guid.Empty;
     }
+    #endregion
 
+    #region Form Handlers
     private void OnFillLevelInput(ChangeEventArgs args)
     {
         if (double.TryParse(args.Value.ToString(), out double value))
@@ -449,12 +560,17 @@
             binModel.SensorCount = Math.Max(0, Math.Min(20, value));
         }
     }
+    #endregion
 
+    #region Modal Operations
     private async Task OpenCreateModal()
     {
+        if (isLoading || isSaving) return;
+
         try
         {
             await JS.InvokeVoidAsync("googleMapsInterop.resetMapState");
+            await DisableBodyScroll();
         }
         catch (Exception ex)
         {
@@ -470,16 +586,18 @@
                 IsFilled = false,
                 SensorCount = 1
             };
-
         showCreateModal = true;
         showEditModal = false;
     }
 
-    private void OpenEditModal(ResultWasteBinDto bin)
+    private async Task OpenEditModal(ResultWasteBinDto bin)
     {
+        if (isLoading || isSaving) return;
+
         try
         {
-            JS.InvokeVoidAsync("googleMapsInterop.resetMapState");
+            await JS.InvokeVoidAsync("googleMapsInterop.resetMapState");
+            await DisableBodyScroll();
         }
         catch (Exception ex)
         {
@@ -499,7 +617,6 @@
                 CreatedAt = bin.CreatedAt,
                 UpdatedAt = DateTime.Now
             };
-
         editingId = bin.Id;
         showEditModal = true;
         showCreateModal = false;
@@ -508,24 +625,28 @@
     private async Task OpenLocationPicker()
     {
         showLocationPickerModal = true;
+        await DisableBodyScroll();
         StateHasChanged();
         await Task.Delay(100);
     }
 
-    private void CloseLocationPickerModal()
+    private async Task CloseLocationPickerModal()
     {
         showLocationPickerModal = false;
+        await EnableBodyScroll();
     }
 
-    private void ConfirmLocationSelection()
+    private async Task ConfirmLocationSelection()
     {
         showLocationPickerModal = false;
+        await EnableBodyScroll();
     }
 
     private async Task CloseModal()
     {
         showCreateModal = false;
         showEditModal = false;
+        await EnableBodyScroll();
 
         try
         {
@@ -535,14 +656,14 @@
         {
             Console.Error.WriteLine($"Error resetting map: {ex.Message}");
         }
-
         binModel = new();
     }
+    #endregion
 
+    #region Delete Operations
     private void DeleteBinConfirmation(Guid id)
     {
         if (isDeleting) return;
-
         binIdToDelete = id;
         showDeleteConfirmation = true;
     }
@@ -550,7 +671,6 @@
     private void CancelDelete()
     {
         if (isDeleting) return;
-
         showDeleteConfirmation = false;
         binIdToDelete = Guid.Empty;
     }
@@ -592,7 +712,9 @@
             StateHasChanged();
         }
     }
+    #endregion
 
+    #region Save Operations
     private void ShowSaveConfirmation()
     {
         if (isSaving) return;
@@ -623,7 +745,6 @@
             StateHasChanged();
 
             bool success;
-
             if (showEditModal)
             {
                 var updateDto = new UpdateWasteBinDto
@@ -665,8 +786,8 @@
 
                 showCreateModal = false;
                 showEditModal = false;
+                await EnableBodyScroll();
                 binModel = new();
-
                 await LoadData();
                 await ShowAllBinsOnMap();
             }
@@ -687,7 +808,9 @@
             StateHasChanged();
         }
     }
+    #endregion
 
+    #region Map Operations
     private async Task ShowAllBinsOnMap()
     {
         try
@@ -718,8 +841,29 @@
     {
         await JS.InvokeVoidAsync("googleMapsInterop.focusOnBin", binId.ToString());
     }
+    #endregion
 
-    // JS Interop Methods
+    #region Body Scroll Management
+    private async Task DisableBodyScroll()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval", "document.body.style.overflow = 'hidden'");
+        }
+        catch { }
+    }
+
+    private async Task EnableBodyScroll()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval", "document.body.style.overflow = ''");
+        }
+        catch { }
+    }
+    #endregion
+
+    #region JS Interop Methods
     [JSInvokable]
     public async Task OpenBinSidebar(string binId)
     {
@@ -744,7 +888,7 @@
             var bin = wasteBins?.FirstOrDefault(b => b.Id == Id);
             if (bin != null)
             {
-                OpenEditModal(bin);
+                _ = OpenEditModal(bin); // Fire and forget
             }
         }
     }
@@ -781,7 +925,6 @@
         if (Guid.TryParse(binId, out Guid Id))
         {
             var binInCurrentPage = displayedBins.FirstOrDefault(b => b.Id == Id);
-
             if (binInCurrentPage != null)
             {
                 expandedRowId = Id;
@@ -809,4 +952,5 @@
             }
         }
     }
+    #endregion
 }

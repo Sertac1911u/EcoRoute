@@ -17,8 +17,9 @@
     <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" defer></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAii03UZlM6EzIm7Idrk0knXOIEjDWjDj4&libraries=geometry,places,marker&callback=initGoogleMapsCallback"></script>    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAii03UZlM6EzIm7Idrk0knXOIEjDWjDj4&libraries=geometry,places,marker&callback=initGoogleMapsCallback"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <script>
         window.initGoogleMapsCallback = function () {
             console.log("Google Maps API loaded successfully");
@@ -101,6 +102,7 @@
         .font-georgia {
             font-family: Georgia, serif;
         }
+
         .font-playfair {
             font-family: 'Playfair Display', serif;
         }
@@ -209,10 +211,44 @@
 
 <body>
     <div id="app">
-        <div class="flex items-center justify-center h-screen animate-fadeIn bg-white dark:bg-gray-900">
-            <div class="text-center">
-                <i class="fas fa-spinner fa-spin text-4xl text-primary-500"></i>
-                <p class="mt-4 text-gray-700 dark:text-gray-300">Yükleniyor...</p>
+        <!-- Geliştirilmiş Initial Loading Screen -->
+        <div id="initial-loader" class="fixed inset-0 bg-white dark:bg-gray-900 flex items-center justify-center z-50 transition-opacity duration-500">
+            <div class="text-center space-y-6">
+                <!-- Ana Logo ve Spinner -->
+                <div class="relative">
+                    <!-- Dış loading ring -->
+                    <div class="w-20 h-20 border-4 border-gray-200 dark:border-gray-700 border-t-primary-500 rounded-full animate-spin mx-auto"></div>
+
+                    <!-- İç logo -->
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center shadow-lg">
+                            <i class="fas fa-recycle text-white text-lg animate-pulse"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Branding -->
+                <div class="space-y-2">
+                    <h1 class="text-2xl font-bold text-primary-600 dark:text-primary-400 tracking-tight">EcoRoute</h1>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Akıllı Atık Yönetimi</p>
+                </div>
+
+                <!-- Loading Text ve Progress Dots -->
+                <div class="space-y-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Uygulama başlatılıyor...</p>
+
+                    <!-- Animated Dots -->
+                    <div class="flex justify-center space-x-1">
+                        <div class="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+                        <div class="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+                        <div class="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar (optional) -->
+                <div class="w-48 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mx-auto">
+                    <div class="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full animate-pulse"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -736,6 +772,196 @@
             window.URL.revokeObjectURL(url);
         };
     </script>
-</body>
+    <style>
+        /* Spinner Animation */
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
 
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Bounce Animation for Dots */
+        @keyframes bounce {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+
+            40% {
+                transform: scale(1);
+            }
+        }
+
+        .animate-bounce {
+            animation: bounce 1.4s ease-in-out infinite both;
+        }
+
+        /* Pulse Animation */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Fade Out Animation for Loading Screen */
+        .fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* Primary Colors for Loading */
+        .text-primary-500 {
+            color: #2ba86d;
+        }
+
+        .text-primary-600 {
+            color: #1f8c58;
+        }
+
+        .text-primary-400 {
+            color: #4acd87;
+        }
+
+        .bg-primary-500 {
+            background-color: #2ba86d;
+        }
+
+        .bg-primary-600 {
+            background-color: #1f8c58;
+        }
+
+        .border-t-primary-500 {
+            border-top-color: #2ba86d;
+        }
+
+        /* Dark Mode Support */
+        .dark .bg-white {
+            background-color: #111827;
+        }
+
+        .dark .text-gray-600 {
+            color: #9ca3af;
+        }
+
+        .dark .text-gray-500 {
+            color: #6b7280;
+        }
+
+        .dark .text-gray-400 {
+            color: #9ca3af;
+        }
+
+        .dark .bg-gray-700 {
+            background-color: #374151;
+        }
+
+        .dark .bg-gray-200 {
+            background-color: #374151;
+        }
+
+        .dark .border-gray-700 {
+            border-color: #374151;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 640px) {
+            #initial-loader h1 {
+                font-size: 1.5rem;
+            }
+
+            #initial-loader .w-20 {
+                width: 4rem;
+                height: 4rem;
+            }
+
+            #initial-loader .w-12 {
+                width: 2.5rem;
+                height: 2.5rem;
+            }
+        }
+    </style>
+
+    <!-- Enhanced Loading Management Script -->
+    <script>
+        // Loading manager
+        window.loadingManager = {
+            startTime: Date.now(),
+            minLoadingTime: 1500, // Minimum 1.5 saniye loading göster
+
+            hideLoader: function () {
+                const loader = document.getElementById('initial-loader');
+                if (loader) {
+                    loader.classList.add('fade-out');
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                    }, 500);
+                }
+            },
+
+            // Auto hide when Blazor is ready with minimum time check
+            init: function () {
+                const checkBlazorAndTime = () => {
+                    const elapsedTime = Date.now() - this.startTime;
+                    const isBlazorReady = window.Blazor ||
+                        document.querySelector('[data-blazor-load]') ||
+                        document.querySelector('.blazor-error-boundary');
+
+                    if (isBlazorReady && elapsedTime >= this.minLoadingTime) {
+                        // Blazor hazır ve minimum süre geçti
+                        this.hideLoader();
+                    } else if (isBlazorReady && elapsedTime < this.minLoadingTime) {
+                        // Blazor hazır ama minimum süre henüz geçmedi
+                        const remainingTime = this.minLoadingTime - elapsedTime;
+                        setTimeout(() => {
+                            this.hideLoader();
+                        }, remainingTime);
+                    } else {
+                        // Blazor henüz hazır değil, tekrar kontrol et
+                        setTimeout(checkBlazorAndTime, 200);
+                    }
+                };
+
+                // Start checking after DOM is loaded
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => {
+                        setTimeout(checkBlazorAndTime, 300); // 300ms bekle sonra kontrol et
+                    });
+                } else {
+                    setTimeout(checkBlazorAndTime, 300);
+                }
+
+                // Fallback: Hide after maximum 8 seconds
+                setTimeout(() => {
+                    console.log('Loading timeout reached, hiding loader');
+                    this.hideLoader();
+                }, 8000);
+            }
+        };
+
+        // Initialize loading manager
+        window.loadingManager.init();
+
+        // Dark mode detection
+        if (localStorage.getItem('darkMode') === 'true' ||
+            (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</body>
+</body>
 </html>
