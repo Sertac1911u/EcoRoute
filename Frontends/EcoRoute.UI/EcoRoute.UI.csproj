@@ -24,8 +24,4 @@
     <ProjectReference Include="..\EcoRoute.DtoLayer\EcoRoute.DtoLayer.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Pages\Components\Routes\" />
-  </ItemGroup>
-
 </Project>

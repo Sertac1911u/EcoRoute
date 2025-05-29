@@ -3,9 +3,9 @@
     public class CreateSensorDto
     {
         public Guid WasteBinId { get; set; }
-        public string Type { get; set; } //sensör tipi
-        public bool IsActive { get; set; } 
-        public DateTime? InstallationDate { get; set; } = DateTime.Now;
-        public DateTime? LastUpdate { get; set; } = DateTime.Now;
+        public bool IsActive { get; set; } = true;
+        public bool IsWorking { get; set; } = true;
+        public int SensorNumber { get; set; }
+        public DateTime InstallationDate { get; set; } = DateTime.Now;
     }
 }

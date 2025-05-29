@@ -46,7 +46,7 @@
     <!-- Rota Özeti -->
     <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="!text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
                 <i class="fas fa-route mr-2 text-amber-500"></i>
                 Rota Özeti
             </h3>
@@ -121,15 +121,31 @@
                     @if (!IsSimulating)
                     {
                         <div class="space-y-3">
-                            <button class="w-full py-2 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors flex items-center justify-center"
+                            <button class="w-full py-2 bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                                     @onclick:stopPropagation="true"
-                                    @onclick="() => OnStartSimulation.InvokeAsync(Route.Id)">
-                                <i class="fas fa-play mr-2"></i> Simülasyonu Başlat
+                                    @onclick="() => OnStartSimulation.InvokeAsync(Route.Id)"
+                                    disabled="@(LoadingState?.IsStartingSimulation == true)">
+                                @if (LoadingState?.IsStartingSimulation == true)
+                                {
+                                    <i class="fas fa-spinner fa-spin mr-2"></i> <span>Başlatılıyor...</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-play mr-2"></i> <span>Simülasyonu Başlat</span>
+                                }
                             </button>
-                            <button class="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors flex items-center justify-center"
+                            <button class="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                                     @onclick:stopPropagation="true"
-                                    @onclick="() => OnCompleteRoute.InvokeAsync(Route.Id)">
-                                <i class="fas fa-check-circle mr-2"></i> Rotayı Tamamla
+                                    @onclick="() => OnCompleteRoute.InvokeAsync(Route.Id)"
+                                    disabled="@(LoadingState?.IsCompleting == true)">
+                                @if (LoadingState?.IsCompleting == true)
+                                {
+                                    <i class="fas fa-spinner fa-spin mr-2"></i> <span>Tamamlanıyor...</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-check-circle mr-2"></i> <span>Rotayı Tamamla</span>
+                                }
                             </button>
                         </div>
                     }
@@ -155,15 +171,31 @@
 
                             <!-- Kontrol Butonları -->
                             <div class="flex space-x-2">
-                                <button class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors flex items-center justify-center"
+                                <button class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                                         @onclick:stopPropagation="true"
-                                        @onclick="() => OnStopSimulation.InvokeAsync(Route.Id)">
-                                    <i class="fas fa-stop mr-2"></i> Durdur
+                                        @onclick="() => OnStopSimulation.InvokeAsync(Route.Id)"
+                                        disabled="@(LoadingState?.IsStoppingSimulation == true)">
+                                    @if (LoadingState?.IsStoppingSimulation == true)
+                                    {
+                                        <i class="fas fa-spinner fa-spin mr-2"></i> <span>Durduruluyor...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-stop mr-2"></i> <span>Durdur</span>
+                                    }
                                 </button>
-                                <button class="flex-1 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors flex items-center justify-center"
+                                <button class="flex-1 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-md transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                                         @onclick:stopPropagation="true"
-                                        @onclick="() => OnCompleteRoute.InvokeAsync(Route.Id)">
-                                    <i class="fas fa-forward mr-2"></i> Tamamla
+                                        @onclick="() => OnCompleteRoute.InvokeAsync(Route.Id)"
+                                        disabled="@(LoadingState?.IsCompleting == true)">
+                                    @if (LoadingState?.IsCompleting == true)
+                                    {
+                                        <i class="fas fa-spinner fa-spin mr-2"></i> <span>Tamamlanıyor...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-forward mr-2"></i> <span>Tamamla</span>
+                                    }
                                 </button>
                             </div>
 
@@ -174,7 +206,7 @@
                                     <span class="text-green-700 dark:text-green-300 font-medium">Simülasyon Aktif</span>
                                 </div>
                                 <div class="text-sm text-green-600 dark:text-green-400" id="simulation-status-@Route.Id">
-                                    Başlatılıyor...
+                                    Devam ediyor...
                                 </div>
                             </div>
                         </div>
@@ -262,10 +294,12 @@
 @code {
     [Parameter] public RouteResultDto Route { get; set; } = new();
     [Parameter] public bool IsSimulating { get; set; }
+    [Parameter] public RouteLoadingState LoadingState { get; set; }
     [Parameter] public EventCallback<Guid> OnStartSimulation { get; set; }
     [Parameter] public EventCallback<Guid> OnStopSimulation { get; set; }
     [Parameter] public EventCallback<(Guid routeId, int speed)> OnUpdateSimulationSpeed { get; set; }
     [Parameter] public EventCallback<Guid> OnCompleteRoute { get; set; }
+
 
     private string GetStatusText(RouteStatus status)
     {

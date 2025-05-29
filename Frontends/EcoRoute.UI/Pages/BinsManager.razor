@@ -15,11 +15,18 @@
     <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
         <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Atık Kutusu Yönetimi</h2>
         <div class="flex space-x-2">
-            <button class="flex items-center bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-300" @onclick="RefreshData">
-                <i class="fas fa-sync-alt mr-2"></i> Yenile
-            </button>
-            <button class="flex items-center bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-300" @onclick="OpenSensorModal">
-                <i class="fas fa-microchip mr-2"></i> Yeni Sensör Ekle
+            <button class="flex items-center bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    @onclick="RefreshData"
+                    disabled="@isRefreshing">
+                @if (isRefreshing)
+                {
+                    <i class="fas fa-circle-notch fa-spin mr-2"></i>
+                }
+                else
+                {
+                    <i class="fas fa-sync-alt mr-2"></i>
+                }
+                Yenile
             </button>
             <button class="flex items-center bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 transition duration-300" @onclick="OpenCreateModal">
                 <i class="fas fa-plus mr-2"></i> Yeni Atık Kutusu Ekle
@@ -52,12 +59,16 @@
               TotalPages="@totalPages"
               StartPage="@startPage"
               EndPage="@endPage"
+              IsDeleting="@isDeleting"
+              LoadingSensorIds="@loadingSensorIds"
               OnSort="@((field) => SortTable(field))"
               OnRowExpand="@((id) => ToggleRowExpansion(id))"
               OnEdit="@((bin) => OpenEditModal(bin))"
               OnDelete="@((id) => DeleteBinConfirmation(id))"
               OnFocusOnBin="@(async (id) => await FocusOnBin(id))"
-              OnPageChange="@((page) => ChangePage(page))" />
+              OnPageChange="@((page) => ChangePage(page))"
+              OnToggleSensorStatus="@(async (tuple) => await ToggleSensorStatus(tuple.Item1, tuple.Item2, tuple.Item3))"
+              OnToggleSensorWorking="@(async (tuple) => await ToggleSensorWorking(tuple.Item1, tuple.Item2, tuple.Item3))" />
 </div>
 
 <!-- Sidebar for bin details -->
@@ -67,11 +78,13 @@
 
 <!-- Modals -->
 <BinDeleteConfirmModal ShowModal="@showDeleteConfirmation"
+                       IsDeleting="@isDeleting"
                        OnCancel="@(() => CancelDelete())"
                        OnConfirm="@(async () => await ConfirmDelete())" />
 
 <BinSaveConfirmModal ShowModal="@showSaveConfirmation"
                      IsEdit="@showEditModal"
+                     IsSaving="@isSaving"
                      OnCancel="@(() => showSaveConfirmation = false)"
                      OnConfirm="@(async () => await SaveBin())" />
 
@@ -88,47 +101,12 @@
 <BinFormModal ShowCreateModal="@showCreateModal"
               ShowEditModal="@showEditModal"
               BinModel="@binModel"
-              AvailableSensors="@availableSensors"
-              SelectedSensorIds="@selectedSensorIds"
+              IsSaving="@isSaving"
               OnClose="@(async () => await CloseModal())"
               OnSave="@(() => ShowSaveConfirmation())"
               OnLocationPicker="@(async () => await OpenLocationPicker())"
               OnFillLevelChange="OnFillLevelInput"
-              OnSensorToggle="ToggleSensorSelection" />
-
-<!-- Sensor Modal -->
-<BinSensorModal ShowModal="@showSensorModal"
-                IsEdit="@showSensorEditModal"
-                SensorModel="@sensorModel"
-                WasteBins="@wasteBins"
-                ExistingSensor="@selectedSensor"
-                OnClose="@(() => CloseSensorModal())"
-                OnSave="@(async () => await SaveSensor())"
-                OnSensorModelChanged="@((sensorData) => OnSensorModelChanged(sensorData))" />
-
-<!-- Sensor Delete Confirm Modal -->
-@if (showSensorDeleteConfirmation)
-{
-    <div class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl p-6 animate-modal-show">
-            <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
-                    <i class="fas fa-exclamation-triangle text-2xl"></i>
-                </div>
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Sensörü Sil</h3>
-                <p class="text-gray-500 dark:text-gray-400">Bu sensörü silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
-            </div>
-            <div class="flex justify-between">
-                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="() => showSensorDeleteConfirmation = false">
-                    İptal
-                </button>
-                <button class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white transition-colors" @onclick="ConfirmSensorDelete">
-                    Sil
-                </button>
-            </div>
-        </div>
-    </div>
-}
+              OnSensorCountChange="OnSensorCountChange" />
 
 @code {
     private List<ResultWasteBinDto> wasteBins;
@@ -136,14 +114,6 @@
     private List<ResultWasteBinDto> displayedBins => GetDisplayedBins();
     private CreateWasteBinDto binModel = new();
     private ResultWasteBinDto selectedBin;
-
-    private List<ResultSensorDto> availableSensors;
-    private List<Guid> selectedSensorIds = new List<Guid>();
-
-    // Sensor management
-    private CreateSensorDto sensorModel = new();
-    private ResultSensorDto selectedSensor;
-    private Guid sensorIdToDelete;
 
     private Guid editingId;
     private Guid expandedRowId;
@@ -159,10 +129,11 @@
     private bool showDeleteConfirmation = false;
     private bool showSaveConfirmation = false;
 
-    // Sensor UI state
-    private bool showSensorModal = false;
-    private bool showSensorEditModal = false;
-    private bool showSensorDeleteConfirmation = false;
+    // Loading states
+    private bool isRefreshing = false;
+    private bool isSaving = false;
+    private bool isDeleting = false;
+    private HashSet<Guid> loadingSensorIds = new HashSet<Guid>();
 
     // Pagination
     private int currentPage = 1;
@@ -182,7 +153,6 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
-        await LoadSensors();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -196,7 +166,6 @@
                 await InitializeMainMap();
             }
 
-            // Handle expanded rows
             if (expandedRowId != Guid.Empty && expandedRowId != _lastExpandedRowId)
             {
                 _lastExpandedRowId = expandedRowId;
@@ -310,197 +279,91 @@
         }
     }
 
-    private async Task LoadSensors()
-    {
-        availableSensors = await SensorService.GetAllSensorsAsync();
-    }
-
     private async Task RefreshData()
     {
-        expandedRowId = Guid.Empty;
-        await LoadData();
-        await LoadSensors();
-        await ShowAllBinsOnMap();
-        toastService.ShowSuccess("Veriler yenilendi");
+        if (isRefreshing) return;
+
+        try
+        {
+            isRefreshing = true;
+            expandedRowId = Guid.Empty;
+            await LoadData();
+            await ShowAllBinsOnMap();
+            toastService.ShowSuccess("Veriler yenilendi");
+        }
+        catch (Exception ex)
+        {
+            toastService.ShowError($"Veri yenileme sırasında hata oluştu: {ex.Message}");
+        }
+        finally
+        {
+            isRefreshing = false;
+            StateHasChanged();
+        }
     }
 
     #region Sensor Management
 
-    private void OpenSensorModal()
+    private async Task ToggleSensorStatus(Guid sensorId, bool currentIsActive, bool currentIsWorking)
     {
-        Console.WriteLine("Opening sensor modal (general)");
-        sensorModel = new CreateSensorDto
-            {
-                IsActive = true,
-                InstallationDate = DateTime.Now,
-                LastUpdate = DateTime.Now,
-                Type = ""
-            };
-        selectedSensor = null;
-        showSensorModal = true;
-        showSensorEditModal = false;
-        StateHasChanged();
-    }
+        if (loadingSensorIds.Contains(sensorId)) return;
 
-    private void OpenSensorModalForBin(Guid binId)
-    {
-        Console.WriteLine($"Opening sensor modal for bin: {binId}");
-        sensorModel = new CreateSensorDto
-            {
-                WasteBinId = binId,
-                IsActive = true,
-                InstallationDate = DateTime.Now,
-                LastUpdate = DateTime.Now,
-                Type = ""
-            };
-        selectedSensor = null;
-        showSensorModal = true;
-        showSensorEditModal = false;
-        StateHasChanged();
-    }
-
-    private void EditSensor(ResultSensorDto sensor)
-    {
-        Console.WriteLine($"Editing sensor: {sensor.SensorId} of type: {sensor.Type}");
-        selectedSensor = sensor;
-        sensorModel = new CreateSensorDto
-            {
-                WasteBinId = sensor.WasteBinId,
-                Type = sensor.Type ?? "",
-                IsActive = sensor.IsActive,
-                InstallationDate = sensor.InstallationDate ?? DateTime.Now,
-                LastUpdate = DateTime.Now
-            };
-        showSensorModal = true;
-        showSensorEditModal = true;
-        StateHasChanged();
-    }
-
-    private void CloseSensorModal()
-    {
-        Console.WriteLine("Closing sensor modal");
-        showSensorModal = false;
-        showSensorEditModal = false;
-        sensorModel = new CreateSensorDto
-            {
-                IsActive = true,
-                InstallationDate = DateTime.Now,
-                LastUpdate = DateTime.Now,
-                Type = ""
-            };
-        selectedSensor = null;
-        StateHasChanged();
-    }
-
-    private async Task SaveSensor()
-    {
-        bool success;
-
-        // Debug logging - gönderilen data'yı logla
-        Console.WriteLine($"=== SAVING SENSOR ===");
-        Console.WriteLine($"Main component sensorModel values:");
-        Console.WriteLine($"  WasteBinId: {sensorModel.WasteBinId}");
-        Console.WriteLine($"  Type: '{sensorModel.Type}'");
-        Console.WriteLine($"  IsActive: {sensorModel.IsActive}");
-        Console.WriteLine($"  InstallationDate: {sensorModel.InstallationDate}");
-        Console.WriteLine($"  LastUpdate: {sensorModel.LastUpdate}");
-
-        if (showSensorEditModal && selectedSensor != null)
+        try
         {
-            var updateDto = new UpdateSensorDto
-                {
-                    SensorId = selectedSensor.SensorId,
-                    WasteBinId = sensorModel.WasteBinId,
-                    Type = sensorModel.Type,
-                    IsActive = sensorModel.IsActive,
-                    InstallationDate = sensorModel.InstallationDate,
-                    LastUpdate = DateTime.Now
-                };
+            loadingSensorIds.Add(sensorId);
+            StateHasChanged();
 
-            Console.WriteLine($"Updating sensor with ID: {updateDto.SensorId}");
-            success = await SensorService.UpdateSensorAsync(updateDto);
-        }
-        else
-        {
-            // Ensure required fields are set
-            if (sensorModel.WasteBinId == Guid.Empty)
+            var success = await SensorService.UpdateSensorStatusAsync(sensorId, !currentIsActive, currentIsWorking);
+            if (success)
             {
-                toastService.ShowError("Lütfen bir atık kutusu seçin.");
-                return;
+                toastService.ShowSuccess("Sensör durumu güncellendi.");
+                await LoadData();
             }
-
-            if (string.IsNullOrWhiteSpace(sensorModel.Type))
+            else
             {
-                toastService.ShowError("Lütfen sensör tipini seçin.");
-                return;
+                toastService.ShowError("Sensör durum güncelleme işlemi başarısız.");
             }
-
-            sensorModel.LastUpdate = DateTime.Now;
-            Console.WriteLine($"Creating new sensor with proper data");
-            success = await SensorService.CreateSensorAsync(sensorModel);
         }
-
-        if (success)
+        catch (Exception ex)
         {
-            toastService.ShowSuccess(showSensorEditModal ? "Sensör başarıyla güncellendi." : "Sensör başarıyla eklendi.");
-            CloseSensorModal();
-            await LoadData();
-            await LoadSensors();
+            toastService.ShowError($"Sensör durum güncelleme sırasında hata oluştu: {ex.Message}");
         }
-        else
+        finally
         {
-            toastService.ShowError("Sensör işlemi sırasında bir hata oluştu. Lütfen tüm alanları kontrol edin.");
+            loadingSensorIds.Remove(sensorId);
+            StateHasChanged();
         }
     }
 
-    private void DeleteSensorConfirmation(Guid sensorId)
+    private async Task ToggleSensorWorking(Guid sensorId, bool currentIsActive, bool currentIsWorking)
     {
-        sensorIdToDelete = sensorId;
-        showSensorDeleteConfirmation = true;
-    }
+        if (loadingSensorIds.Contains(sensorId)) return;
 
-    private async Task ConfirmSensorDelete()
-    {
-        var success = await SensorService.DeleteSensorAsync(sensorIdToDelete);
-        if (success)
+        try
         {
-            toastService.ShowSuccess("Sensör başarıyla silindi.");
-            await LoadData();
-            await LoadSensors();
-        }
-        else
-        {
-            toastService.ShowError("Sensör silme işlemi sırasında bir hata oluştu.");
-        }
-        showSensorDeleteConfirmation = false;
-    }
+            loadingSensorIds.Add(sensorId);
+            StateHasChanged();
 
-    private async Task ToggleSensorStatus(Guid sensorId, bool currentStatus)
-    {
-        var success = await SensorService.UpdateSensorStatusAsync(sensorId, !currentStatus);
-        if (success)
-        {
-            toastService.ShowSuccess("Sensör durumu güncellendi.");
-            await LoadData();
-            await LoadSensors();
+            var success = await SensorService.UpdateSensorStatusAsync(sensorId, currentIsActive, !currentIsWorking);
+            if (success)
+            {
+                toastService.ShowSuccess("Sensör çalışma durumu güncellendi.");
+                await LoadData();
+            }
+            else
+            {
+                toastService.ShowError("Sensör çalışma durumu güncelleme işlemi başarısız.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            toastService.ShowError("Sensör durum güncelleme işlemi başarısız.");
+            toastService.ShowError($"Sensör çalışma durumu güncelleme sırasında hata oluştu: {ex.Message}");
         }
-    }
-
-    private void OnSensorModelChanged(CreateSensorDto updatedSensorModel)
-    {
-        // Modal'dan gelen değişiklikleri ana component'teki sensorModel'e aktar
-        sensorModel.WasteBinId = updatedSensorModel.WasteBinId;
-        sensorModel.Type = updatedSensorModel.Type;
-        sensorModel.IsActive = updatedSensorModel.IsActive;
-        sensorModel.InstallationDate = updatedSensorModel.InstallationDate;
-        sensorModel.LastUpdate = updatedSensorModel.LastUpdate;
-
-        Console.WriteLine($"Main component sensorModel updated - WasteBinId: {sensorModel.WasteBinId}, Type: '{sensorModel.Type}'");
-        StateHasChanged();
+        finally
+        {
+            loadingSensorIds.Remove(sensorId);
+            StateHasChanged();
+        }
     }
 
     #endregion
@@ -551,21 +414,6 @@
         ApplyFilters();
     }
 
-    private void ToggleSensorSelection(Tuple<Guid, bool> sensorToggle)
-    {
-        var (sensorId, isSelected) = sensorToggle;
-
-        if (isSelected)
-        {
-            if (!selectedSensorIds.Contains(sensorId))
-                selectedSensorIds.Add(sensorId);
-        }
-        else
-        {
-            selectedSensorIds.Remove(sensorId);
-        }
-    }
-
     private void ChangePage(int page)
     {
         currentPage = page;
@@ -594,6 +442,14 @@
         }
     }
 
+    private void OnSensorCountChange(ChangeEventArgs args)
+    {
+        if (int.TryParse(args.Value.ToString(), out int value))
+        {
+            binModel.SensorCount = Math.Max(0, Math.Min(20, value));
+        }
+    }
+
     private async Task OpenCreateModal()
     {
         try
@@ -611,10 +467,10 @@
                 Latitude = 41.1634,
                 Longitude = 27.7951,
                 FillLevel = 0,
-                IsFilled = false
+                IsFilled = false,
+                SensorCount = 1
             };
 
-        selectedSensorIds.Clear();
         showCreateModal = true;
         showEditModal = false;
     }
@@ -639,11 +495,11 @@
                 IsFilled = bin.IsFilled,
                 FillLevel = bin.FillLevel,
                 DeviceStatus = bin.DeviceStatus,
+                SensorCount = bin.SensorCount,
                 CreatedAt = bin.CreatedAt,
                 UpdatedAt = DateTime.Now
             };
 
-        selectedSensorIds = bin.Sensors?.Select(s => s.SensorId).ToList() ?? new List<Guid>();
         editingId = bin.Id;
         showEditModal = true;
         showCreateModal = false;
@@ -681,48 +537,76 @@
         }
 
         binModel = new();
-        selectedSensorIds.Clear();
     }
 
     private void DeleteBinConfirmation(Guid id)
     {
+        if (isDeleting) return;
+
         binIdToDelete = id;
         showDeleteConfirmation = true;
     }
 
     private void CancelDelete()
     {
+        if (isDeleting) return;
+
         showDeleteConfirmation = false;
         binIdToDelete = Guid.Empty;
     }
 
     private async Task ConfirmDelete()
     {
-        var success = await WasteBinService.DeleteWasteBinAsync(binIdToDelete);
-        if (success)
-        {
-            toastService.ShowSuccess("Atık kutusu başarıyla silindi.");
-            await LoadData();
-            await ShowAllBinsOnMap();
+        if (isDeleting) return;
 
-            if (expandedRowId == binIdToDelete)
+        try
+        {
+            isDeleting = true;
+            StateHasChanged();
+
+            var success = await WasteBinService.DeleteWasteBinAsync(binIdToDelete);
+            if (success)
             {
-                expandedRowId = Guid.Empty;
+                toastService.ShowSuccess("Atık kutusu ve sensörleri başarıyla silindi.");
+                await LoadData();
+                await ShowAllBinsOnMap();
+
+                if (expandedRowId == binIdToDelete)
+                {
+                    expandedRowId = Guid.Empty;
+                }
+            }
+            else
+            {
+                toastService.ShowError("Silme işlemi sırasında bir hata oluştu.");
             }
         }
-        else
+        catch (Exception ex)
         {
-            toastService.ShowError("Silme işlemi sırasında bir hata oluştu.");
+            toastService.ShowError($"Silme işlemi sırasında hata oluştu: {ex.Message}");
         }
-        showDeleteConfirmation = false;
+        finally
+        {
+            isDeleting = false;
+            showDeleteConfirmation = false;
+            StateHasChanged();
+        }
     }
 
     private void ShowSaveConfirmation()
     {
+        if (isSaving) return;
+
         if (string.IsNullOrWhiteSpace(binModel.Label) || string.IsNullOrWhiteSpace(binModel.Address) ||
             binModel.Latitude == 0 || binModel.Longitude == 0)
         {
             toastService.ShowWarning("Lütfen tüm zorunlu alanları doldurun.");
+            return;
+        }
+
+        if (binModel.SensorCount < 0 || binModel.SensorCount > 20)
+        {
+            toastService.ShowWarning("Sensör adedi 0-20 arasında olmalıdır.");
             return;
         }
 
@@ -731,60 +615,76 @@
 
     private async Task SaveBin()
     {
-        bool success;
-        binModel.SensorIds = selectedSensorIds;
+        if (isSaving) return;
 
-        if (showEditModal)
+        try
         {
-            var updateDto = new UpdateWasteBinDto
+            isSaving = true;
+            StateHasChanged();
+
+            bool success;
+
+            if (showEditModal)
+            {
+                var updateDto = new UpdateWasteBinDto
+                    {
+                        WasteBinId = editingId,
+                        Label = binModel.Label,
+                        Address = binModel.Address,
+                        Latitude = binModel.Latitude,
+                        Longitude = binModel.Longitude,
+                        IsFilled = binModel.IsFilled,
+                        DeviceStatus = binModel.DeviceStatus,
+                        FillLevel = binModel.FillLevel,
+                        SensorCount = binModel.SensorCount,
+                        UpdatedAt = DateTime.Now
+                    };
+                success = await WasteBinService.UpdateWasteBinAsync(updateDto);
+            }
+            else
+            {
+                binModel.CreatedAt = DateTime.Now;
+                binModel.UpdatedAt = DateTime.Now;
+                success = await WasteBinService.CreateWasteBinAsync(binModel);
+            }
+
+            if (success)
+            {
+                toastService.ShowSuccess(showEditModal ? "Atık kutusu başarıyla güncellendi." : "Atık kutusu ve sensörleri başarıyla eklendi.");
+                showSaveConfirmation = false;
+
+                try
                 {
-                    WasteBinId = editingId,
-                    Label = binModel.Label,
-                    Address = binModel.Address,
-                    Latitude = binModel.Latitude,
-                    Longitude = binModel.Longitude,
-                    IsFilled = binModel.IsFilled,
-                    DeviceStatus = binModel.DeviceStatus,
-                    FillLevel = binModel.FillLevel,
-                    SensorIds = selectedSensorIds,
-                    UpdatedAt = DateTime.Now
-                };
-            success = await WasteBinService.UpdateWasteBinAsync(updateDto);
-        }
-        else
-        {
-            binModel.CreatedAt = DateTime.Now;
-            binModel.UpdatedAt = DateTime.Now;
-            success = await WasteBinService.CreateWasteBinAsync(binModel);
-        }
+                    await JS.InvokeVoidAsync("googleMapsInterop.resetMapState");
+                    await Task.Delay(100);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"Error resetting map state after save: {ex.Message}");
+                }
 
-        if (success)
-        {
-            toastService.ShowSuccess(showEditModal ? "Atık kutusu başarıyla güncellendi." : "Atık kutusu başarıyla eklendi.");
-            showSaveConfirmation = false;
+                showCreateModal = false;
+                showEditModal = false;
+                binModel = new();
 
-            try
-            {
-                await JS.InvokeVoidAsync("googleMapsInterop.resetMapState");
-                await Task.Delay(100);
+                await LoadData();
+                await ShowAllBinsOnMap();
             }
-            catch (Exception ex)
+            else
             {
-                Console.Error.WriteLine($"Error resetting map state after save: {ex.Message}");
+                toastService.ShowError("İşlem sırasında bir hata oluştu.");
+                showSaveConfirmation = false;
             }
-
-            showCreateModal = false;
-            showEditModal = false;
-            binModel = new();
-            selectedSensorIds.Clear();
-
-            await LoadData();
-            await ShowAllBinsOnMap();
         }
-        else
+        catch (Exception ex)
         {
-            toastService.ShowError("İşlem sırasında bir hata oluştu.");
+            toastService.ShowError($"Kaydetme işlemi sırasında hata oluştu: {ex.Message}");
             showSaveConfirmation = false;
+        }
+        finally
+        {
+            isSaving = false;
+            StateHasChanged();
         }
     }
 
@@ -863,7 +763,6 @@
         StateHasChanged();
     }
 
-    // EventCallback için wrapper metod
     private void UpdateCoordinatesFromEvent(Tuple<double, double> coordinates)
     {
         UpdateCoordinates(coordinates.Item1, coordinates.Item2);

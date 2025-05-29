@@ -38,13 +38,33 @@
         <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
             <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Rota Yönetimi</h2>
             <div class="flex space-x-2">
-                <button class="flex items-center bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-300" @onclick="SimulateAllRoutes">
-                    <i class="fas fa-play-circle mr-2"></i> Tüm Rotaları Simüle Et
+                <button class="flex items-center bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        @onclick="SimulateAllRoutes"
+                        disabled="@isSimulatingAll">
+                    @if (isSimulatingAll)
+                    {
+                        <i class="fas fa-spinner fa-spin mr-2"></i> <span>Simüle Ediliyor...</span>
+                    }
+                    else
+                    {
+                        <i class="fas fa-play-circle mr-2"></i> <span>Tüm Rotaları Simüle Et</span>
+                    }
                 </button>
-                <button class="flex items-center bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-300" @onclick="RefreshData">
-                    <i class="fas fa-sync-alt mr-2"></i> Yenile
+                <button class="flex items-center bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        @onclick="RefreshData"
+                        disabled="@isRefreshing">
+                    @if (isRefreshing)
+                    {
+                        <i class="fas fa-spinner fa-spin mr-2"></i> <span>Yenileniyor...</span>
+                    }
+                    else
+                    {
+                        <i class="fas fa-sync-alt mr-2"></i> <span>Yenile</span>
+                    }
                 </button>
-                <button class="flex items-center bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 transition duration-300" @onclick="OpenCreateModal">
+                <button class="flex items-center bg-primary-500 text-white px-4 py-2 rounded-md hover:bg-primary-600 transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        @onclick="OpenCreateModal"
+                        disabled="@isCreatingRoute">
                     <i class="fas fa-plus mr-2"></i> Yeni Rota Ekle
                 </button>
             </div>
@@ -124,37 +144,64 @@
         <!-- Routes Table Section -->
         <div class="p-6">
             <RouteTable Routes="@displayedRoutes"
-                       Drivers="@drivers"
-                       Vehicles="@vehicles"
-                       ActiveSimulations="@activeSimulations"
-                       ExpandedRouteId="@expandedRouteId"
-                       CurrentPage="@currentPage"
-                       TotalPages="@totalPages"
-                       StartPage="@startPage"
-                       EndPage="@endPage"
-                       PageSize="@pageSize"
-                       FilteredRoutes="@filteredRoutes"
-                       SortField="@sortField"
-                       SortAscending="@sortAscending"
-                       OnSortTable="@SortTable"
-                       OnToggleExpand="@ToggleExpand"
-                       OnChangePage="@ChangePage"
-                       OnCompleteRoute="@CompleteRoute"
-                       OnFocusRouteOnMap="@FocusRouteOnMap"
-                       OnStartSimulation="@StartRouteSimulation"
-                       OnStopSimulation="@StopSimulation"
-                       OnUpdateSimulationSpeed="@UpdateSimulationSpeed" />
+                        Drivers="@drivers"
+                        Vehicles="@vehicles"
+                        ActiveSimulations="@activeSimulations"
+                        ExpandedRouteId="@expandedRouteId"
+                        CurrentPage="@currentPage"
+                        TotalPages="@totalPages"
+                        StartPage="@startPage"
+                        EndPage="@endPage"
+                        PageSize="@pageSize"
+                        FilteredRoutes="@filteredRoutes"
+                        SortField="@sortField"
+                        SortAscending="@sortAscending"
+                        RouteLoadingStates="@routeLoadingStates"
+                        OnSortTable="@SortTable"
+                        OnToggleExpand="@ToggleExpand"
+                        OnChangePage="@ChangePage"
+                        OnCompleteRoute="@CompleteRoute"
+                        OnFocusRouteOnMap="@FocusRouteOnMap"
+                        OnStartSimulation="@StartRouteSimulation"
+                        OnStopSimulation="@StopSimulation"
+                        OnUpdateSimulationSpeed="@UpdateSimulationSpeed" />
         </div>
     }
 </div>
 
 <!-- Create Route Modal -->
 <CreateRouteModal @bind-IsVisible="@showCreateModal"
-                 Drivers="@availableDrivers"
-                 Vehicles="@availableVehicles"
-                 WasteBins="@wasteBins"
-                 OnCreateRoute="@CreateRoute"
-                 OnClose="@CloseCreateModal" />
+                  Drivers="@availableDrivers"
+                  Vehicles="@availableVehicles"
+                  WasteBins="@wasteBins"
+                  IsCreating="@isCreatingRoute"
+                  OnCreateRoute="@CreateRoute"
+                  OnClose="@CloseCreateModal" />
+
+<!-- Loading Overlay for global operations -->
+@if (isSimulatingAll || isRefreshing)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
+            <div class="flex items-center">
+                <i class="fas fa-spinner fa-spin text-2xl text-primary-500 mr-4"></i>
+                <div>
+                    <p class="text-lg font-semibold text-gray-800 dark:text-white">
+                        @if (isSimulatingAll)
+                        {
+                            <span>Tüm rotalar simüle ediliyor...</span>
+                        }
+                        else if (isRefreshing)
+                        {
+                            <span>Veriler yenileniyor...</span>
+                        }
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Lütfen bekleyiniz</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <style>
     /* Tooltip Styles */
@@ -198,14 +245,18 @@
 
     /* Modal Animation */
     @@keyframes modalShow {
-        from {
-            opacity: 0;
-            transform: scale(0.95) translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-        }
+        from
+
+    {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+
     }
 
     .animate-modal-show {
@@ -239,6 +290,12 @@
     private DotNetObjectReference<RoutesManager> _objectReference;
     private CancellationTokenSource _debounceTokenSource = new CancellationTokenSource();
 
+    // Loading states
+    private bool isRefreshing = false;
+    private bool isSimulatingAll = false;
+    private bool isCreatingRoute = false;
+    private Dictionary<Guid, RouteLoadingState> routeLoadingStates = new();
+
     // Simulation tracking
     private Dictionary<Guid, bool> activeSimulations = new Dictionary<Guid, bool>();
 
@@ -262,6 +319,8 @@
 
     private static readonly JsonSerializerOptions camelCase =
     new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+
 
     private List<ResultUserDto> GetAvailableDrivers()
     {
@@ -621,6 +680,8 @@
 
     private async Task CreateRoute(CreateRouteDto newRoute)
     {
+        if (isCreatingRoute) return; // Prevent multiple calls
+
         if (newRoute.WasteBinIds.Count == 0)
         {
             ToastService.ShowWarning("En az bir atık kutusu seçmelisiniz");
@@ -641,6 +702,9 @@
 
         try
         {
+            isCreatingRoute = true;
+            StateHasChanged();
+
             var apiRoute = new ApiCreateRouteDto
                 {
                     DriverId = newRoute.DriverId.ToString(),
@@ -672,12 +736,25 @@
             Console.Error.WriteLine($"Error creating route: {ex.Message}");
             ToastService.ShowError($"❌ Hata: {ex.Message}");
         }
+        finally
+        {
+            isCreatingRoute = false;
+            StateHasChanged();
+        }
     }
 
     private async Task CompleteRoute(Guid routeId)
     {
+        if (!routeLoadingStates.ContainsKey(routeId))
+            routeLoadingStates[routeId] = new RouteLoadingState();
+
+        if (routeLoadingStates[routeId].IsCompleting) return; // Prevent multiple calls
+
         try
         {
+            routeLoadingStates[routeId].IsCompleting = true;
+            StateHasChanged();
+
             var result = await RouteService.CompleteRouteAsync(routeId);
             if (result)
             {
@@ -696,10 +773,20 @@
             Console.Error.WriteLine($"Error completing route: {ex.Message}");
             ToastService.ShowError($"❌ Hata: {ex.Message}");
         }
+        finally
+        {
+            routeLoadingStates[routeId].IsCompleting = false;
+            StateHasChanged();
+        }
     }
 
     private async Task StartRouteSimulation(Guid routeId)
     {
+        if (!routeLoadingStates.ContainsKey(routeId))
+            routeLoadingStates[routeId] = new RouteLoadingState();
+
+        if (routeLoadingStates[routeId].IsStartingSimulation) return; // Prevent multiple calls
+
         try
         {
             var route = routes?.FirstOrDefault(r => r.Id == routeId);
@@ -721,6 +808,9 @@
                 return;
             }
 
+            routeLoadingStates[routeId].IsStartingSimulation = true;
+            StateHasChanged();
+
             await RouteService.StartRouteSimulationAsync(routeId);
             activeSimulations[routeId] = true;
 
@@ -734,12 +824,26 @@
             Console.Error.WriteLine($"Error starting route simulation: {ex.Message}");
             ToastService.ShowError($"❌ Simülasyon başlatılamadı: {ex.Message}");
         }
+        finally
+        {
+            if (routeLoadingStates.ContainsKey(routeId))
+                routeLoadingStates[routeId].IsStartingSimulation = false;
+            StateHasChanged();
+        }
     }
 
     private async Task StopSimulation(Guid routeId)
     {
+        if (!routeLoadingStates.ContainsKey(routeId))
+            routeLoadingStates[routeId] = new RouteLoadingState();
+
+        if (routeLoadingStates[routeId].IsStoppingSimulation) return; // Prevent multiple calls
+
         try
         {
+            routeLoadingStates[routeId].IsStoppingSimulation = true;
+            StateHasChanged();
+
             await JS.InvokeVoidAsync("googleMapsInterop.stopSimulation", routeId.ToString());
 
             if (activeSimulations.ContainsKey(routeId))
@@ -753,6 +857,11 @@
         {
             Console.Error.WriteLine($"Error stopping simulation: {ex.Message}");
             ToastService.ShowError($"❌ Simülasyon durdurulamadı: {ex.Message}");
+        }
+        finally
+        {
+            routeLoadingStates[routeId].IsStoppingSimulation = false;
+            StateHasChanged();
         }
     }
 
@@ -770,8 +879,13 @@
 
     private async Task SimulateAllRoutes()
     {
+        if (isSimulatingAll) return; // Prevent multiple calls
+
         try
         {
+            isSimulatingAll = true;
+            StateHasChanged();
+
             var activeRoutes = routes?.Where(r => r.Status != RouteStatus.Completed).ToList();
             if (activeRoutes == null || !activeRoutes.Any())
             {
@@ -796,6 +910,11 @@
         {
             Console.Error.WriteLine($"Error simulating all routes: {ex.Message}");
             ToastService.ShowError($"❌ Toplu simülasyon hatası: {ex.Message}");
+        }
+        finally
+        {
+            isSimulatingAll = false;
+            StateHasChanged();
         }
     }
 
@@ -857,11 +976,24 @@
     [JSInvokable]
     public async Task RefreshData()
     {
-        expandedRouteId = Guid.Empty;
-        await LoadData();
-        await ShowAllRoutesOnMap();
-        ToastService.ShowSuccess("🔄 Veriler yenilendi");
-        StateHasChanged();
+        if (isRefreshing) return; // Prevent multiple calls
+
+        try
+        {
+            isRefreshing = true;
+            StateHasChanged();
+
+            expandedRouteId = Guid.Empty;
+            await LoadData();
+            await ShowAllRoutesOnMap();
+            ToastService.ShowSuccess("🔄 Veriler yenilendi");
+            StateHasChanged();
+        }
+        finally
+        {
+            isRefreshing = false;
+            StateHasChanged();
+        }
     }
 
     [JSInvokable]

@@ -5,17 +5,47 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl p-6 animate-modal-show">
             <div class="text-center mb-6">
                 <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 text-red-500 mb-4">
-                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                    @if (IsDeleting)
+                    {
+                        <i class="fas fa-circle-notch fa-spin text-2xl"></i>
+                    }
+                    else
+                    {
+                        <i class="fas fa-exclamation-triangle text-2xl"></i>
+                    }
                 </div>
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">Atık Kutusunu Sil</h3>
-                <p class="text-gray-500 dark:text-gray-400">Bu atık kutusunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                    @(IsDeleting ? "Siliniyor..." : "Atık Kutusunu Sil")
+                </h3>
+                <p class="text-gray-500 dark:text-gray-400">
+                    @if (IsDeleting)
+                    {
+                        <span>Atık kutusu siliniyor, lütfen bekleyin...</span>
+                    }
+                    else
+                    {
+                        <span>Bu atık kutusunu silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</span>
+                    }
+                </p>
             </div>
             <div class="flex justify-between">
-                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors" @onclick="OnCancel">
+                <button class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        @onclick="OnCancel"
+                        disabled="@IsDeleting">
                     İptal
                 </button>
-                <button class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white transition-colors" @onclick="OnConfirm">
-                    Sil
+                <button class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                        @onclick="OnConfirm"
+                        disabled="@IsDeleting">
+                    @if (IsDeleting)
+                    {
+                        <i class="fas fa-circle-notch fa-spin mr-2"></i>
+                        <span>Siliniyor...</span>
+                    }
+                    else
+                    {
+                        <span>Sil</span>
+                    }
                 </button>
             </div>
         </div>
@@ -24,6 +54,7 @@
 
 @code {
     [Parameter] public bool ShowModal { get; set; }
+    [Parameter] public bool IsDeleting { get; set; } // YENİ PARAMETRE
     [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter] public EventCallback OnConfirm { get; set; }
 }

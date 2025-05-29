@@ -32,20 +32,46 @@ namespace EcoRoute.RouteOptimization.Services
         {
             var client = _httpClientFactory.CreateClient("DataCollectionClient");
 
-            var query = string.Join("&", wasteBinIds.Select(id => $"id={id}"));
-            var response = await client.GetAsync($"/api/wastebins/selected?{query}");
+            var queryParams = string.Join("&", wasteBinIds.Select(id => $"id={id}"));
+            var requestUrl = $"/api/wastebins/selected?{queryParams}";
 
-            if (!response.IsSuccessStatusCode)
-                throw new Exception("WasteBin verileri alınamadı.");
+            Console.WriteLine($"[RouteService] BASE URL: {client.BaseAddress}");
+            Console.WriteLine($"[RouteService] REQUEST URL: {requestUrl}");
+            Console.WriteLine($"[RouteService] FULL URL: {client.BaseAddress}{requestUrl}");
+            Console.WriteLine($"[RouteService] WASTE BIN IDs: {string.Join(", ", wasteBinIds)}");
 
-            var content = await response.Content.ReadAsStringAsync();
-
-            return await Task.Run(() =>
-            JsonSerializer.Deserialize<List<WasteBinDto>>(content, new JsonSerializerOptions
+            try
             {
-                PropertyNameCaseInsensitive = true
-            }) ?? new List<WasteBinDto>());
+                var response = await client.GetAsync(requestUrl);
+
+                Console.WriteLine($"[RouteService] Response Status: {response.StatusCode}");
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"[RouteService] Error Response Body: {errorContent}");
+                    throw new Exception($"WasteBin verileri alınamadı. Status: {response.StatusCode}");
+                }
+
+                var content = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"[RouteService] Success Response: {content}");
+
+                var wasteBins = JsonSerializer.Deserialize<List<WasteBinDto>>(content, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }) ?? new List<WasteBinDto>();
+
+                Console.WriteLine($"[RouteService] Parsed {wasteBins.Count} waste bins");
+
+                return wasteBins;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RouteService] Exception: {ex.Message}");
+                throw;
+            }
         }
+
 
         public bool VehicleHasActiveRoute(string vehicleId)
         {

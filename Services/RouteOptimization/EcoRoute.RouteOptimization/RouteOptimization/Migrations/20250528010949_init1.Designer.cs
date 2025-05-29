@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EcoRoute.RouteOptimization.Migrations
 {
     [DbContext(typeof(RouteDbContext))]
-    [Migration("20250524190447_updated")]
-    partial class updated
+    [Migration("20250528010949_init1")]
+    partial class init1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

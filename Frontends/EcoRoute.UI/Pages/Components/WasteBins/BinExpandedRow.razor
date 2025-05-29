@@ -28,6 +28,10 @@
                         <span class="text-sm text-gray-500 dark:text-gray-400">Doluluk Seviyesi:</span>
                         <span class="text-sm font-medium @GetTextColorByFillLevel(Bin.FillLevel)">@(Bin.FillLevel ?? 0)%</span>
                     </div>
+                    <div class="flex justify-between items-center border-b border-gray-200 dark:border-gray-700 pb-2">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">Toplam Sensör:</span>
+                        <span class="text-sm font-medium text-gray-800 dark:text-gray-200">@Bin.SensorCount adet</span>
+                    </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-500 dark:text-gray-400">Durum:</span>
                         <span class="text-sm font-medium @GetDeviceStatusTextColor(Bin.DeviceStatus)">
@@ -97,20 +101,20 @@
                 </div>
             </div>
 
-            <!-- Sensörler -->
+            <!-- Işık Sensörleri -->
             <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                        <i class="fas fa-microchip mr-2 text-green-500"></i>
-                        Sensörler
+                        <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
+                        Işık Sensörleri
                     </h3>
                     <div class="flex items-center space-x-2">
                         <span class="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-xs">
-                            @(Bin.Sensors?.Count ?? 0) adet
+                            @(Bin.Sensors?.Count ?? 0) / @Bin.SensorCount adet
                         </span>
-                        <span class="text-green-500 text-sm font-medium bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-md">
+                        <span class="@GetSensorStatusBadge(Bin.ActiveSensorCount, Bin.WorkingSensorCount) text-xs px-2 py-1 rounded-md">
                             <i class="fas fa-info-circle mr-1"></i>
-                            Düzenle modunda sensör ekleyin
+                            @Bin.WorkingSensorCount aktif
                         </span>
                     </div>
                 </div>
@@ -118,55 +122,72 @@
                 <div class="space-y-3 max-h-60 overflow-y-auto">
                     @if (Bin.Sensors != null && Bin.Sensors.Any())
                     {
-                        foreach (var sensor in Bin.Sensors)
+                        foreach (var sensor in Bin.Sensors.OrderBy(s => s.SensorNumber))
                         {
-                            <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border-l-4 @GetSensorBorderColor(sensor.IsActive) transition-transform duration-300 hover:translate-x-1">
+                            var isLoading = LoadingSensorIds?.Contains(sensor.SensorId) == true;
+                            <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border-l-4 @GetSensorBorderColor(sensor.IsActive, sensor.IsWorking) transition-transform duration-300 hover:translate-x-1">
                                 <div class="flex justify-between items-start">
                                     <div class="flex-1">
                                         <div class="flex justify-between items-center mb-1">
-                                            <span class="font-medium text-gray-800 dark:text-white">@sensor.Type</span>
+                                            <div class="flex items-center">
+                                                <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+                                                <span class="font-medium text-gray-800 dark:text-white">Işık Sensörü</span>
+                                                @if (isLoading)
+                                                {
+                                                    <i class="fas fa-circle-notch fa-spin text-blue-500 ml-2"></i>
+                                                }
+                                            </div>
                                             <div class="flex items-center space-x-1">
-                                                <!-- Status Toggle Button -->
-                                                <button class="@(sensor.IsActive ? "text-green-500 hover:text-green-700" : "text-gray-400 hover:text-green-500") text-sm tooltip-container"
-                                                        @onclick="() => OnToggleSensorStatus.InvokeAsync(new Tuple<Guid, bool>(sensor.SensorId, sensor.IsActive))">
-                                                    <i class="fas @(sensor.IsActive ? "fa-toggle-on" : "fa-toggle-off")"></i>
+                                                <!-- Active Status Toggle -->
+                                                <button class="@(sensor.IsActive ? "text-green-500 hover:text-green-700" : "text-gray-400 hover:text-green-500") text-sm tooltip-container disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        @onclick="() => OnToggleSensorStatus.InvokeAsync(new Tuple<Guid, bool, bool>(sensor.SensorId, sensor.IsActive, sensor.IsWorking))"
+                                                        disabled="@isLoading">
+                                                    @if (isLoading)
+                                                    {
+                                                        <i class="fas fa-circle-notch fa-spin"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="fas @(sensor.IsActive ? "fa-toggle-on" : "fa-toggle-off")"></i>
+                                                    }
                                                     <span class="tooltip">@(sensor.IsActive ? "Pasif Yap" : "Aktif Yap")</span>
                                                 </button>
 
-                                                <!-- Edit Button -->
-                                                <button class="text-blue-500 hover:text-blue-700 text-sm tooltip-container"
-                                                        @onclick="() => OnEditSensor.InvokeAsync(sensor)">
-                                                    <i class="fas fa-edit"></i>
-                                                    <span class="tooltip">Düzenle</span>
-                                                </button>
-
-                                                <!-- Delete Button -->
-                                                <button class="text-red-500 hover:text-red-700 text-sm tooltip-container"
-                                                        @onclick="() => OnDeleteSensor.InvokeAsync(sensor.SensorId)">
-                                                    <i class="fas fa-trash"></i>
-                                                    <span class="tooltip">Sil</span>
-                                                </button>
+                                                <!-- Working Status Toggle -->
+                                                @if (sensor.IsActive)
+                                                {
+                                                    <button class="@(sensor.IsWorking ? "text-blue-500 hover:text-blue-700" : "text-orange-500 hover:text-blue-500") text-sm tooltip-container disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            @onclick="() => OnToggleSensorWorking.InvokeAsync(new Tuple<Guid, bool, bool>(sensor.SensorId, sensor.IsActive, sensor.IsWorking))"
+                                                            disabled="@isLoading">
+                                                        @if (isLoading)
+                                                        {
+                                                            <i class="fas fa-circle-notch fa-spin"></i>
+                                                        }
+                                                        else
+                                                        {
+                                                            <i class="fas @(sensor.IsWorking ? "fa-cog" : "fa-exclamation-triangle")"></i>
+                                                        }
+                                                        <span class="tooltip">@(sensor.IsWorking ? "Arıza Bildir" : "Tamir Et")</span>
+                                                    </button>
+                                                }
                                             </div>
                                         </div>
 
                                         <div class="flex justify-between items-center mb-1">
-                                            <span class="@(sensor.IsActive ? "text-green-500" : "text-red-500") text-xs flex items-center">
-                                                <i class="fas @(sensor.IsActive ? "fa-check-circle" : "fa-times-circle") mr-1 @(sensor.IsActive ? "animate-pulse" : "")"></i>
-                                                @(sensor.IsActive ? "Aktif" : "Pasif")
-                                            </span>
-                                            <span class="text-xs text-gray-500 dark:text-gray-400">
-                                                ID: @sensor.SensorId.ToString()[..8]...
+                                            <span class="@GetSensorStatusColor(sensor.IsActive, sensor.IsWorking) text-xs flex items-center">
+                                                <i class="fas @GetSensorStatusIcon(sensor.IsActive, sensor.IsWorking) mr-1"></i>
+                                                @GetSensorStatusText(sensor.IsActive, sensor.IsWorking)
                                             </span>
                                         </div>
 
                                         <div class="text-xs text-gray-500 dark:text-gray-400 space-y-1">
                                             <div class="flex justify-between">
                                                 <span>Kurulum:</span>
-                                                <span>@(sensor.InstallationDate?.ToString("dd.MM.yyyy") ?? "-")</span>
+                                                <span>@sensor.InstallationDate.ToString("dd.MM.yyyy")</span>
                                             </div>
                                             <div class="flex justify-between">
                                                 <span>Son Güncelleme:</span>
-                                                <span>@(sensor.LastUpdate?.ToString("dd.MM.yyyy") ?? "-")</span>
+                                                <span>@(sensor.LastUpdate?.ToString("dd.MM.yyyy HH:mm") ?? "-")</span>
                                             </div>
                                         </div>
                                     </div>
@@ -178,11 +199,18 @@
                     {
                         <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded text-center">
                             <div class="text-gray-400 mb-2">
-                                <i class="fas fa-microchip text-2xl"></i>
+                                <i class="fas fa-lightbulb text-2xl"></i>
                             </div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Sensör bulunamadı</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">Henüz sensör bulunamadı</p>
                             <p class="text-xs text-gray-400 dark:text-gray-500">
-                                Sensör eklemek için atık kutusunu düzenleyin
+                                @if (Bin.SensorCount > 0)
+                                {
+                                    <span>@Bin.SensorCount adet sensör oluşturulması bekleniyor</span>
+                                }
+                                else
+                                {
+                                    <span>Bu atık kutusu için sensör tanımlanmamış</span>
+                                }
                             </p>
                         </div>
                     }
@@ -194,11 +222,11 @@
 
 @code {
     [Parameter] public ResultWasteBinDto Bin { get; set; }
+    [Parameter] public HashSet<Guid> LoadingSensorIds { get; set; } = new HashSet<Guid>(); // YENİ PARAMETRE
 
     // Sensor management events
-    [Parameter] public EventCallback<ResultSensorDto> OnEditSensor { get; set; }
-    [Parameter] public EventCallback<Guid> OnDeleteSensor { get; set; }
-    [Parameter] public EventCallback<Tuple<Guid, bool>> OnToggleSensorStatus { get; set; }
+    [Parameter] public EventCallback<Tuple<Guid, bool, bool>> OnToggleSensorStatus { get; set; }
+    [Parameter] public EventCallback<Tuple<Guid, bool, bool>> OnToggleSensorWorking { get; set; }
 
     // Belirli bir tarihteki tahmini doluluk oranı
     private const double DAILY_FILL_RATE = 5.0; // Günlük ortalama doluluk artışı yüzdesi
@@ -303,8 +331,35 @@
         };
     }
 
-    private string GetSensorBorderColor(bool isActive)
+    private string GetSensorBorderColor(bool isActive, bool isWorking)
     {
-        return isActive ? "border-green-500" : "border-red-500";
+        if (!isActive) return "border-gray-500";
+        return isWorking ? "border-green-500" : "border-orange-500";
+    }
+
+    private string GetSensorStatusColor(bool isActive, bool isWorking)
+    {
+        if (!isActive) return "text-gray-500";
+        return isWorking ? "text-green-500" : "text-orange-500";
+    }
+
+    private string GetSensorStatusIcon(bool isActive, bool isWorking)
+    {
+        if (!isActive) return "fa-times-circle";
+        return isWorking ? "fa-check-circle animate-pulse" : "fa-exclamation-triangle";
+    }
+
+    private string GetSensorStatusText(bool isActive, bool isWorking)
+    {
+        if (!isActive) return "Pasif";
+        return isWorking ? "Aktif ve Çalışıyor" : "Aktif ama Arızalı";
+    }
+
+    private string GetSensorStatusBadge(int activeCount, int workingCount)
+    {
+        if (activeCount == 0) return "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400";
+        if (workingCount == activeCount) return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+        if (workingCount > 0) return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
+        return "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400";
     }
 }

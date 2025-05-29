@@ -34,20 +34,12 @@ namespace EcoRoute.DataCollection.Controllers
             return Ok(sensor);
         }
 
-        [HttpPost]
+        [HttpGet("wastebin/{wasteBinId}")]
         [Authorize(Policy = "DataCollectionFullAccess")]
-        public async Task<IActionResult> CreateSensor(CreateSensorDto createSensorDto)
+        public async Task<IActionResult> GetSensorsByWasteBinId(Guid wasteBinId)
         {
-            await _sensorService.CreateSensorAsync(createSensorDto);
-            return Ok("Sensor Created Successfully");
-        }
-
-        [HttpDelete("{id}")]
-        [Authorize(Policy = "DataCollectionFullAccess")]
-        public async Task<IActionResult> DeleteSensor(Guid id)
-        {
-            await _sensorService.DeleteSensorAsync(id);
-            return Ok("Sensor Deleted Successfully");
+            var sensors = await _sensorService.GetSensorsByWasteBinIdAsync(wasteBinId);
+            return Ok(sensors);
         }
 
         [HttpPut]
@@ -56,6 +48,14 @@ namespace EcoRoute.DataCollection.Controllers
         {
             await _sensorService.UpdateSensorAsync(updateSensorDto);
             return Ok("Sensor Updated Successfully");
+        }
+
+        [HttpPut("{id}/status")]
+        [Authorize(Policy = "DataCollectionFullAccess")]
+        public async Task<IActionResult> UpdateSensorStatus(Guid id, [FromQuery] bool isActive, [FromQuery] bool isWorking)
+        {
+            await _sensorService.UpdateSensorStatusAsync(id, isActive, isWorking);
+            return Ok("Sensor Status Updated Successfully");
         }
     }
 }

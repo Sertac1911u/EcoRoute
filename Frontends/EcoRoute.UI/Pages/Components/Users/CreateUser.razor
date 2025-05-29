@@ -1,256 +1,234 @@
 ﻿@using EcoRoute.DtoLayer.IdentityDtos
+@inject IJSRuntime JS
 
 @if (IsOpen)
 {
-    <div class="fixed inset-0 z-50 overflow-y-auto" @onclick="OnClose">
-        <div class="flex min-h-screen items-center justify-center p-2 sm:p-4">
-            <!-- Backdrop -->
-            <div class="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"></div>
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4" @onclick="OnClose">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black/50"></div>
 
-            <!-- Modal - Optimized for smaller screens -->
-            <div class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] transform transition-all animate-slideIn flex flex-col"
-                 @onclick:stopPropagation="true">
+        <!-- Modal -->
+        <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[95vh] flex flex-col border border-gray-200 dark:border-gray-700"
+             @onclick:stopPropagation="true">
 
-                <!-- Header - Fixed -->
-                <div class="relative bg-gradient-to-r from-primary-500 to-primary-600 px-4 sm:px-6 py-3 sm:py-4 rounded-t-2xl flex-shrink-0">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-white/20">
-                                <i class="fas fa-user-plus text-white text-sm sm:text-base"></i>
-                            </div>
-                            <div>
-                                <h3 class="text-lg sm:text-xl font-bold text-white">Yeni Kullanıcı</h3>
-                                <p class="text-primary-100 text-xs sm:text-sm">Sisteme yeni kullanıcı ekleyin</p>
-                            </div>
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4 rounded-t-xl">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+                            <i class="fas fa-user-plus text-white"></i>
                         </div>
-                        <button @onclick="OnClose"
-                                class="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 bg-white/20 hover:bg-white/30 rounded-xl transition-colors">
-                            <i class="fas fa-times text-white text-sm"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Body - Scrollable -->
-                <div class="p-4 sm:p-6 overflow-y-auto flex-1">
-
-                    <!-- Kişisel Bilgiler -->
-                    <div class="mb-4">
-                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                            <span class="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs">1</span>
-                            Kişisel Bilgiler
-                        </h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div class="group relative">
-                                <input type="text"
-                                       id="create-name"
-                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-                                       @bind="User.Name"
-                                       placeholder="Ad" />
-                                <label for="create-name"
-                                       class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                    Ad *
-                                </label>
-                            </div>
-
-                            <div class="group relative">
-                                <input type="text"
-                                       id="create-surname"
-                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-                                       @bind="User.Surname"
-                                       placeholder="Soyad" />
-                                <label for="create-surname"
-                                       class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                    Soyad *
-                                </label>
-                            </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-white">Yeni Kullanıcı</h3>
+                            <p class="text-primary-100 text-sm">Sisteme yeni kullanıcı ekleyin</p>
                         </div>
                     </div>
-
-                    <!-- Hesap Bilgileri -->
-                    <div class="mb-4">
-                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                            <span class="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs">2</span>
-                            Hesap Bilgileri
-                        </h4>
-                        <div class="space-y-3">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div class="group relative">
-                                    <input type="text"
-                                           id="create-username"
-                                           class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-                                           @bind="User.UserName"
-                                           placeholder="Kullanıcı Adı" />
-                                    <label for="create-username"
-                                           class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                        Kullanıcı Adı *
-                                    </label>
-                                </div>
-
-                                <div class="group relative">
-                                    <input type="tel"
-                                           id="create-phone"
-                                           class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-                                           @bind="User.PhoneNumber"
-                                           placeholder="Telefon" />
-                                    <label for="create-phone"
-                                           class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                        Telefon
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="group relative">
-                                <input type="email"
-                                       id="create-email"
-                                       class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-                                       @bind="User.Email"
-                                       placeholder="E-posta" />
-                                <label for="create-email"
-                                       class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                    E-posta *
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Güvenlik -->
-                    <div class="mb-4">
-                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                            <span class="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs">3</span>
-                            Güvenlik
-                        </h4>
-                        <div class="space-y-3">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div class="group relative">
-                                    <input type="@(_showPassword ? "text" : "password")"
-                                           id="create-password"
-                                           class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 pr-10 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-                                           @bind="User.Password"
-                                           placeholder="Şifre" />
-                                    <label for="create-password"
-                                           class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                        Şifre *
-                                    </label>
-                                    <button type="button"
-                                            class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                            @onclick="TogglePasswordVisibility">
-                                        <i class="fas @(_showPassword ? "fa-eye-slash" : "fa-eye") text-sm"></i>
-                                    </button>
-                                </div>
-
-                                <div class="group relative">
-                                    <input type="@(_showPassword ? "text" : "password")"
-                                           id="create-confirm-password"
-                                           class="peer w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-gray-900 dark:text-white text-sm placeholder-transparent focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-all"
-                                           @bind="ConfirmPassword"
-                                           placeholder="Şifre Tekrarı" />
-                                    <label for="create-confirm-password"
-                                           class="absolute left-3 top-2.5 text-gray-500 dark:text-gray-400 text-sm transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:text-gray-400 peer-focus:-top-2 peer-focus:left-2 peer-focus:bg-white dark:peer-focus:bg-gray-700 peer-focus:px-1 peer-focus:text-xs peer-focus:text-primary-600 dark:peer-focus:text-primary-400 peer-[:not(:placeholder-shown)]:-top-2 peer-[:not(:placeholder-shown)]:left-2 peer-[:not(:placeholder-shown)]:bg-white dark:peer-[:not(:placeholder-shown)]:bg-gray-700 peer-[:not(:placeholder-shown)]:px-1 peer-[:not(:placeholder-shown)]:text-xs">
-                                        Şifre Tekrarı *
-                                    </label>
-                                </div>
-                            </div>
-
-                            @if (!string.IsNullOrEmpty(PasswordError))
-                            {
-                                <div class="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-2 flex items-start space-x-2">
-                                    <i class="fas fa-exclamation-circle text-red-500 mt-0.5 text-sm"></i>
-                                    <p class="text-xs text-red-700 dark:text-red-400">@PasswordError</p>
-                                </div>
-                            }
-
-                            <!-- Şifre Gereksinimleri - Compact -->
-                            <div class="rounded-lg bg-gray-50 dark:bg-gray-700/50 p-3">
-                                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Şifre Gereksinimleri:</p>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-1 text-xs text-gray-600 dark:text-gray-400">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-check-circle mr-1 @(User.Password?.Length >= 6 ? "text-green-500" : "text-gray-400") text-xs"></i>
-                                        En az 6 karakter
-                                    </div>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-check-circle mr-1 @(User.Password?.Any(char.IsLetter) == true ? "text-green-500" : "text-gray-400") text-xs"></i>
-                                        En az bir harf
-                                    </div>
-                                    <div class="flex items-center">
-                                        <i class="fas fa-check-circle mr-1 @(User.Password?.Any(char.IsDigit) == true ? "text-green-500" : "text-gray-400") text-xs"></i>
-                                        En az bir rakam
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Kullanıcı Rolü -->
-                    <div class="mb-4">
-                        <h4 class="flex items-center text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                            <span class="mr-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 text-xs">4</span>
-                            Kullanıcı Rolü
-                        </h4>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <label class="relative cursor-pointer">
-                                <input type="radio"
-                                       name="new-role"
-                                       value="Manager"
-                                       checked="@(User.Role == "Manager")"
-                                       @onchange='@(() => User.Role = "Manager")'
-                                       class="sr-only peer" />
-                                <div class="rounded-lg border-2 border-gray-200 dark:border-gray-700 p-3 transition-all hover:border-gray-300 dark:hover:border-gray-600 peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/10">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400">
-                                            <i class="fas fa-user-tie text-sm"></i>
-                                        </div>
-                                        <div class="flex-1">
-                                            <p class="font-medium text-gray-900 dark:text-white text-sm">Manager</p>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">Yönetici rolü</p>
-                                        </div>
-                                        <div class="opacity-0 peer-checked:opacity-100 transition-opacity">
-                                            <i class="fas fa-check-circle text-primary-500 text-sm"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </label>
-
-                            <label class="relative cursor-pointer">
-                                <input type="radio"
-                                       name="new-role"
-                                       value="Driver"
-                                       checked="@(User.Role == "Driver")"
-                                       @onchange='@(() => User.Role = "Driver")'
-                                       class="sr-only peer" />
-                                <div class="rounded-lg border-2 border-gray-200 dark:border-gray-700 p-3 transition-all hover:border-gray-300 dark:hover:border-gray-600 peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/10">
-                                    <div class="flex items-center space-x-3">
-                                        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-100 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400">
-                                            <i class="fas fa-truck text-sm"></i>
-                                        </div>
-                                        <div class="flex-1">
-                                            <p class="font-medium text-gray-900 dark:text-white text-sm">Driver</p>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">Sürücü rolü</p>
-                                        </div>
-                                        <div class="opacity-0 peer-checked:opacity-100 transition-opacity">
-                                            <i class="fas fa-check-circle text-primary-500 text-sm"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Footer - Fixed -->
-                <div class="flex items-center justify-end gap-2 sm:gap-3 border-t border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4 flex-shrink-0">
-                    <button class="px-3 sm:px-5 py-2 sm:py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium transition-colors text-sm"
-                            @onclick="OnClose">
-                        İptal
-                    </button>
-                    <button class="px-3 sm:px-5 py-2 sm:py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all text-sm"
-                            @onclick="OnSave">
-                        <i class="fas fa-save mr-1 sm:mr-2 text-xs"></i>
-                        Kullanıcı Ekle
+                    <button @onclick="OnClose"
+                            class="flex items-center justify-center w-8 h-8 bg-white/20 hover:bg-white/30 rounded-lg">
+                        <i class="fas fa-times text-white"></i>
                     </button>
                 </div>
             </div>
+
+            <!-- Body -->
+            <div class="p-6 overflow-y-auto flex-1 space-y-6">
+
+                <!-- Kişisel Bilgiler -->
+                <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                        <i class="fas fa-user mr-2 text-primary-500"></i>
+                        Kişisel Bilgiler
+                    </h4>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Ad *
+                            </label>
+                            <input type="text"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary-500 focus:outline-none"
+                                   @bind="User.Name" />
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Soyad *
+                            </label>
+                            <input type="text"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary-500 focus:outline-none"
+                                   @bind="User.Surname" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hesap Bilgileri -->
+                <div class="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                        <i class="fas fa-id-card mr-2 text-blue-500"></i>
+                        Hesap Bilgileri
+                    </h4>
+
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Kullanıcı Adı *
+                                </label>
+                                <input type="text"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary-500 focus:outline-none"
+                                       @bind="User.UserName" />
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Telefon
+                                </label>
+                                <input type="tel"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary-500 focus:outline-none"
+                                       @bind="User.PhoneNumber" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                E-posta *
+                            </label>
+                            <input type="email"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary-500 focus:outline-none"
+                                   @bind="User.Email" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Güvenlik -->
+                <div class="bg-red-50 dark:bg-red-900/10 rounded-lg p-4 border border-red-200 dark:border-red-700">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                        <i class="fas fa-lock mr-2 text-red-500"></i>
+                        Güvenlik
+                    </h4>
+
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Şifre *
+                                </label>
+                                <div class="relative">
+                                    <input type="@(_showPassword ? "text" : "password")"
+                                           class="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary-500 focus:outline-none"
+                                           @bind="User.Password" />
+                                    <button type="button"
+                                            class="absolute right-3 top-2 text-gray-400 hover:text-gray-600"
+                                            @onclick="TogglePasswordVisibility">
+                                        <i class="fas @(_showPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Şifre Tekrarı *
+                                </label>
+                                <input type="@(_showPassword ? "text" : "password")"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:border-primary-500 focus:outline-none"
+                                       @bind="ConfirmPassword" />
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(PasswordError))
+                        {
+                            <div class="bg-red-100 dark:bg-red-900/20 border border-red-300 dark:border-red-800 rounded-lg p-3">
+                                <p class="text-sm text-red-700 dark:text-red-400">@PasswordError</p>
+                            </div>
+                        }
+
+                        <!-- Şifre Gereksinimleri -->
+                        <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
+                            <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Şifre Gereksinimleri:</p>
+                            <div class="space-y-1">
+                                <div class="flex items-center text-sm">
+                                    <i class="fas fa-check-circle mr-2 @(User.Password?.Length >= 6 ? "text-green-500" : "text-gray-400")"></i>
+                                    <span class="@(User.Password?.Length >= 6 ? "text-green-700 dark:text-green-400" : "text-gray-600 dark:text-gray-400")">En az 6 karakter</span>
+                                </div>
+                                <div class="flex items-center text-sm">
+                                    <i class="fas fa-check-circle mr-2 @(User.Password?.Any(char.IsLetter) == true ? "text-green-500" : "text-gray-400")"></i>
+                                    <span class="@(User.Password?.Any(char.IsLetter) == true ? "text-green-700 dark:text-green-400" : "text-gray-600 dark:text-gray-400")">En az bir harf</span>
+                                </div>
+                                <div class="flex items-center text-sm">
+                                    <i class="fas fa-check-circle mr-2 @(User.Password?.Any(char.IsDigit) == true ? "text-green-500" : "text-gray-400")"></i>
+                                    <span class="@(User.Password?.Any(char.IsDigit) == true ? "text-green-700 dark:text-green-400" : "text-gray-600 dark:text-gray-400")">En az bir rakam</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kullanıcı Rolü -->
+                <div class="bg-purple-50 dark:bg-purple-900/10 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                    <h4 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                        <i class="fas fa-users-cog mr-2 text-purple-500"></i>
+                        Kullanıcı Rolü
+                    </h4>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <label class="cursor-pointer">
+                            <input type="radio"
+                                   name="new-role"
+                                   value="Manager"
+                                   checked="@(User.Role == "Manager")"
+                                   @onchange='@(() => User.Role = "Manager")'
+                                   class="sr-only peer" />
+                            <div class="border-2 border-gray-200 dark:border-gray-700 p-4 rounded-lg peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/10">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+                                        <i class="fas fa-user-tie"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900 dark:text-white">Manager</p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Sistem yöneticisi</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="cursor-pointer">
+                            <input type="radio"
+                                   name="new-role"
+                                   value="Driver"
+                                   checked="@(User.Role == "Driver")"
+                                   @onchange='@(() => User.Role = "Driver")'
+                                   class="sr-only peer" />
+                            <div class="border-2 border-gray-200 dark:border-gray-700 p-4 rounded-lg peer-checked:border-primary-500 peer-checked:bg-primary-50 dark:peer-checked:bg-primary-900/10">
+                                <div class="flex items-center space-x-3">
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
+                                        <i class="fas fa-truck"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-semibold text-gray-900 dark:text-white">Driver</p>
+                                        <p class="text-sm text-gray-500 dark:text-gray-400">Sürücü kullanıcısı</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex items-center justify-end gap-3 border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-700/30 rounded-b-xl">
+                <button class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 rounded-lg"
+                        @onclick="OnClose">
+                    İptal
+                </button>
+                <button class="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg"
+                        @onclick="OnSave">
+                    <i class="fas fa-save mr-2"></i>
+                    Kullanıcı Ekle
+                </button>
+            </div>
         </div>
     </div>
+
 }
 
 @code {
@@ -278,6 +256,41 @@
     [Parameter] public EventCallback<string> ConfirmPasswordChanged { get; set; }
 
     private bool _showPassword = false;
+    private bool _previousIsOpen = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen != _previousIsOpen)
+        {
+            _previousIsOpen = IsOpen;
+            if (IsOpen)
+            {
+                await DisableBodyScroll();
+            }
+            else
+            {
+                await EnableBodyScroll();
+            }
+        }
+    }
+
+    private async Task DisableBodyScroll()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval", "document.body.style.overflow = 'hidden'");
+        }
+        catch { }
+    }
+
+    private async Task EnableBodyScroll()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval", "document.body.style.overflow = ''");
+        }
+        catch { }
+    }
 
     private void TogglePasswordVisibility()
     {

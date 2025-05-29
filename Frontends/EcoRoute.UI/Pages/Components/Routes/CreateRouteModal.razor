@@ -12,7 +12,9 @@
                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
                     <i class="fas fa-route mr-3 text-primary-500"></i> Yeni Rota Oluştur
                 </h2>
-                <button class="text-gray-500 hover:text-red-600" @onclick="CloseModal">
+                <button class="text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        @onclick="CloseModal"
+                        disabled="@IsCreating">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -29,12 +31,16 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Rota Adı</label>
-                                <InputText class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" @bind-Value="newRoute.RouteName" placeholder="Örn: Sabah Rotası" />
+                                <InputText class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                           @bind-Value="newRoute.RouteName"
+                                           placeholder="Örn: Sabah Rotası"
+                                           disabled="@IsCreating" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Atık Türü</label>
-                                <InputSelect class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                                             @bind-Value="newRoute.WasteType">
+                                <InputSelect class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                             @bind-Value="newRoute.WasteType"
+                                             disabled="@IsCreating">
                                     <option value="">Seçiniz</option>
                                     @foreach (WasteType wt in Enum.GetValues(typeof(WasteType)))
                                     {
@@ -45,7 +51,9 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Başlangıç Zamanı</label>
-                                <InputDate class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" @bind-Value="newRoute.ScheduledStart" />
+                                <InputDate class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                           @bind-Value="newRoute.ScheduledStart"
+                                           disabled="@IsCreating" />
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Optimizasyon Türü</label>
@@ -54,8 +62,9 @@
                                         <input type="radio" id="opt-shortest" name="optimization-type" value="@OptimizationType.EnKisaMesafe"
                                                checked="@(newRoute.OptimizationType == OptimizationType.EnKisaMesafe)"
                                                @onchange='@(() => newRoute.OptimizationType = OptimizationType.EnKisaMesafe)'
-                                               class="hidden peer" />
-                                        <label for="opt-shortest" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-400 peer-checked:border-blue-600 peer-checked:text-blue-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                               class="hidden peer"
+                                               disabled="@IsCreating" />
+                                        <label for="opt-shortest" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-blue-400 peer-checked:border-blue-600 peer-checked:text-blue-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 @(IsCreating ? "opacity-50 cursor-not-allowed" : "")">
                                             <i class="fas fa-route mr-2 text-blue-500"></i>
                                             <span class="font-medium text-sm">En Kısa Mesafe</span>
                                         </label>
@@ -64,8 +73,9 @@
                                         <input type="radio" id="opt-fill" name="optimization-type" value="@OptimizationType.DolulukOncelikli"
                                                checked="@(newRoute.OptimizationType == OptimizationType.DolulukOncelikli)"
                                                @onchange='@(() => newRoute.OptimizationType = OptimizationType.DolulukOncelikli)'
-                                               class="hidden peer" />
-                                        <label for="opt-fill" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-green-400 peer-checked:border-green-600 peer-checked:text-green-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                               class="hidden peer"
+                                               disabled="@IsCreating" />
+                                        <label for="opt-fill" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-green-400 peer-checked:border-green-600 peer-checked:text-green-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 @(IsCreating ? "opacity-50 cursor-not-allowed" : "")">
                                             <i class="fas fa-fill-drip mr-2 text-green-500"></i>
                                             <span class="font-medium text-sm">Doluluk Öncelikli</span>
                                         </label>
@@ -108,20 +118,21 @@
                             <!-- Sürücü Seçimi -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Sürücü Seçimi</label>
-                                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 @(IsCreating ? "opacity-50" : "")">
                                     @if (Drivers != null && Drivers.Any())
                                     {
                                         foreach (var driver in Drivers)
                                         {
-                                            <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800 @(newRoute.DriverId == driver.Id ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "")"
-                                                 @onclick="@(() => newRoute.DriverId = driver.Id)">
+                                            <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800 @(newRoute.DriverId == driver.Id ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "") @(IsCreating ? "cursor-not-allowed" : "cursor-pointer")"
+                                                 @onclick="@(() => { if (!IsCreating) newRoute.DriverId = driver.Id; })">
                                                 <input type="radio"
                                                        id="driver-@driver.Id"
                                                        name="driver-selection"
                                                        value="@driver.Id"
                                                        checked="@(newRoute.DriverId == driver.Id)"
-                                                       @onchange="@(e => newRoute.DriverId = driver.Id)"
-                                                       class="w-4 h-4 mr-3 text-primary-600 bg-gray-100 border-gray-300 rounded-full focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                                                       @onchange="@(e => { if (!IsCreating) newRoute.DriverId = driver.Id; })"
+                                                       class="w-4 h-4 mr-3 text-primary-600 bg-gray-100 border-gray-300 rounded-full focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                                       disabled="@IsCreating" />
                                                 <div class="flex items-center">
                                                     <div class="w-8 h-8 bg-primary-500 rounded-full text-white flex items-center justify-center mr-3">
                                                         <i class="fas fa-user"></i>
@@ -147,20 +158,21 @@
                             <!-- Araç Seçimi -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Araç Seçimi</label>
-                                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 @(IsCreating ? "opacity-50" : "")">
                                     @if (Vehicles != null && Vehicles.Any())
                                     {
                                         foreach (var vehicle in Vehicles)
                                         {
-                                            <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800 @(newRoute.VehicleId == vehicle.Id.ToString() ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "")"
-                                                 @onclick="@(() => newRoute.VehicleId = vehicle.Id.ToString())">
+                                            <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800 @(newRoute.VehicleId == vehicle.Id.ToString() ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "") @(IsCreating ? "cursor-not-allowed" : "cursor-pointer")"
+                                                 @onclick="@(() => { if (!IsCreating) newRoute.VehicleId = vehicle.Id.ToString(); })">
                                                 <input type="radio"
                                                        id="vehicle-@vehicle.Id"
                                                        name="vehicle-selection"
                                                        value="@vehicle.Id.ToString()"
                                                        checked="@(newRoute.VehicleId == vehicle.Id.ToString())"
-                                                       @onchange="@(e => newRoute.VehicleId = vehicle.Id.ToString())"
-                                                       class="w-4 h-4 mr-3 text-primary-600 bg-gray-100 border-gray-300 rounded-full focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                                                       @onchange="@(e => { if (!IsCreating) newRoute.VehicleId = vehicle.Id.ToString(); })"
+                                                       class="w-4 h-4 mr-3 text-primary-600 bg-gray-100 border-gray-300 rounded-full focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                                                       disabled="@IsCreating" />
                                                 <div class="flex items-center">
                                                     <div class="w-8 h-8 bg-blue-500 rounded-full text-white flex items-center justify-center mr-3">
                                                         <i class="fas fa-truck"></i>
@@ -196,11 +208,12 @@
                             </span>
                         </div>
 
-                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg max-h-72 overflow-y-auto">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg max-h-72 overflow-y-auto @(IsCreating ? "opacity-50" : "")">
                             <div class="mb-3 relative">
                                 <input type="text" placeholder="Atık kutusu ara..."
                                        @bind="binSearchText" @bind:event="oninput" @onkeyup="FilterBinsWithDebounce"
-                                       class="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" />
+                                       class="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                       disabled="@IsCreating" />
                                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <i class="fas fa-search text-gray-400"></i>
                                 </div>
@@ -209,14 +222,15 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                                 @foreach (var bin in filteredBins)
                                 {
-                                    <div class="flex items-center space-x-2 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors @(newRoute.WasteBinIds.Contains(bin.Id) ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "")"
-                                         @onclick="e => ToggleBin(bin.Id, !newRoute.WasteBinIds.Contains(bin.Id))">
+                                    <div class="flex items-center space-x-2 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors @(newRoute.WasteBinIds.Contains(bin.Id) ? "bg-blue-50 border-blue-300 dark:bg-blue-900/20 dark:border-blue-600" : "") @(IsCreating ? "cursor-not-allowed" : "cursor-pointer")"
+                                         @onclick="e => { if (!IsCreating) ToggleBin(bin.Id, !newRoute.WasteBinIds.Contains(bin.Id)); }">
                                         <input type="checkbox"
                                                id="bin-@bin.Id"
                                                value="@bin.Id"
                                                checked="@newRoute.WasteBinIds.Contains(bin.Id)"
-                                               @onchange="e => ToggleBin(bin.Id, e.Value)"
-                                               class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:bg-gray-700 dark:border-gray-600" />
+                                               @onchange="e => { if (!IsCreating) ToggleBin(bin.Id, e.Value); }"
+                                               class="w-4 h-4 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 dark:bg-gray-700 dark:border-gray-600"
+                                               disabled="@IsCreating" />
                                         <div class="flex-1">
                                             <div class="flex justify-between">
                                                 <span class="font-medium text-gray-800 dark:text-white text-sm">@bin.Label</span>
@@ -238,10 +252,11 @@
                             <i class="fas fa-sticky-note mr-2 text-yellow-500"></i> Notlar
                         </h3>
 
-                        <textarea class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                        <textarea class="w-full p-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white resize-none focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                   @bind="newRoute.Notes"
                                   rows="3"
-                                  placeholder="Rotayla ilgili notlarınızı buraya ekleyebilirsiniz..."></textarea>
+                                  placeholder="Rotayla ilgili notlarınızı buraya ekleyebilirsiniz..."
+                                  disabled="@IsCreating"></textarea>
                     </div>
 
                     <!-- Özet ve Butonlar -->
@@ -261,11 +276,21 @@
                             </div>
                         </div>
                         <div class="flex space-x-3">
-                            <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" @onclick="CloseModal">
+                            <button type="button" class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    @onclick="CloseModal"
+                                    disabled="@IsCreating">
                                 İptal
                             </button>
-                            <button type="submit" class="px-5 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors shadow-sm">
-                                <i class="fas fa-check mr-2"></i> Rota Oluştur
+                            <button type="submit" class="px-5 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                    disabled="@IsCreating">
+                                @if (IsCreating)
+                                {
+                                    <i class="fas fa-spinner fa-spin mr-2"></i> <span>Oluşturuluyor...</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-check mr-2"></i> <span>Rota Oluştur</span>
+                                }
                             </button>
                         </div>
                     </div>
@@ -275,7 +300,43 @@
     </div>
 }
 
+<!-- Loading Overlay -->
+@if (IsCreating)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-60">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-2xl max-w-md mx-auto">
+            <div class="flex items-center justify-center mb-4">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+            </div>
+            <div class="text-center">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Rota Oluşturuluyor</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Lütfen bekleyiniz, rota hesaplanıyor...</p>
+            </div>
+        </div>
+    </div>
+}
+
 <style>
+    /* Modal Animation */
+    @@keyframes modalShow {
+        from
+
+    {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+
+    }
+
+    .animate-modal-show {
+        animation: modalShow 0.2s ease-out forwards;
+    }
+
     /* Line clamp for address text */
     .line-clamp-1 {
         display: -webkit-box;
@@ -291,6 +352,7 @@
     [Parameter] public List<ResultUserDto> Drivers { get; set; } = new();
     [Parameter] public List<ResultVehicleDto> Vehicles { get; set; } = new();
     [Parameter] public List<ResultWasteBinDto> WasteBins { get; set; } = new();
+    [Parameter] public bool IsCreating { get; set; }
     [Parameter] public EventCallback<CreateRouteDto> OnCreateRoute { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
@@ -357,6 +419,8 @@
 
     private async Task FilterBinsWithDebounce()
     {
+        if (IsCreating) return; // Don't filter while creating
+
         try
         {
             _debounceTokenSource.Cancel();
@@ -378,6 +442,8 @@
 
     private void ToggleBin(Guid binId, object isChecked)
     {
+        if (IsCreating) return; // Don't allow changes while creating
+
         if ((bool)isChecked)
         {
             if (!newRoute.WasteBinIds.Contains(binId))
@@ -393,11 +459,14 @@
 
     private async Task CreateRouteSubmit()
     {
+        if (IsCreating) return; // Prevent multiple submissions
         await OnCreateRoute.InvokeAsync(newRoute);
     }
 
     private async Task CloseModal()
     {
+        if (IsCreating) return; // Prevent closing during creation
+
         IsVisible = false;
         await IsVisibleChanged.InvokeAsync(false);
         await OnClose.InvokeAsync();

@@ -54,6 +54,12 @@ namespace EcoRoute.UI.Services.NotificationServices
                 // Register for notifications
                 _hubConnection.On<ResultNotificationDto>("ReceiveNotification", (notification) =>
                 {
+                    if (_notifications.Any(n => n.Id == notification.Id))
+                    {
+                        // Zaten geldi
+                        return;
+                    }
+
                     Console.WriteLine($"Notification received: {notification.Title}");
 
                     // Add to our local list
@@ -96,6 +102,16 @@ namespace EcoRoute.UI.Services.NotificationServices
                         await _hubConnection.InvokeAsync("JoinGroup", "AllUsers");
                         Console.WriteLine($"Joined groups with user ID: {userId}");
                     }
+
+                    // Token'dan roller de alınmalı
+                    var roles = await GetRolesFromTokenAsync(token);
+                    foreach (var role in roles)
+                    {
+                        var groupName = $"Role_{role}";
+                        await _hubConnection.InvokeAsync("JoinGroup", groupName);
+                        Console.WriteLine($"Joined SignalR group: {groupName}");
+                    }
+
                 }
                 catch (Exception ex)
                 {
@@ -107,6 +123,43 @@ namespace EcoRoute.UI.Services.NotificationServices
             {
                 Console.WriteLine($"Error initializing notification service: {ex.Message}");
                 throw; // Rethrow so we can see the detailed error
+            }
+        }
+        private async Task<List<string>> GetRolesFromTokenAsync(string token)
+        {
+            try
+            {
+                var tokenParts = token.Split('.');
+                if (tokenParts.Length != 3)
+                    return new List<string>();
+
+                var payload = tokenParts[1];
+                var paddedPayload = payload;
+
+                switch (payload.Length % 4)
+                {
+                    case 2: paddedPayload += "=="; break;
+                    case 3: paddedPayload += "="; break;
+                }
+
+                var base64Payload = paddedPayload.Replace('-', '+').Replace('_', '/');
+                var jsonPayload = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(base64Payload));
+
+                using var document = System.Text.Json.JsonDocument.Parse(jsonPayload);
+                if (document.RootElement.TryGetProperty("http://schemas.microsoft.com/ws/2008/06/identity/claims/role", out var roleElement))
+                {
+                    if (roleElement.ValueKind == System.Text.Json.JsonValueKind.Array)
+                        return roleElement.EnumerateArray().Select(r => r.GetString()).ToList();
+                    else
+                        return new List<string> { roleElement.GetString() };
+                }
+
+                return new List<string>();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error decoding roles: {ex.Message}");
+                return new List<string>();
             }
         }
 

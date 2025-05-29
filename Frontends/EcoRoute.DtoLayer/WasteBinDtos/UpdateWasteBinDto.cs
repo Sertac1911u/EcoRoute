@@ -14,11 +14,10 @@ namespace EcoRoute.DtoLayer.WasteBinDtos
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public bool? IsFilled { get; set; }
-        public double? FillLevel { get; set; }  
+        public double? FillLevel { get; set; }
         public string DeviceStatus { get; set; }
+        public int SensorCount { get; set; } // Sensör adedi - 0-20 arası
         public DateTime LastUpdated { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
-        public List<Guid> SensorIds { get; set; } = new();
-
     }
 }

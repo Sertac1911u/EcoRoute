@@ -1,7 +1,5 @@
 ﻿using EcoRoute.DataCollection.Context;
-using EcoRoute.DataCollection.Services.BinLogServices;
-using EcoRoute.DataCollection.Services.EnvLogServices;
-using EcoRoute.DataCollection.Services.ProcessDataServices;
+using EcoRoute.DataCollection.Services;
 using EcoRoute.DataCollection.Services.SensorServices;
 using EcoRoute.DataCollection.Services.WasteBinServices;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -76,11 +74,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DataCollectionContext>();
 builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
-builder.Services.AddScoped<IBinLogService, BinLogService>();
-builder.Services.AddScoped<IEnvLogService, EnvLogServices>();
-builder.Services.AddScoped<IProcessDataService, ProcessDataService>();
 builder.Services.AddScoped<ISensorService, SensorService>();
 builder.Services.AddScoped<IWasteBinService, WasteBinService>();
+builder.Services.AddHttpClient<IDataCollectionNotificationService, DataCollectionNotificationService>();
+
+builder.Services.AddHttpContextAccessor();
 
 
 var app = builder.Build();

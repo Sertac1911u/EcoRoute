@@ -11,78 +11,101 @@
 
 <div class="min-h-screen p-4 md:p-6 lg:p-8">
     <!-- Header Section -->
-    <div class="mb-8 animate-fadeIn">
+    <div class="mb-8">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h1 class="text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
                     Kullanıcı Yönetimi
                 </h1>
-                <p class="text-gray-500 dark:text-gray-400 mt-2">Sistem kullanıcılarını yönetin</p>
+                <p class="text-gray-500 dark:text-gray-400 mt-2">Sistem kullanıcılarını yönetin ve düzenleyin</p>
             </div>
-            <button class="group relative overflow-hidden px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+            <button class="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-medium shadow-lg"
                     @onclick="OpenCreateModal">
-                <span class="relative z-10 flex items-center">
-                    <i class="fas fa-plus mr-2"></i>
-                    Yeni Kullanıcı
-                </span>
-                <div class="absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <i class="fas fa-user-plus mr-2"></i>
+                Yeni Kullanıcı Ekle
             </button>
         </div>
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border border-gray-100 dark:border-gray-700">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm">Toplam Kullanıcı</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Toplam Kullanıcı</p>
                     <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">@(users?.Count ?? 0)</p>
+                    <span class="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20 px-2 py-1 rounded-full mt-2 inline-block">
+                        Aktif sistem
+                    </span>
                 </div>
-                <div class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-users text-white"></i>
+                <div class="w-14 h-14 bg-primary-500 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-users text-white text-lg"></i>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border border-gray-100 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm">Aktif Kullanıcı</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Aktif Kullanıcı</p>
                     <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">@(users?.Count(u => u.IsActive) ?? 0)</p>
+                    <span class="text-xs text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/20 px-2 py-1 rounded-full mt-2 inline-block">
+                        Çevrimiçi
+                    </span>
                 </div>
-                <div class="w-12 h-12 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-user-check text-white"></i>
+                <div class="w-14 h-14 bg-green-500 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-user-check text-white text-lg"></i>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border border-gray-100 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm">Yöneticiler</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Yöneticiler</p>
                     <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">@(users?.Count(u => u.Roles.Contains("Manager")) ?? 0)</p>
+                    <span class="text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/20 px-2 py-1 rounded-full mt-2 inline-block">
+                        Yönetim
+                    </span>
                 </div>
-                <div class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-user-tie text-white"></i>
+                <div class="w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-user-tie text-white text-lg"></i>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 border border-gray-100 dark:border-gray-700">
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm">Sürücüler</p>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium">Sürücüler</p>
                     <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">@(users?.Count(u => u.Roles.Contains("Driver")) ?? 0)</p>
+                    <span class="text-xs text-orange-600 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/20 px-2 py-1 rounded-full mt-2 inline-block">
+                        Sahada
+                    </span>
                 </div>
-                <div class="w-12 h-12 bg-gradient-to-br from-primary-300 to-primary-500 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-truck text-white"></i>
+                <div class="w-14 h-14 bg-orange-500 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-truck text-white text-lg"></i>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Users Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700 animate-slideIn">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700">
+        <!-- Table Header -->
+        <div class="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Kullanıcı Listesi</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Tüm sistem kullanıcılarını görüntüleyin ve yönetin</p>
+                </div>
+                <span class="px-3 py-1 bg-primary-100 dark:bg-primary-900/20 text-primary-800 dark:text-primary-300 rounded-full text-sm font-medium">
+                    @(users?.Count ?? 0) kullanıcı
+                </span>
+            </div>
+        </div>
+
+        <!-- Table Content -->
         <UsersTable Users="users"
                     SortColumn="@sortColumn"
                     Ascending="@ascending"
@@ -92,70 +115,7 @@
     </div>
 </div>
 
-<style>
-    @@keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @@keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateX(-20px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
-
-    .animate-fadeIn {
-        animation: fadeIn 0.5s ease-out;
-    }
-
-    .animate-slideIn {
-        animation: slideIn 0.5s ease-out;
-    }
-
-    /* Gradient text animation */
-    @@keyframes gradient {
-        0% {
-            background-position: 0% 50%;
-        }
-
-        50% {
-            background-position: 100% 50%;
-        }
-
-        100% {
-            background-position: 0% 50%;
-        }
-    }
-
-    .bg-gradient-to-r {
-        background-size: 200% 200%;
-        animation: gradient 6s ease infinite;
-    }
-</style>
-
-<!-- Edit User Modal -->
-<EditUser User="editingUser"
-          IsOpen="editingUser != null"
-          OnClose="() => editingUser = null"
-          OnSave="ShowUpdateConfirmation"
-          PasswordError="@passwordError"
-          ConfirmPassword="@confirmPassword"
-          ConfirmPasswordChanged="(value) => confirmPassword = value" />
-
-<!-- Create User Modal -->
+<!-- Modals -->
 <CreateUser User="newUser"
             IsOpen="isCreateModalOpen"
             OnClose="CloseCreateModal"
@@ -164,38 +124,43 @@
             ConfirmPassword="@newConfirmPassword"
             ConfirmPasswordChanged="(value) => newConfirmPassword = value" />
 
+<EditUser User="editingUser"
+          IsOpen="editingUser != null"
+          OnClose="() => editingUser = null"
+          OnSave="ShowUpdateConfirmation"
+          PasswordError="@passwordError"
+          ConfirmPassword="@confirmPassword"
+          ConfirmPasswordChanged="(value) => confirmPassword = value" />
+
 <!-- Confirmation Dialogs -->
 <ConfirmationDialog IsOpen="showDeleteConfirmation"
                     Title="Kullanıcıyı Sil"
                     Message="Bu kullanıcıyı silmek istediğinize emin misiniz? Bu işlem geri alınamaz."
                     ConfirmButtonText="Sil"
-                    ConfirmButtonClass="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
+                    ConfirmButtonClass="bg-red-500 hover:bg-red-600"
                     OnConfirm="ConfirmDelete"
                     OnCancel="CancelDelete"
                     Icon="fa-exclamation-triangle"
-                    IconClass="bg-red-100 text-red-500 dark:bg-red-900/20 dark:text-red-400"
                     IsLoading="@isDeleting" />
 
 <ConfirmationDialog IsOpen="showUpdateConfirmation"
                     Title="Kullanıcıyı Güncelle"
                     Message="Kullanıcı bilgilerini güncellemek istediğinize emin misiniz?"
                     ConfirmButtonText="Güncelle"
-                    ConfirmButtonClass="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700"
+                    ConfirmButtonClass="bg-primary-500 hover:bg-primary-600"
                     OnConfirm="UpdateUser"
                     OnCancel="() => showUpdateConfirmation = false"
                     Icon="fa-question-circle"
-                    IconClass="bg-primary-100 text-primary-500 dark:bg-primary-900/20 dark:text-primary-400"
                     IsLoading="@isUpdating" />
 
 <ConfirmationDialog IsOpen="showCreateConfirmation"
                     Title="Yeni Kullanıcı Ekle"
                     Message="Yeni kullanıcı eklemek istediğinize emin misiniz?"
                     ConfirmButtonText="Ekle"
-                    ConfirmButtonClass="bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700"
+                    ConfirmButtonClass="bg-green-500 hover:bg-green-600"
                     OnConfirm="CreateUser"
                     OnCancel="() => showCreateConfirmation = false"
                     Icon="fa-user-plus"
-                    IconClass="bg-primary-100 text-primary-500 dark:bg-primary-900/20 dark:text-primary-400"
                     IsLoading="@isCreating" />
 
 @code {

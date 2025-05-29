@@ -16,7 +16,6 @@ namespace EcoRoute.DataCollection.Controllers
             _wasteBinService = wasteBinService;
         }
 
-        // SADECE GET İŞLEMİNE SCOPE VE ROLE OKUMA İZNİ
         [HttpGet]
         [Authorize(Policy = "DataCollectionReadAccess")]
         public async Task<IActionResult> WasteBinList()
@@ -33,37 +32,73 @@ namespace EcoRoute.DataCollection.Controllers
             return Ok(values);
         }
 
-        // CREATE - GÜNCELLEME - SİLME -> SADECE TAM YETKİLİLER
         [HttpPost]
         [Authorize(Policy = "DataCollectionFullAccess")]
         public async Task<IActionResult> CreateWasteBin(CreateWasteBinDto createWasteBinDto)
         {
-            await _wasteBinService.CreateWasteBinAsync(createWasteBinDto);
-            return Ok("WasteBin Created");
+            try
+            {
+                await _wasteBinService.CreateWasteBinAsync(createWasteBinDto);
+                return Ok("WasteBin Created with Sensors");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
-        [HttpDelete]
+        [HttpDelete("{id}")]
         [Authorize(Policy = "DataCollectionFullAccess")]
         public async Task<IActionResult> DeleteWasteBin(Guid id)
         {
             await _wasteBinService.DeleteWasteBinAsync(id);
-            return Ok("WasteBin Deleted");
+            return Ok("WasteBin and Sensors Deleted");
         }
 
         [HttpPut]
         [Authorize(Policy = "DataCollectionFullAccess")]
         public async Task<IActionResult> UpdateWasteBin(UpdateWasteBinDto updateWasteBinDto)
         {
-            await _wasteBinService.UpdateWasteBinAsync(updateWasteBinDto);
-            return Ok("WasteBin Updated");
-        }
-        [HttpGet("selected")]
-        //[Authorize(Policy = "DataCollectionReadAccess")]
-        public async Task<IActionResult> GetWasteBinsByIds([FromQuery] List<Guid> id)
-        {
-            var bins = await _wasteBinService.GetWasteBinsByIdsAsync(id);
-            return Ok(bins);
+            try
+            {
+                await _wasteBinService.UpdateWasteBinAsync(updateWasteBinDto);
+                return Ok("WasteBin Updated");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
+        // Service-to-service endpoint - geçici olarak anonymous
+        [HttpGet("selected")]
+        public async Task<IActionResult> GetWasteBinsByIds([FromQuery] List<Guid> id)
+        {
+            try
+            {
+                if (id == null || !id.Any())
+                {
+                    return BadRequest("En az bir ID belirtilmelidir.");
+                }
+
+                Console.WriteLine($"[DataCollection] GetWasteBinsByIds called with {id.Count} IDs");
+                foreach (var guid in id)
+                {
+                    Console.WriteLine($"[DataCollection] Requested ID: {guid}");
+                }
+
+                var bins = await _wasteBinService.GetWasteBinsByIdsAsync(id);
+
+                Console.WriteLine($"[DataCollection] Found {bins.Count} bins");
+
+                return Ok(bins);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[DataCollection] Error: {ex.Message}");
+                Console.WriteLine($"[DataCollection] StackTrace: {ex.StackTrace}");
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
     }
 }

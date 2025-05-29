@@ -34,31 +34,13 @@ namespace EcoRoute.UI.Services.WasteBinServices
             return response;
         }
 
-        public async Task<List<ResultSensorDto>> GetAvailableSensorsAsync()
-        {
-            var token = await _localStorage.GetItemAsync<string>("authToken");
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await _httpClient.GetFromJsonAsync<List<ResultSensorDto>>("services/datacollection/Sensors/available");
-            return response ?? new List<ResultSensorDto>();
-        }
-
         public async Task<List<ResultSensorDto>> GetSensorsByWasteBinIdAsync(Guid wasteBinId)
         {
             var token = await _localStorage.GetItemAsync<string>("authToken");
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var response = await _httpClient.GetFromJsonAsync<List<ResultSensorDto>>($"services/datacollection/Sensors/bybin/{wasteBinId}");
+            var response = await _httpClient.GetFromJsonAsync<List<ResultSensorDto>>($"services/datacollection/Sensors/wastebin/{wasteBinId}");
             return response ?? new List<ResultSensorDto>();
-        }
-
-        public async Task<bool> CreateSensorAsync(CreateSensorDto createSensorDto)
-        {
-            var token = await _localStorage.GetItemAsync<string>("authToken");
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await _httpClient.PostAsJsonAsync("services/datacollection/Sensors", createSensorDto);
-            return response.IsSuccessStatusCode;
         }
 
         public async Task<bool> UpdateSensorAsync(UpdateSensorDto updateSensorDto)
@@ -70,39 +52,12 @@ namespace EcoRoute.UI.Services.WasteBinServices
             return response.IsSuccessStatusCode;
         }
 
-        public async Task<bool> DeleteSensorAsync(Guid id)
+        public async Task<bool> UpdateSensorStatusAsync(Guid sensorId, bool isActive, bool isWorking)
         {
             var token = await _localStorage.GetItemAsync<string>("authToken");
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            var response = await _httpClient.DeleteAsync($"services/datacollection/Sensors?id={id}");
-            return response.IsSuccessStatusCode;
-        }
-
-        public async Task<bool> AssignSensorToWasteBinAsync(Guid sensorId, Guid wasteBinId)
-        {
-            var token = await _localStorage.GetItemAsync<string>("authToken");
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await _httpClient.PostAsync($"services/datacollection/Sensors/assign?sensorId={sensorId}&wasteBinId={wasteBinId}", null);
-            return response.IsSuccessStatusCode;
-        }
-
-        public async Task<bool> UnassignSensorFromWasteBinAsync(Guid sensorId)
-        {
-            var token = await _localStorage.GetItemAsync<string>("authToken");
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await _httpClient.PostAsync($"services/datacollection/Sensors/unassign?sensorId={sensorId}", null);
-            return response.IsSuccessStatusCode;
-        }
-
-        public async Task<bool> UpdateSensorStatusAsync(Guid sensorId, bool isActive)
-        {
-            var token = await _localStorage.GetItemAsync<string>("authToken");
-            _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-            var response = await _httpClient.PutAsync($"services/datacollection/Sensors/status?sensorId={sensorId}&isActive={isActive}", null);
+            var response = await _httpClient.PutAsync($"services/datacollection/Sensors/{sensorId}/status?isActive={isActive}&isWorking={isWorking}", null);
             return response.IsSuccessStatusCode;
         }
     }

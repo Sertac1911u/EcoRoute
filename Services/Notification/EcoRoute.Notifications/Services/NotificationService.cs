@@ -50,14 +50,12 @@ namespace EcoRoute.Notifications.Services
                                 .SendAsync("ReceiveNotification", result);
             }
 
-            // 2) Roller varsa, “Driver” haricinde her role
             if (!string.IsNullOrWhiteSpace(dto.UserRole))
             {
                 var roles = dto.UserRole
                     .Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(r => r.Trim())
-                    .Distinct()
-                    .Where(r => !r.Equals("Driver", StringComparison.OrdinalIgnoreCase));
+                    .Distinct(); // ARTIK FİLTRE YOK
 
                 foreach (var role in roles)
                 {
@@ -66,6 +64,8 @@ namespace EcoRoute.Notifications.Services
                         .SendAsync("ReceiveNotification", result);
                 }
             }
+
+
 
             // 3) Hiçbir hedef yoksa AllUsers
             if (string.IsNullOrWhiteSpace(dto.UserId)

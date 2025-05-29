@@ -4,14 +4,13 @@
     {
         public Guid SensorId { get; set; }
         public Guid WasteBinId { get; set; }
-        public string Type { get; set; } //sensör tipi
-        public bool IsActive { get; set; }
-        public int Order { get; set; }
-        public DateTime? InstallationDate { get; set; }
-        public DateTime? LastUpdate {  get; set; }
+        public string Type { get; set; } = "Light"; // Sabit değer - sadece ışık sensörü
+        public bool IsActive { get; set; } = true;
+        public bool IsWorking { get; set; } = true; // Çalışır durumda olup olmadığı
+        public int SensorNumber { get; set; } // 1'den başlayarak sensör numarası
+        public DateTime InstallationDate { get; set; } = DateTime.Now;
+        public DateTime? LastUpdate { get; set; }
 
-        
         public virtual WasteBin WasteBin { get; set; }
-        public virtual ICollection<EnvLog> EnvLogs { get; set; }
     }
 }

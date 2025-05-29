@@ -10,7 +10,9 @@
                 <h3 class="text-xl font-semibold text-gray-800 dark:text-white">
                     @(ShowCreateModal ? "Yeni Atık Kutusu Ekle" : "Atık Kutusu Düzenle")
                 </h3>
-                <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" @onclick="OnClose">
+                <button class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        @onclick="OnClose"
+                        disabled="@IsSaving">
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
@@ -29,16 +31,20 @@
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="label">
                                     Etiket <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" id="label" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                                       @bind="BinModel.Label" />
+                                <input type="text" id="label"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                       @bind="BinModel.Label"
+                                       disabled="@IsSaving" />
                             </div>
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="address">
                                     Adres <span class="text-red-500">*</span>
                                 </label>
-                                <input type="text" id="address" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                                       @bind="BinModel.Address" />
+                                <input type="text" id="address"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                       @bind="BinModel.Address"
+                                       disabled="@IsSaving" />
                             </div>
 
                             <div class="grid grid-cols-2 gap-3">
@@ -47,9 +53,15 @@
                                         Enlem <span class="text-red-500">*</span>
                                     </label>
                                     <div class="flex">
-                                        <input type="number" step="0.000001" id="latitude" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                                               @bind="BinModel.Latitude" readonly />
-                                        <button type="button" class="flex-shrink-0 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-md" @onclick="OnLocationPicker">
+                                        <input type="number" step="0.000001" id="latitude"
+                                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                               @bind="BinModel.Latitude"
+                                               readonly
+                                               disabled="@IsSaving" />
+                                        <button type="button"
+                                                class="flex-shrink-0 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 rounded-r-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                                @onclick="OnLocationPicker"
+                                                disabled="@IsSaving">
                                             <i class="fas fa-map text-primary-500"></i>
                                         </button>
                                     </div>
@@ -58,8 +70,11 @@
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" for="longitude">
                                         Boylam <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="number" step="0.000001" id="longitude" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-                                           @bind="BinModel.Longitude" readonly />
+                                    <input type="number" step="0.000001" id="longitude"
+                                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                                           @bind="BinModel.Longitude"
+                                           readonly
+                                           disabled="@IsSaving" />
                                 </div>
                             </div>
                         </div>
@@ -77,8 +92,9 @@
                                     <input type="radio" id="status-active" name="device-status" value="Active"
                                            checked="@(BinModel.DeviceStatus == "Active")"
                                            @onchange='@(() => BinModel.DeviceStatus = "Active")'
-                                           class="hidden peer" />
-                                    <label for="status-active" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-green-400 peer-checked:border-green-600 peer-checked:text-green-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                           class="hidden peer"
+                                           disabled="@IsSaving" />
+                                    <label for="status-active" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-green-400 peer-checked:border-green-600 peer-checked:text-green-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed">
                                         <i class="fas fa-check-circle mr-2 text-green-500"></i>
                                         <span class="font-medium text-sm">Aktif</span>
                                     </label>
@@ -87,8 +103,9 @@
                                     <input type="radio" id="status-inactive" name="device-status" value="Inactive"
                                            checked="@(BinModel.DeviceStatus == "Inactive")"
                                            @onchange='@(() => BinModel.DeviceStatus = "Inactive")'
-                                           class="hidden peer" />
-                                    <label for="status-inactive" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-gray-400 peer-checked:border-gray-600 peer-checked:text-gray-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                           class="hidden peer"
+                                           disabled="@IsSaving" />
+                                    <label for="status-inactive" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-gray-400 peer-checked:border-gray-600 peer-checked:text-gray-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed">
                                         <i class="fas fa-ban mr-2 text-gray-500"></i>
                                         <span class="font-medium text-sm">Pasif</span>
                                     </label>
@@ -97,8 +114,9 @@
                                     <input type="radio" id="status-maintenance" name="device-status" value="Maintenance"
                                            checked="@(BinModel.DeviceStatus == "Maintenance")"
                                            @onchange='@(() => BinModel.DeviceStatus = "Maintenance")'
-                                           class="hidden peer" />
-                                    <label for="status-maintenance" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-yellow-400 peer-checked:border-yellow-600 peer-checked:text-yellow-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                           class="hidden peer"
+                                           disabled="@IsSaving" />
+                                    <label for="status-maintenance" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-yellow-400 peer-checked:border-yellow-600 peer-checked:text-yellow-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed">
                                         <i class="fas fa-wrench mr-2 text-yellow-500"></i>
                                         <span class="font-medium text-sm">Bakımda</span>
                                     </label>
@@ -107,8 +125,9 @@
                                     <input type="radio" id="status-faulty" name="device-status" value="Faulty"
                                            checked="@(BinModel.DeviceStatus == "Faulty")"
                                            @onchange='@(() => BinModel.DeviceStatus = "Faulty")'
-                                           class="hidden peer" />
-                                    <label for="status-faulty" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-red-400 peer-checked:border-red-600 peer-checked:text-red-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                           class="hidden peer"
+                                           disabled="@IsSaving" />
+                                    <label for="status-faulty" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-red-400 peer-checked:border-red-600 peer-checked:text-red-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed">
                                         <i class="fas fa-exclamation-triangle mr-2 text-red-500"></i>
                                         <span class="font-medium text-sm">Arızalı</span>
                                     </label>
@@ -128,8 +147,9 @@
                                         <input type="radio" id="filled-true" name="fill-status" value="true"
                                                checked="@(BinModel.IsFilled == true)"
                                                @onchange='@(() => BinModel.IsFilled = true)'
-                                               class="hidden peer" />
-                                        <label for="filled-true" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-red-400 peer-checked:border-red-600 peer-checked:text-red-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                               class="hidden peer"
+                                               disabled="@IsSaving" />
+                                        <label for="filled-true" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-red-400 peer-checked:border-red-600 peer-checked:text-red-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed">
                                             <i class="fas fa-trash-alt mr-2 text-red-500"></i>
                                             <span class="font-medium text-sm">Dolu</span>
                                         </label>
@@ -138,8 +158,9 @@
                                         <input type="radio" id="filled-false" name="fill-status" value="false"
                                                checked="@(BinModel.IsFilled == false)"
                                                @onchange='@(() => BinModel.IsFilled = false)'
-                                               class="hidden peer" />
-                                        <label for="filled-false" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-green-400 peer-checked:border-green-600 peer-checked:text-green-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700">
+                                               class="hidden peer"
+                                               disabled="@IsSaving" />
+                                        <label for="filled-false" class="inline-flex items-center justify-center w-full p-3 text-gray-700 bg-white border border-gray-200 rounded-lg cursor-pointer dark:hover:text-gray-300 dark:border-gray-700 dark:peer-checked:text-green-400 peer-checked:border-green-600 peer-checked:text-green-600 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:bg-gray-800 dark:hover:bg-gray-700 peer-disabled:opacity-50 peer-disabled:cursor-not-allowed">
                                             <i class="fas fa-trash mr-2 text-green-500"></i>
                                             <span class="font-medium text-sm">Boş</span>
                                         </label>
@@ -155,8 +176,11 @@
                                         </span>
                                     </div>
                                     <div class="relative">
-                                        <input type="range" min="0" max="100" step="1" id="fillLevel" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                                               @bind="BinModel.FillLevel" @oninput="OnFillLevelChange" />
+                                        <input type="range" min="0" max="100" step="1" id="fillLevel"
+                                               class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                               @bind="BinModel.FillLevel"
+                                               @oninput="OnFillLevelChange"
+                                               disabled="@IsSaving" />
                                         <div class="w-full flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-1">
                                             <span>0</span>
                                             <span>25</span>
@@ -170,54 +194,84 @@
                         </div>
                     </div>
 
-                    <!-- Sensör Seçimi -->
+                    <!-- Sensör Adedi -->
                     <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3">
-                            <h4 class="text-md font-medium text-gray-700 dark:text-gray-300 mb-2 sm:mb-0">Sensörler</h4>
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-md font-medium text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
+                                Işık Sensörleri
+                            </h4>
                             <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 rounded-full">
-                                @(SelectedSensorIds.Count) sensör seçildi
+                                @BinModel.SensorCount adet sensör
                             </span>
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 max-h-48 overflow-y-auto p-3 bg-white dark:bg-gray-900 rounded-lg shadow-inner">
-                            @if (AvailableSensors != null && AvailableSensors.Any())
-                            {
-                                foreach (var sensor in AvailableSensors)
-                                {
-                                    <div class="flex items-center p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border border-gray-100 dark:border-gray-800">
-                                        <input type="checkbox"
-                                               id="sensor-@sensor.SensorId"
-                                               value="@sensor.SensorId"
-                                               checked="@(SelectedSensorIds.Contains(sensor.SensorId))"
-                                               @onchange="@(e => OnSensorToggle.InvokeAsync(new Tuple<Guid, bool>(sensor.SensorId, (bool)e.Value)))"
-                                               class="w-4 h-4 mr-2 text-primary-600 bg-gray-100 border-gray-300 rounded focus:ring-primary-500 dark:focus:ring-primary-600 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
-                                        <label for="sensor-@sensor.SensorId" class="flex-1 cursor-pointer">
-                                            <div class="font-medium text-gray-800 dark:text-white text-sm">@sensor.Type</div>
-                                            <div class="flex items-center mt-1">
-                                                <span class="@(sensor.IsActive ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300") px-2 py-0.5 rounded-full text-xs">
-                                                    @(sensor.IsActive ? "Aktif" : "Pasif")
-                                                </span>
-                                            </div>
-                                        </label>
-                                    </div>
-                                }
-                            }
-                            else
-                            {
-                                <div class="col-span-full text-center p-6 text-gray-500 dark:text-gray-400">
-                                    <i class="fas fa-sensor-off text-2xl mb-2"></i>
-                                    <p>Kullanılabilir sensör bulunamadı</p>
+
+                        <div class="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 p-3 rounded-lg text-sm mb-4">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Atık kutusu için otomatik olarak ışık sensörleri oluşturulacaktır. Sensör adedini 0-20 arasında seçebilirsiniz.
+                        </div>
+
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center mb-2">
+                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Sensör Adedi</label>
+                                <span class="px-3 py-1 rounded-full text-sm @GetSensorCountBadge(BinModel.SensorCount)">
+                                    @BinModel.SensorCount @(BinModel.SensorCount == 1 ? "sensör" : "sensör")
+                                </span>
+                            </div>
+                            <div class="relative">
+                                <input type="range" min="0" max="20" step="1" id="sensorCount"
+                                       class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-yellow disabled:opacity-50 disabled:cursor-not-allowed"
+                                       @bind="BinModel.SensorCount"
+                                       @oninput="OnSensorCountChange"
+                                       disabled="@IsSaving" />
+                                <div class="w-full flex justify-between text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                    <span>0</span>
+                                    <span>5</span>
+                                    <span>10</span>
+                                    <span>15</span>
+                                    <span>20</span>
                                 </div>
-                            }
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">
+                                @if (BinModel.SensorCount == 0)
+                                {
+                                    <span>⚠️ Sensör olmadan atık kutusu çalışmayabilir</span>
+                                }
+                                else if (BinModel.SensorCount <= 5)
+                                {
+                                    <span>✅ Küçük atık kutuları için yeterli</span>
+                                }
+                                else if (BinModel.SensorCount <= 15)
+                                {
+                                    <span>✅ Orta büyüklükteki atık kutuları için ideal</span>
+                                }
+                                else
+                                {
+                                    <span>✅ Büyük atık kutuları için maksimum sensör desteği</span>
+                                }
+                            </div>
                         </div>
                     </div>
 
                     <!-- Butonlar -->
                     <div class="flex justify-end space-x-3 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors" @onclick="OnClose">
+                        <button class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                @onclick="OnClose"
+                                disabled="@IsSaving">
                             İptal
                         </button>
-                        <button class="px-5 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors shadow-sm" @onclick="OnSave">
-                            @(ShowEditModal ? "Güncelle" : "Kaydet")
+                        <button class="px-5 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                                @onclick="OnSave"
+                                disabled="@IsSaving">
+                            @if (IsSaving)
+                            {
+                                <i class="fas fa-circle-notch fa-spin mr-2"></i>
+                                <span>@(ShowEditModal ? "Güncelleniyor..." : "Kaydediliyor...")</span>
+                            }
+                            else
+                            {
+                                <span>@(ShowEditModal ? "Güncelle" : "Kaydet")</span>
+                            }
                         </button>
                     </div>
                 </div>
@@ -230,14 +284,13 @@
     [Parameter] public bool ShowCreateModal { get; set; }
     [Parameter] public bool ShowEditModal { get; set; }
     [Parameter] public CreateWasteBinDto BinModel { get; set; }
-    [Parameter] public List<ResultSensorDto> AvailableSensors { get; set; }
-    [Parameter] public List<Guid> SelectedSensorIds { get; set; }
+    [Parameter] public bool IsSaving { get; set; } // YENİ PARAMETRE
 
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnLocationPicker { get; set; }
     [Parameter] public EventCallback<ChangeEventArgs> OnFillLevelChange { get; set; }
-    [Parameter] public EventCallback<Tuple<Guid, bool>> OnSensorToggle { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnSensorCountChange { get; set; }
 
     private string GetFillLevelBadge(double? fillLevel)
     {
@@ -252,4 +305,38 @@
             _ => "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
         };
     }
+
+    private string GetSensorCountBadge(int sensorCount)
+    {
+        return sensorCount switch
+        {
+            0 => "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400",
+            <= 5 => "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400",
+            <= 15 => "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
+            _ => "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
+        };
+    }
 }
+
+<style>
+    .slider-yellow::-webkit-slider-thumb {
+        appearance: none;
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: #eab308;
+        cursor: pointer;
+        border: 2px solid #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .slider-yellow::-moz-range-thumb {
+        height: 20px;
+        width: 20px;
+        border-radius: 50%;
+        background: #eab308;
+        cursor: pointer;
+        border: 2px solid #ffffff;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+</style>
