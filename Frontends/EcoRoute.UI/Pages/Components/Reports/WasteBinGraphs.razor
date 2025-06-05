@@ -4,7 +4,6 @@
 @implements IAsyncDisposable
 
 <div class="space-y-6 animate-fadeIn">
-    <!-- İstatistik Kartları -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
@@ -51,7 +50,6 @@
         </div>
     </div>
 
-    <!-- Doluluk Oranı Dağılımı Pasta Grafiği -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-4">
@@ -89,7 +87,6 @@
             </div>
         </div>
 
-        <!-- Cihaz Durumları Pasta Grafiği -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -127,7 +124,6 @@
         </div>
     </div>
 
-    <!-- Son Güncellenme Zaman Grafiği -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -174,16 +170,13 @@
         await LoadData();
     }
 
-    // *** MISSING METHOD ADDED HERE ***
     private async Task RefreshData()
     {
         try
         {
-            // Cancel any existing operations
             _cancellationTokenSource?.Cancel();
             _cancellationTokenSource = new CancellationTokenSource();
 
-            // Reload the data
             await LoadData();
         }
         catch (Exception ex)
@@ -207,7 +200,6 @@
         }
         catch (OperationCanceledException)
         {
-            // İptal edildi
         }
         catch (Exception ex)
         {
@@ -224,7 +216,6 @@
     {
         try
         {
-            // Doluluk oranı dağılımı
             var lowCount = ReportList.Count(r => r.FillLevel <= 50);
             var mediumCount = ReportList.Count(r => r.FillLevel > 50 && r.FillLevel <= 75);
             var highCount = ReportList.Count(r => r.FillLevel > 75 && r.FillLevel <= 90);
@@ -236,7 +227,6 @@
 
             await SafeJSInvoke("renderFillLevelChart", fillLevelLabels, fillLevelCounts, fillLevelColors);
 
-            // Cihaz durumları
             var online = ReportList.Count(r => r.DeviceStatus?.ToLower() == "active" || r.DeviceStatus?.ToLower() == "çevrimiçi");
             var standby = ReportList.Count(r => r.DeviceStatus?.ToLower() == "inactive" || r.DeviceStatus?.ToLower() == "beklemede");
             var offline = ReportList.Count(r => r.DeviceStatus?.ToLower() == "maintenance" || r.DeviceStatus?.ToLower() == "çevrimdışı");
@@ -249,7 +239,6 @@
 
             await SafeJSInvoke("renderDeviceStatusChart", statusLabels, statusCounts, statusColors);
 
-            // Son güncellenme zamanları
             var now = DateTime.Now;
             var last24hours = ReportList.Count(r => (now - r.LastUpdated).TotalHours <= 24);
             var last3days = ReportList.Count(r => (now - r.LastUpdated).TotalHours > 24 && (now - r.LastUpdated).TotalHours <= 72);

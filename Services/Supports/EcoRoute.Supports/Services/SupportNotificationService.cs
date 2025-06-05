@@ -28,7 +28,6 @@ namespace EcoRoute.Supports.Services
 
         private async Task SetAuthorizationHeader()
         {
-            // Kullanıcının mevcut token'ını al
             var token = await _httpContextAccessor.HttpContext.GetTokenAsync("access_token");
 
             if (!string.IsNullOrEmpty(token))
@@ -55,8 +54,8 @@ namespace EcoRoute.Supports.Services
                     Title = "Yeni Destek Talebi",
                     Message = $"{ticket.UserName} tarafından \"{ticket.Subject}\" konulu yeni bir destek talebi oluşturuldu.",
                     Type = "Info",
-                    UserId = "", // Boş bırakıp...
-                    UserRole = "Admin,SuperAdmin,Manager", // ...sadece yönetici rollerini belirt
+                    UserId = "",
+                    UserRole = "Admin,SuperAdmin,Manager", 
                     Url = $"/supports/"
                 };
 
@@ -85,7 +84,6 @@ namespace EcoRoute.Supports.Services
         {
             try
             {
-                // 1) Header’a token ekle
                 await SetAuthorizationHeader();
 
                 using var client = new HttpClient
@@ -95,37 +93,32 @@ namespace EcoRoute.Supports.Services
                 client.DefaultRequestHeaders.Authorization =
                     _httpClient.DefaultRequestHeaders.Authorization;
 
-                // 2) Sunucuda gerçek rollerden tespit et
                 var user = _httpContextAccessor.HttpContext?.User;
                 var isSuperAdmin = user?.IsInRole("SuperAdmin") ?? false;
                 var isManager = user?.IsInRole("Manager") ?? false;
 
-                // 3) Gönderen adı
                 var sender = (isSuperAdmin || isManager)
                     ? "Destek Ekibi"
                     : (responseDto.UserName ?? "Bir kullanıcı");
 
-                // 4) Hedefleri belirle
                 string targetUserId = "";
                 string targetRoles = "";
                 if (isSuperAdmin)
                 {
-                    targetUserId = recipientUserId;   // driver’a
-                    targetRoles = "Manager";         // sadece Manager grubuna
+                    targetUserId = recipientUserId;   
+                    targetRoles = "Manager";         
                 }
                 else if (isManager)
                 {
-                    targetUserId = recipientUserId;   // driver’a
-                    targetRoles = "SuperAdmin";      // sadece SuperAdmin grubuna
+                    targetUserId = recipientUserId;   
+                    targetRoles = "SuperAdmin";      
                 }
                 else
                 {
-                    // Driver yanıtı ise
                     targetUserId = "";
                     targetRoles = "SuperAdmin,Manager";
                 }
 
-                // 5) Payload
                 var notification = new
                 {
                     Title = "Destek Talebine Yanıt",
@@ -136,12 +129,10 @@ namespace EcoRoute.Supports.Services
                     UserRole = targetRoles
                 };
 
-                // LOG için
                 _logger.LogInformation(
                     "Reply notification payload: UserId={UserId}, UserRole={UserRole}",
                     targetUserId, targetRoles);
 
-                // 6) Gönder
                 var resp = await client.PostAsJsonAsync("api/Notifications", notification);
                 if (!resp.IsSuccessStatusCode)
                 {
@@ -167,14 +158,13 @@ namespace EcoRoute.Supports.Services
                 client.BaseAddress = new Uri("http://localhost:5008/");
                 client.DefaultRequestHeaders.Authorization = _httpClient.DefaultRequestHeaders.Authorization;
 
-                // Durum değişikliği bildirimi sadece talep sahibine gönderilmeli
                 var notification = new
                 {
                     Title = "Destek Talebi Durumu Değişti",
                     Message = $"\"{ticketSubject}\" konulu destek talebinizin durumu \"{status}\" olarak güncellendi.",
                     Type = status == "Kapatıldı" ? "Warning" : (status == "Çözüldü" ? "Success" : "Info"),
-                    UserId = recipientUserId, // Sadece talep sahibine
-                    UserRole = "", // Rol değil, spesifik kullanıcı
+                    UserId = recipientUserId, 
+                    UserRole = "", 
                     Url = $"/supports/{ticketId}"
                 };
 

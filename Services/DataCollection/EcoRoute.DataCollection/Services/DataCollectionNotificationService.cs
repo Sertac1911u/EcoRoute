@@ -41,8 +41,8 @@ namespace EcoRoute.DataCollection.Services
                 Title = "Yeni Atık Kutusu Eklendi",
                 Message = $"\"{GetLabel(wasteBinDto)}\" konumunda yeni bir atık kutusu oluşturuldu.",
                 Type = "Info",
-                UserId = "", // Herkese
-                UserRole = "Manager,SuperAdmin,Driver", // Sadece yönetici
+                UserId = "", 
+                UserRole = "Manager,SuperAdmin,Driver",
                 Url = "/bins"
             };
             await _httpClient.PostAsJsonAsync("http://localhost:5008/api/Notifications", notification);
@@ -78,10 +78,8 @@ namespace EcoRoute.DataCollection.Services
             await _httpClient.PostAsJsonAsync("http://localhost:5008/api/Notifications", notification);
         }
 
-        // Helper method to get label from dto (ResultWasteBinDto veya benzeri)
         private string GetLabel(object dto)
         {
-            // Dinamik tip desteği, Label alanı varsa getir
             var labelProp = dto?.GetType().GetProperty("Label");
             return labelProp?.GetValue(dto)?.ToString() ?? "Atık Kutusu";
         }

@@ -16,10 +16,8 @@ namespace EcoRoute.DtoLayer.RouteOptimizationDtos
         public int Order { get; set; }
         public bool IsCompleted { get; set; }
 
-        // *** NULLABLE yapıldı - başlangıç ve bitiş için null ***
         public Guid? WasteBinId { get; set; }
 
-        // Helper properties
         public bool IsDepotStep => !WasteBinId.HasValue;
         public bool IsWasteBinStep => WasteBinId.HasValue;
         public string StepType => Order switch
@@ -49,7 +47,6 @@ namespace EcoRoute.DtoLayer.RouteOptimizationDtos
         public string? Notes { get; set; }
         public List<RouteStepDto> Steps { get; set; } = new List<RouteStepDto>();
 
-        // Computed properties
         public int TotalSteps => Steps?.Count ?? 0;
         public int CompletedSteps => Steps?.Count(s => s.IsCompleted) ?? 0;
         public int RemainingSteps => TotalSteps - CompletedSteps;

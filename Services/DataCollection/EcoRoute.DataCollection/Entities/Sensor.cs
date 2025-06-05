@@ -4,10 +4,10 @@
     {
         public Guid SensorId { get; set; }
         public Guid WasteBinId { get; set; }
-        public string Type { get; set; } = "Light"; // Sabit değer - sadece ışık sensörü
+        public string Type { get; set; } = "Light"; 
         public bool IsActive { get; set; } = true;
-        public bool IsWorking { get; set; } = true; // Çalışır durumda olup olmadığı
-        public int SensorNumber { get; set; } // 1'den başlayarak sensör numarası
+        public bool IsWorking { get; set; } = true; 
+        public int SensorNumber { get; set; } 
         public DateTime InstallationDate { get; set; } = DateTime.Now;
         public DateTime? LastUpdate { get; set; }
 

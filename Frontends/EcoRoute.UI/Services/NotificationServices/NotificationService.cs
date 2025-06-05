@@ -14,11 +14,9 @@ namespace EcoRoute.UI.Services.NotificationServices
         private List<ResultNotificationDto> _notifications = new List<ResultNotificationDto>();
         private bool _hasLoadedInitialNotifications = false;
 
-        // Events
         public event Action<ResultNotificationDto> OnNotificationReceived;
         public event Action OnNotificationsUpdated;
 
-        // Properties
         public int UnreadCount { get; private set; } = 0;
         public List<ResultNotificationDto> Notifications => _notifications;
         public bool IsConnected => _hubConnection?.State == HubConnectionState.Connected;
@@ -33,7 +31,6 @@ namespace EcoRoute.UI.Services.NotificationServices
         {
             try
             {
-                // Get token
                 var token = await _localStorage.GetItemAsync<string>("authToken");
                 if (string.IsNullOrEmpty(token))
                     return;
@@ -42,7 +39,6 @@ namespace EcoRoute.UI.Services.NotificationServices
 
                 Console.WriteLine("Initializing notification service with token");
 
-                // Build hub connection - Using the gateway URL
                 _hubConnection = new HubConnectionBuilder()
                     .WithUrl("http://localhost:5008/notificationHub", options =>
                     {
@@ -51,27 +47,22 @@ namespace EcoRoute.UI.Services.NotificationServices
                     .WithAutomaticReconnect()
                     .Build();
 
-                // Register for notifications
                 _hubConnection.On<ResultNotificationDto>("ReceiveNotification", (notification) =>
                 {
                     if (_notifications.Any(n => n.Id == notification.Id))
                     {
-                        // Zaten geldi
                         return;
                     }
 
                     Console.WriteLine($"Notification received: {notification.Title}");
 
-                    // Add to our local list
                     _notifications.Insert(0, notification);
                     UnreadCount++;
 
-                    // Trigger events
                     OnNotificationReceived?.Invoke(notification);
                     OnNotificationsUpdated?.Invoke();
                 });
 
-                // Set up reconnect handler
                 _hubConnection.Closed += async (error) =>
                 {
                     Console.WriteLine($"Connection closed with error: {error?.Message}");
@@ -87,14 +78,12 @@ namespace EcoRoute.UI.Services.NotificationServices
                     }
                 };
 
-                // Connect to hub
                 try
                 {
                     Console.WriteLine("Starting SignalR connection...");
                     await _hubConnection.StartAsync();
                     Console.WriteLine("SignalR connection started successfully");
 
-                    // Add user to proper groups
                     var userId = await GetUserIdFromTokenAsync(token);
                     if (!string.IsNullOrEmpty(userId))
                     {
@@ -103,7 +92,6 @@ namespace EcoRoute.UI.Services.NotificationServices
                         Console.WriteLine($"Joined groups with user ID: {userId}");
                     }
 
-                    // Token'dan roller de alınmalı
                     var roles = await GetRolesFromTokenAsync(token);
                     foreach (var role in roles)
                     {
@@ -116,13 +104,13 @@ namespace EcoRoute.UI.Services.NotificationServices
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error starting SignalR connection: {ex.Message}");
-                    throw; // Rethrow to see the detailed exception in the browser console
+                    throw; 
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error initializing notification service: {ex.Message}");
-                throw; // Rethrow so we can see the detailed error
+                throw; 
             }
         }
         private async Task<List<string>> GetRolesFromTokenAsync(string token)
@@ -167,7 +155,6 @@ namespace EcoRoute.UI.Services.NotificationServices
         {
             try
             {
-                // Simple JWT decoder to extract user ID
                 var tokenParts = token.Split('.');
                 if (tokenParts.Length != 3)
                     return null;
@@ -175,7 +162,6 @@ namespace EcoRoute.UI.Services.NotificationServices
                 var payload = tokenParts[1];
                 var paddedPayload = payload;
 
-                // Add padding if needed
                 switch (payload.Length % 4)
                 {
                     case 2: paddedPayload += "=="; break;
@@ -231,7 +217,6 @@ namespace EcoRoute.UI.Services.NotificationServices
 
         public async Task GetNotificationsAsync(bool forceRefresh = false)
         {
-            // Only use cache if not forcing refresh
             var cachedNotifications = await _localStorage.GetItemAsync<List<ResultNotificationDto>>("notifications");
             if (!forceRefresh && cachedNotifications != null && cachedNotifications.Any() && _hasLoadedInitialNotifications)
             {
@@ -243,7 +228,6 @@ namespace EcoRoute.UI.Services.NotificationServices
 
             try
             {
-                // API'den bildirimleri getir
                 var token = await _localStorage.GetItemAsync<string>("authToken");
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -254,7 +238,6 @@ namespace EcoRoute.UI.Services.NotificationServices
                     UnreadCount = _notifications.Count(n => !n.IsRead);
                     _hasLoadedInitialNotifications = true;
 
-                    // Cache'e kaydet
                     await _localStorage.SetItemAsync("notifications", _notifications);
 
                     OnNotificationsUpdated?.Invoke();
@@ -319,7 +302,6 @@ namespace EcoRoute.UI.Services.NotificationServices
                 var response = await _httpClient.PutAsync("services/notifications/Notifications/read-all", null);
                 if (response.IsSuccessStatusCode)
                 {
-                    // Instead of manually updating notifications, force fetch from server
                     await GetNotificationsAsync(forceRefresh: true);
                 }
             }

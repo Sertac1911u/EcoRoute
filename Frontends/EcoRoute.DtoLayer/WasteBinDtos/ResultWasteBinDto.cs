@@ -8,13 +8,14 @@ namespace EcoRoute.DtoLayer.WasteBinDtos
 {
     public class ResultWasteBinDto
     {
-        public Guid Id { get; set; } // WasteBinId yerine Id kullan
+        public Guid Id { get; set; } // WasteBinId yerine Id 
         public string Label { get; set; }
         public string Address { get; set; }
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public bool? IsFilled { get; set; }
         public double? FillLevel { get; set; }
+        public double? estimatedFillLevel { get; set; }
         public string DeviceStatus { get; set; }
         public int SensorCount { get; set; } // Toplam sensör adedi
         public DateTime LastUpdated { get; set; }

@@ -27,7 +27,6 @@ namespace EcoRoute.Supports.Controllers
             {
                 return Forbid("Administrators cannot create support tickets");
             }
-            // Kullanıcı bilgisini alın
             dto.UserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             dto.UserName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Bilinmeyen Kullanıcı";
 
@@ -69,12 +68,10 @@ namespace EcoRoute.Supports.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // Kural ihlali
                 return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
-                // Diğer hatalar
                 return StatusCode(500, new { message = "Beklenmeyen bir hata oluştu.", detail = ex.Message });
             }
         }

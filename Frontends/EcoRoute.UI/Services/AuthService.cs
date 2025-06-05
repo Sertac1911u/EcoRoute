@@ -39,7 +39,6 @@ namespace EcoRoute.UI.Services
             {
                 await _localStorage.SetItemAsync("authToken", token.Token);
 
-                // JWT içindeki roller çözümleniyor
                 var handler = new JwtSecurityTokenHandler();
                 var jwt = handler.ReadJwtToken(token.Token);
 
@@ -48,7 +47,6 @@ namespace EcoRoute.UI.Services
                     .Select(c => c.Value)
                     .ToList();
 
-                // İstersen roller listesi de kaydedebilirsin
                 await _localStorage.SetItemAsync("userRoles", roles);
             }
 

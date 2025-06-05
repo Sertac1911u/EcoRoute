@@ -15,7 +15,6 @@ namespace EcoRoute.Supports.Mapping
             CreateMap<ThemeColor, ThemeColorDto>();
             CreateMap<Avatar, AvatarDto>();
 
-            // DTO -> Entity mappings
             CreateMap<SystemSetting, SystemSettingDto>()
                 .ForMember(dest => dest.FontTypeId, opt => opt.MapFrom(src => src.FontTypeId))
                 .ForMember(dest => dest.FontTypeName, opt => opt.MapFrom(src => src.FontType != null ? src.FontType.Name : null))

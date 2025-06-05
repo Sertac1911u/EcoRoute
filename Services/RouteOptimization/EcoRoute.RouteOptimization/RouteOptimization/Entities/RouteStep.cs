@@ -25,18 +25,13 @@ namespace EcoRoute.RouteOptimization.Entities
 
         public bool IsCompleted { get; set; } = false;
 
-        // *** DÜZELTME: WasteBinId nullable yapıldı ***
-        // Başlangıç ve bitiş noktaları için null olacak
         public Guid? WasteBinId { get; set; }
 
-        // Navigation properties
         public RouteTask RouteTask { get; set; } = null!;
 
-        // Audit fields
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
 
-        // Helper methods
         public bool IsDepotStep => !WasteBinId.HasValue;
         public bool IsWasteBinStep => WasteBinId.HasValue;
 
@@ -48,7 +43,6 @@ namespace EcoRoute.RouteOptimization.Entities
             _ => "UNKNOWN"
         };
 
-        // For debugging and logging
         public override string ToString()
         {
             return $"RouteStep(Order={Order}, Type={StepType}, Address='{Address}', WasteBinId={WasteBinId}, Completed={IsCompleted})";

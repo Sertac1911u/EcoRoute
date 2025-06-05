@@ -19,30 +19,25 @@ namespace EcoRoute.Settings.Services
         }
         public async Task<SystemSettingDto> GetSettingsAsync(string userId = null)
         {
-            // Get settings for the specified user
             var settings = string.IsNullOrEmpty(userId)
                 ? await _context.SystemSettings.FirstOrDefaultAsync()
                 : await _context.SystemSettings.FirstOrDefaultAsync(s => s.UserId == userId);
 
             if (settings == null)
             {
-                // If no settings exist, create default settings
                 settings = await CreateDefaultSettingsAsync(userId);
             }
 
-            // Map entity to DTO
             return _mapper.Map<SystemSettingDto>(settings);
         }
         public async Task<SystemSettingDto> UpdateSettingsAsync(UpdateSystemSettingDto updateDto, string userId = null)
         {
-            // Get current settings for this user
             var settings = string.IsNullOrEmpty(userId)
                 ? await _context.SystemSettings.FirstOrDefaultAsync()
                 : await _context.SystemSettings.FirstOrDefaultAsync(s => s.UserId == userId);
 
             if (settings == null)
             {
-                // Create new settings for this user if none exist
                 settings = _mapper.Map<SystemSetting>(updateDto);
                 settings.Id = Guid.NewGuid();
                 settings.UserId = userId;
@@ -50,113 +45,95 @@ namespace EcoRoute.Settings.Services
             }
             else
             {
-                // Update existing settings
                 _mapper.Map(updateDto, settings);
             }
 
-            // Save changes
             await _context.SaveChangesAsync();
 
-            // Return updated settings as DTO
             return _mapper.Map<SystemSettingDto>(settings);
         }
         public async Task<SystemSettingDto> ResetToDefaultsAsync(string userId = null)
         {
-            // Get settings for the specified user
             var settings = string.IsNullOrEmpty(userId)
                 ? await _context.SystemSettings.FirstOrDefaultAsync()
                 : await _context.SystemSettings.FirstOrDefaultAsync(s => s.UserId == userId);
 
             if (settings != null)
             {
-                // Reset to default values but keep the user ID
                 settings.DarkMode = false;
-                settings.ThemeColor = "#2ba86d"; // default blue
+                settings.ThemeColor = "#2ba86d"; 
                 settings.TwoFactorEnabled = false;
                 settings.LocationTracking = false;
                 settings.SessionTimeout = 0;
                 settings.ActiveSessionLimit = 0;
                 settings.EnableAnimations = true;
-                settings.AvatarUrl = "https://api.dicebear.com/9.x/shapes/svg?seed=TEST"; // default avatar
+                settings.AvatarUrl = "https://api.dicebear.com/9.x/shapes/svg?seed=TEST";
                 settings.EmailNotifications = true;
                 settings.SmsNotifications = false;
                 settings.PushNotifications = true;
                 settings.GoogleMapsApiKey = "";
-                settings.FontTypeId = Guid.Parse("11111111-1111-1111-1111-111111111111"); // Reset to default font
-                settings.LanguageId = Guid.Parse("22222222-2222-2222-2222-222222222222"); // Reset to default language
-                settings.DateFormatId = Guid.Parse("33333333-3333-3333-3333-333333333333"); // Reset to default date format
-                // Save changes
+                settings.FontTypeId = Guid.Parse("11111111-1111-1111-1111-111111111111");
+                settings.LanguageId = Guid.Parse("22222222-2222-2222-2222-222222222222");
+                settings.DateFormatId = Guid.Parse("33333333-3333-3333-3333-333333333333");
                 await _context.SaveChangesAsync();
             }
             else
             {
-                // Create default settings
                 settings = await CreateDefaultSettingsAsync(userId);
             }
 
-            // Return settings as DTO
             return _mapper.Map<SystemSettingDto>(settings);
         }
         public async Task<List<ThemeColorDto>> GetThemeColorsAsync()
         {
-            // Tüm tema renklerini getir
             var themeColors = await _context.ThemeColors.ToListAsync();
 
-            // Entity listesini DTO listesine çevir
             return _mapper.Map<List<ThemeColorDto>>(themeColors);
         }
 
         public async Task<List<AvatarDto>> GetAvatarsAsync()
         {
-            // Tüm avatarları getir
             var avatars = await _context.Avatars.ToListAsync();
 
-            // Entity listesini DTO listesine çevir
             return _mapper.Map<List<AvatarDto>>(avatars);
         }
 
         public async Task<bool> TestGoogleMapsApiAsync(string apiKey)
         {
-            // Bu metot Google Maps API'yi test etmek için kullanılır
-            // Gerçek uygulamada burada API'ye istekte bulunulur
 
-            // Basit bir kontrol yapalım
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 return false;
             }
 
-            // Gerçek uygulamada burada API'ye istek yapılır
-            await Task.Delay(500); // API isteği simülasyonu
+            await Task.Delay(500); 
 
             return true;
         }
 
         private async Task<SystemSetting> CreateDefaultSettingsAsync(string userId = null)
         {
-            // Create default settings
             var defaultSettings = new SystemSetting
             {
                 Id = Guid.NewGuid(),
                 UserId = userId,
                 DarkMode = false,
-                ThemeColor = "#2ba86d", // default blue
+                ThemeColor = "#2ba86d", 
                 EnableAnimations = true,
                 LocationTracking=false,
                 SessionTimeout=0,
                 ActiveSessionLimit=0,
                 TwoFactorEnabled=false,
-                AvatarUrl = "https://api.dicebear.com/9.x/shapes/svg?seed=TEST", // default avatar
+                AvatarUrl = "https://api.dicebear.com/9.x/shapes/svg?seed=TEST",
                 EmailNotifications = true,
                 SmsNotifications = false,
                 PushNotifications = true,
                 GoogleMapsApiKey = "",
-                FontTypeId = Guid.Parse("11111111-1111-1111-1111-111111111111"), // Default font
-                LanguageId = Guid.Parse("22222222-2222-2222-2222-222222222222"), // Default language
-                DateFormatId = Guid.Parse("33333333-3333-3333-3333-333333333333"), // Default date format
+                FontTypeId = Guid.Parse("11111111-1111-1111-1111-111111111111"), 
+                LanguageId = Guid.Parse("22222222-2222-2222-2222-222222222222"), 
+                DateFormatId = Guid.Parse("33333333-3333-3333-3333-333333333333"),
             };
 
-            // Add the new settings
             _context.SystemSettings.Add(defaultSettings);
             await _context.SaveChangesAsync();
 

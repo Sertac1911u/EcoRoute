@@ -9,9 +9,10 @@
         public double Longitude { get; set; }
         public bool? IsFilled { get; set; }
         public double? FillLevel { get; set; }
+        public double? estimatedFillLevel { get; set; }
         public DateTime? LastUpdated { get; set; }
         public string DeviceStatus { get; set; }
-        public int SensorCount { get; set; } = 1; // Sensör adedi (0-20 arası)
+        public int SensorCount { get; set; } = 1; 
         public DateTime? CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
 

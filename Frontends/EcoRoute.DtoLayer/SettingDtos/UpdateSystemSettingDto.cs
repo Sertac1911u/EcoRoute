@@ -23,7 +23,6 @@ namespace EcoRoute.DtoLayer.SettingDtos
         public bool PushNotifications { get; set; }
         public string GoogleMapsApiKey { get; set; }
 
-        // Sadece ID'ler
         public Guid? FontTypeId { get; set; }
         public Guid? LanguageId { get; set; }
         public Guid? DateFormatId { get; set; }

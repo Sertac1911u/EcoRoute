@@ -68,7 +68,6 @@ namespace EcoRoute.Supports.Controllers
                 var userId = GetCurrentUserId();
                 _logger.LogInformation("Updating settings for user: {UserId}", userId);
 
-                // Validasyon - null değerleri kontrol et
                 if (string.IsNullOrEmpty(updateDto.ThemeColor))
                 {
                     updateDto.ThemeColor = "#3B82F6";
@@ -105,9 +104,7 @@ namespace EcoRoute.Supports.Controllers
             return Ok(colors);
         }
 
-        /// <summary>
-        /// Tüm avatarları getirir
-        /// </summary>
+
         [HttpGet("avatars")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<List<AvatarDto>>> GetAvatars()
@@ -116,9 +113,7 @@ namespace EcoRoute.Supports.Controllers
             return Ok(avatars);
         }
 
-        /// <summary>
-        /// Google Maps API'sini test eder
-        /// </summary>
+
         [HttpPost("test-google-maps")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<bool>> TestGoogleMapsApi([FromBody] string apiKey)

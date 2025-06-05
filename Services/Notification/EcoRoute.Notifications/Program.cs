@@ -7,7 +7,6 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CORS first - make it as permissive as possible for development
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
@@ -19,7 +18,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -37,7 +35,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 Encoding.UTF8.GetBytes("dsopkjfewosspjwe12+fqpjrfqepqjasd123x.@ewrkj3241kld"))
         };
 
-        // Enable receiving tokens via WebSockets (for SignalR)
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -54,7 +51,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Authorization
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("NotificationsFullAccess", policy =>
@@ -69,13 +65,11 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-// Add SignalR with specific options for CORS
 builder.Services.AddSignalR(hubOptions =>
 {
-    hubOptions.EnableDetailedErrors = true; // Helps with debugging
+    hubOptions.EnableDetailedErrors = true; 
 });
 
-// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -86,17 +80,14 @@ builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// IMPORTANT: Order matters! Apply CORS before routing
 app.UseCors();
 
-// Special handling for OPTIONS requests
 app.Use(async (context, next) =>
 {
     if (context.Request.Method == "OPTIONS")

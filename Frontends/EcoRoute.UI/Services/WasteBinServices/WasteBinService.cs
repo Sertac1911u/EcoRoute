@@ -57,7 +57,6 @@ namespace EcoRoute.UI.Services.WasteBinServices
             var token = await _localStorage.GetItemAsync<string>("authToken");
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-            // URL'den ID gönder, query parameter değil
             var response = await _httpClient.DeleteAsync($"services/datacollection/WasteBins/{id}");
             return response.IsSuccessStatusCode;
         }

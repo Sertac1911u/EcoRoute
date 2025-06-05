@@ -2,38 +2,628 @@
 @page "/home"
 @using Microsoft.AspNetCore.Authorization
 @using EcoRoute.UI.Services.SettingsServices
+@using EcoRoute.UI.Services.ReportsServices
+@using EcoRoute.UI.Services.RouteOptimizationServices
+@using EcoRoute.UI.Services.WasteBinServices
+@using EcoRoute.UI.Services.NotificationServices
+@using EcoRoute.UI.Services
+@using EcoRoute.DtoLayer.ReportsDtos
+@using EcoRoute.DtoLayer.RouteOptimizationDtos
+@using EcoRoute.DtoLayer.WasteBinDtos
+@using EcoRoute.DtoLayer.NotificationDtos
+@using EcoRoute.DtoLayer.IdentityDtos
 @using Blazored.LocalStorage
 @using Microsoft.AspNetCore.Components.Authorization
 @inject ILocalStorageService localStorage
 @inject IJSRuntime JS
 @inject SettingsService settingsService
+@inject IReportService reportService
+@inject IRouteService routeService
+@inject WasteBinService wasteBinService
+@inject NotificationService notificationService
+@inject UserService userService
 @inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 @attribute [Authorize]
 
-<div class="animate-fadeIn">
-    <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">Ana Dashboard</h2>
-    Burası anasayfa
+<div class="animate-fadeIn space-y-6">
+    @if (isLoading)
+    {
+        <!-- Loading State -->
+        <div class="animate-fadeIn">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Ana Dashboard</h2>
+                    <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-4 w-64 rounded mt-2"></div>
+                </div>
+                <div class="animate-pulse bg-gray-200 dark:bg-gray-700 h-10 w-32 rounded-lg"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+                @for (int i = 0; i < 5; i++)
+                {
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-md border-l-4 border-l-gray-300">
+                        <div class="animate-pulse">
+                            <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-3"></div>
+                            <div class="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
+                            <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="text-center py-12">
+                <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+                <p class="mt-4 text-gray-600 dark:text-gray-400">Dashboard yükleniyor...</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Ana Dashboard</h2>
+                <p class="mt-1 text-gray-600 dark:text-gray-400">
+                    @GetWelcomeMessage()
+                </p>
+            </div>
+            <div class="mt-4 md:mt-0 flex space-x-3">
+                @if (isSuperAdmin || isManager)
+                {
+                    <button @onclick="ExportReport"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            disabled="@isRefreshing">
+                        <i class="fas fa-download mr-2"></i>
+                        Rapor İndir
+                    </button>
+                }
+                <button @onclick="RefreshDashboard"
+                        class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                        disabled="@isRefreshing">
+                    @if (isRefreshing)
+                    {
+                        <i class="fas fa-spinner fa-spin mr-2"></i>
+                    }
+                    else
+                    {
+                        <i class="fas fa-sync-alt mr-2"></i>
+                    }
+                    @(isRefreshing ? "Yenileniyor..." : "Yenile")
+                </button>
+            </div>
+        </div>
+
+        <!-- Role-based Stats Cards -->
+        @if (isSuperAdmin || isManager)
+        {
+            <!-- Admin/Manager Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                <!-- Toplam Rotalar -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-l-primary-500 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                Toplam Rotalar
+                            </p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                                @totalRoutes
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                Bu ay oluşturulan
+                            </p>
+                            @if (routeTrend != 0)
+                            {
+                                <div class="flex items-center mt-2 text-sm @(routeTrend > 0 ? "text-green-600" : "text-red-600")">
+                                    <i class="fas @(routeTrend > 0 ? "fa-arrow-up" : "fa-arrow-down") mr-1"></i>
+                                    <span>@Math.Abs(routeTrend)%</span>
+                                    <span class="text-gray-500 ml-1">geçen haftaya göre</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                            <i class="fas fa-route text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Aktif Atık Kutuları -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-l-primary-500 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                Aktif Atık Kutuları
+                            </p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                                @activeBins
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                Şu anda çalışır durumda
+                            </p>
+                            @if (binEfficiency > 0)
+                            {
+                                <div class="flex items-center mt-2 text-sm text-primary-600">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    <span>%@binEfficiency.ToString("F0") verimli</span>
+                                </div>
+                            }
+                        </div>
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                            <i class="fas fa-dumpster text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toplam Sürücü -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-l-primary-500 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                Toplam Sürücü
+                            </p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                                @totalDrivers
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                Aktif personel
+                            </p>
+                            <div class="flex items-center mt-2 text-sm text-primary-600">
+                                <i class="fas fa-user-check mr-1"></i>
+                                <span>@activeDrivers aktif şu anda</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                            <i class="fas fa-users text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Verimlilik Skoru -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-l-primary-500 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center">
+                                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                    Verimlilik Skoru
+                                </p>
+                                <div class="group relative ml-2">
+                                    <i class="fas fa-info-circle text-gray-400 hover:text-primary-500 cursor-help"></i>
+                                    <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-10">
+                                        <div class="bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 text-xs rounded-lg py-2 px-3 whitespace-nowrap shadow-lg max-w-xs">
+                                            <strong>Hesaplama:</strong><br/>
+                                            (Tamamlanan Rotalar ÷ Toplam Rotalar) × 100<br/>
+                                            <em>Sistem genelindeki rota tamamlama oranı</em>
+                                            <div class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900 dark:border-t-gray-100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                                %@efficiencyScore.ToString("F1")
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                Genel sistem verimi
+                            </p>
+                            <div class="flex items-center mt-2 text-sm @(efficiencyScore >= 80 ? "text-primary-600" : efficiencyScore >= 60 ? "text-yellow-600" : "text-red-600")">
+                                <i class="fas @(efficiencyScore >= 80 ? "fa-thumbs-up" : efficiencyScore >= 60 ? "fa-minus-circle" : "fa-thumbs-down") mr-1"></i>
+                                <span>@(efficiencyScore >= 80 ? "Mükemmel" : efficiencyScore >= 60 ? "İyi" : "Geliştirilmeli")</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                            <i class="fas fa-chart-line text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Toplama Verimliliği -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-l-primary-500 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                Toplama Verimliliği
+                            </p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                                %@collectionEfficiency.ToString("F1")
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                Çevre dostu toplama
+                            </p>
+                            <div class="flex items-center mt-2 text-sm text-primary-600">
+                                <i class="fas fa-leaf mr-1"></i>
+                                <span>@FormatCO2Value(co2Saved) kg CO₂ tasarruf</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                            <i class="fas fa-leaf text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (isDriver)
+        {
+            <!-- Driver-specific Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Benim Rotalarım -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-l-primary-500 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                Benim Rotalarım
+                            </p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                                @myRoutes
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                Bu hafta atanan
+                            </p>
+                        </div>
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                            <i class="fas fa-map-marked-alt text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tamamlanan İşler -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-l-primary-500 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                Tamamlanan İşler
+                            </p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                                @completedJobs
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                Bu ay toplam
+                            </p>
+                        </div>
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                            <i class="fas fa-check-circle text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bugünkü Görevler -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-l-primary-500 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                Bugünkü Görevler
+                            </p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                                @todayTasks
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                Bekleyen iş
+                            </p>
+                        </div>
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                            <i class="fas fa-tasks text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performans Skoru -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-l-primary-500 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                Performans Skoru
+                            </p>
+                            <p class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
+                                %@myPerformanceScore.ToString("F1")
+                            </p>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                                Kişisel verim
+                            </p>
+                        </div>
+                        <div class="flex items-center justify-center w-16 h-16 rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                            <i class="fas fa-star text-2xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Recent Routes -->
+            <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+                        <i class="fas fa-route mr-3 text-primary-500"></i>
+                        @(isDriver ? "Benim Rotalarım" : "Son Rotalar")
+                    </h3>
+                    @if (isSuperAdmin || isManager)
+                    {
+                        <button @onclick='() => Navigation.NavigateTo("/routes")'
+                                class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium">
+                            Tümünü Gör →
+                        </button>
+                    }
+                    else if (isDriver)
+                    {
+                        <button @onclick='() => Navigation.NavigateTo("/driver-routes")'
+                                class="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium">
+                            Tümünü Gör →
+                        </button>
+                    }
+                </div>
+                <div class="space-y-4">
+                    @if (recentRoutes?.Any() == true)
+                    {
+                        @foreach (var route in recentRoutes.Take(3))
+                        {
+                            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200">
+                                <div class="flex items-center justify-between mb-3">
+                                    <h4 class="font-semibold text-gray-900 dark:text-white">Rota (@route.StartTime.ToString("HH:mm"))</h4>
+                                    <span class="@GetRouteStatusClass(route.Status) px-2 py-1 rounded-full text-xs font-medium">
+                                        @GetRouteStatusText(route.Status)
+                                    </span>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                        <i class="fas fa-user mr-2"></i>
+                                        <span>@GetDriverName(route.DriverId)</span>
+                                    </div>
+                                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                        <i class="fas fa-truck mr-2"></i>
+                                        <span>@GetVehiclePlate(route.VehicleId)</span>
+                                    </div>
+                                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                        <i class="fas fa-route mr-2"></i>
+                                        <span>@route.TotalDistanceKm.ToString("F1") km</span>
+                                    </div>
+                                    @if (route.Status != RouteStatus.Completed)
+                                    {
+                                        var progress = CalculateRouteProgress(route);
+                                        <div class="mt-3">
+                                            <div class="flex justify-between text-sm mb-1">
+                                                <span class="text-gray-600 dark:text-gray-400">İlerleme</span>
+                                                <span class="font-medium text-gray-900 dark:text-white">@progress%</span>
+                                            </div>
+                                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                                <div class="@GetProgressBarColor(progress) h-2 rounded-full transition-all duration-300"
+                                                     style="width: @(progress)%"></div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-8">
+                            <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-route text-2xl text-gray-400"></i>
+                            </div>
+                            <p class="text-gray-500 dark:text-gray-400">@(isDriver ? "Henüz atanmış rota bulunmamaktadır" : "Henüz rota bulunmamaktadır")</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Alerts & Bin Status -->
+            <div class="space-y-4">
+                @if (isSuperAdmin || isManager)
+                {
+                    <!-- Bin Status -->
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                        <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-3 flex items-center">
+                            <i class="fas fa-chart-pie mr-3 text-primary-500"></i>
+                            Atık Kutusu Durumu
+                        </h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-primary-500 rounded-full mr-3"></div>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">Aktif</span>
+                                </div>
+                                <span class="font-semibold text-gray-900 dark:text-white">@binStats.ActiveCount</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">Bakımda</span>
+                                </div>
+                                <span class="font-semibold text-gray-900 dark:text-white">@binStats.MaintenanceCount</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">Arızalı</span>
+                                </div>
+                                <span class="font-semibold text-gray-900 dark:text-white">@binStats.FaultyCount</span>
+                            </div>
+                            <div class="pt-3 border-t border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-medium text-gray-900 dark:text-white">Toplam</span>
+                                    <span class="font-bold text-xl text-gray-900 dark:text-white">@binStats.TotalCount</span>
+                                </div>
+                            </div>
+                            <button @onclick='() => Navigation.NavigateTo("/bins")'
+                                    class="w-full mt-4 text-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Detayları Gör
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                <!-- Real-time Alerts -->
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+                            <i class="fas fa-bell mr-3 text-red-500"></i>
+                            @(isDriver ? "Benim Bildirimlerim" : "Anlık Uyarılar")
+                        </h3>
+                        <span class="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400 text-xs px-2 py-1 rounded-full">
+                            @(recentAlerts?.Count ?? 0) aktif
+                        </span>
+                    </div>
+                    <div class="space-y-3 max-h-80 overflow-y-auto">
+                        @if (recentAlerts?.Any() == true)
+                        {
+                            @foreach (var alert in recentAlerts.Take(5))
+                            {
+                                <div class="@GetAlertBorderClass(alert.Type) flex items-start p-3 rounded-lg border-l-4">
+                                    <div class="@GetAlertIconClass(alert.Type) flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center">
+                                        <i class="@GetAlertIcon(alert.Type) text-sm"></i>
+                                    </div>
+                                    <div class="ml-3 flex-1">
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">
+                                            @alert.Title
+                                        </p>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                            @alert.Message
+                                        </p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                            @GetTimeAgo(alert.CreatedDate)
+                                        </p>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-center py-4">
+                                <div class="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-bell-slash text-xl text-gray-400"></i>
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">@(isDriver ? "Henüz bildirim bulunmamaktadır" : "Aktif uyarı bulunmamaktadır")</p>
+                            </div>
+                        }
+                    </div>
+                    <button @onclick='() => Navigation.NavigateTo("/notifications")'
+                            class="w-full mt-4 text-center text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 text-sm font-medium py-2 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Tüm Bildirimleri Gör
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-gradient-to-r from-primary-50 to-primary-100 dark:from-gray-800 dark:to-gray-900 rounded-xl p-4 border border-primary-200 dark:border-primary-800">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-bolt mr-2 text-primary-500"></i>
+                Hızlı İşlemler
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                @if (isSuperAdmin || isManager)
+                {
+                    <button @onclick='() => Navigation.NavigateTo("/routes")'
+                            class="flex flex-col items-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 group">
+                        <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-plus text-primary-600 dark:text-primary-400"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-900 dark:text-white">Yeni Rota</span>
+                    </button>
+                    <button @onclick='() => Navigation.NavigateTo("/bins")'
+                            class="flex flex-col items-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 group">
+                        <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-dumpster text-primary-600 dark:text-primary-400"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-900 dark:text-white">Atık Kutusu</span>
+                    </button>
+                    <button @onclick='() => Navigation.NavigateTo("/reports")'
+                            class="flex flex-col items-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 group">
+                        <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-chart-bar text-primary-600 dark:text-primary-400"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-900 dark:text-white">Raporlar</span>
+                    </button>
+                }
+                else if (isDriver)
+                {
+                    <button @onclick='() => Navigation.NavigateTo("/driver-routes")'
+                            class="flex flex-col items-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 group">
+                        <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-map-marked-alt text-primary-600 dark:text-primary-400"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-900 dark:text-white">Rotalarım</span>
+                    </button>
+                    <button @onclick='() => Navigation.NavigateTo("/notifications")'
+                            class="flex flex-col items-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 group">
+                        <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-bell text-primary-600 dark:text-primary-400"></i>
+                        </div>
+                        <span class="text-xs font-medium text-gray-900 dark:text-white">Bildirimler</span>
+                    </button>
+                }
+                <button @onclick='() => Navigation.NavigateTo("/settings")'
+                        class="flex flex-col items-center p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 group">
+                    <div class="w-10 h-10 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                        <i class="fas fa-cogs text-primary-600 dark:text-primary-400"></i>
+                    </div>
+                    <span class="text-xs font-medium text-gray-900 dark:text-white">Ayarlar</span>
+                </button>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
     private string currentUserId = string.Empty;
+    private bool isLoading = true;
+    private bool isRefreshing = false;
+
+    // Role kontrolleri - NavMenu gibi
+    private bool isSuperAdmin = false;
+    private bool isManager = false;
+    private bool isDriver = false;
+
+    // Dashboard Statistics
+    private int totalRoutes = 0;
+    private int activeBins = 0;
+    private int totalDrivers = 0;
+    private int activeDrivers = 0;
+    private double efficiencyScore = 0;
+    private double collectionEfficiency = 0;
+    private double binEfficiency = 0;
+    private double co2Saved = 0;
+    private int routeTrend = 0;
+
+    // Driver-specific stats
+    private int myRoutes = 0;
+    private int completedJobs = 0;
+    private int todayTasks = 0;
+    private double myPerformanceScore = 0;
+
+    // Data Collections
+    private List<RouteResultDto> recentRoutes = new();
+    private List<ResultNotificationDto> recentAlerts = new();
+    private List<ResultUserDto> drivers = new();
+    private List<ResultVehicleDto> vehicles = new();
+
+    // Bin Statistics
+    private BinStatusStats binStats = new();
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-
         try
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var user = authState.User;
+            currentUserId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-            Console.WriteLine($"Home page - Current user ID: {currentUserId}");
+            // Role checks - same as NavMenu
+            isSuperAdmin = user.IsInRole("SuperAdmin");
+            isManager = user.IsInRole("Manager");
+            isDriver = user.IsInRole("Driver");
 
             await LoadUserSettings();
+            await LoadDashboardData();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error in Home page initialization: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
         }
     }
 
@@ -42,29 +632,597 @@
         try
         {
             var settingsDto = await settingsService.GetSettingsAsync();
-
             if (settingsDto != null)
             {
-                Console.WriteLine("User settings loaded on Home page");
-
                 await localStorage.SetItemAsync("darkMode", settingsDto.DarkMode.ToString().ToLower());
                 await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(settingsDto.DarkMode ? "add" : "remove")}('dark')");
-
                 if (!string.IsNullOrEmpty(settingsDto.AvatarUrl))
                 {
                     await localStorage.SetItemAsync("avatarUrl", settingsDto.AvatarUrl);
                 }
-
                 await localStorage.SetItemAsync("currentUserId", currentUserId);
-            }
-            else
-            {
-                Console.WriteLine("No user settings found on Home page");
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading user settings on Home page: {ex.Message}");
+            Console.WriteLine($"Error loading user settings: {ex.Message}");
         }
     }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            if (isDriver)
+            {
+                // Driver sadece kendi verilerine erişebilir
+                await LoadDriverDashboardData();
+            }
+            else
+            {
+                // Admin/Manager için tüm verileri yükle
+                await LoadAdminDashboardData();
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+        }
+    }
+
+    private async Task LoadDriverDashboardData()
+    {
+        try
+        {
+            // Driver için sadece yetkili olduğu servisleri çağır
+            var notificationsTask = LoadNotifications();
+            
+            await Task.WhenAll(notificationsTask);
+
+            recentAlerts = await notificationsTask;
+
+            // Driver için kendi rotalarını yükle (farklı endpoint kullanabilir)
+            await LoadDriverRoutes();
+
+            // Driver için basit istatistikleri hesapla
+            CalculateDriverStatistics(recentRoutes);
+
+            // Driver için bildirimlerini filtrele
+            recentAlerts = recentAlerts?.Where(n => string.IsNullOrEmpty(n.UserId) || n.UserId == currentUserId)
+                                     .Take(5)
+                                     .ToList() ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading driver dashboard data: {ex.Message}");
+        }
+    }
+
+    private async Task LoadAdminDashboardData()
+    {
+        try
+        {
+            // Admin/Manager için tüm verileri concurrent olarak yükle
+            var routesTask = LoadAllRoutes();
+            var binsTask = LoadWasteBins();
+            var driversTask = LoadDrivers();
+            var notificationsTask = LoadNotifications();
+            var statsTask = LoadWasteBinStats();
+
+            await Task.WhenAll(routesTask, binsTask, driversTask, notificationsTask, statsTask);
+
+            var routes = await routesTask;
+            var bins = await binsTask;
+            drivers = await driversTask;
+            recentAlerts = await notificationsTask;
+            var wasteBinStats = await statsTask;
+
+            // Admin/Manager istatistiklerini hesapla
+            CalculateStatistics(routes, bins, drivers, wasteBinStats);
+            recentRoutes = routes?.OrderByDescending(r => r.StartTime).Take(5).ToList() ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading admin dashboard data: {ex.Message}");
+        }
+    }
+
+    private async Task<List<RouteResultDto>> LoadAllRoutes()
+    {
+        try
+        {
+            return await routeService.GetAllRoutesAsync() ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading routes: {ex.Message}");
+            return new();
+        }
+    }
+
+    private async Task<List<ResultWasteBinDto>> LoadWasteBins()
+    {
+        try
+        {
+            return await wasteBinService.GetAllWasteBinsAsync() ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading waste bins: {ex.Message}");
+            return new();
+        }
+    }
+
+    private async Task<WasteBinStatsDto> LoadWasteBinStats()
+    {
+        try
+        {
+            return await reportService.GetWasteBinStatsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading waste bin stats: {ex.Message}");
+            return null;
+        }
+    }
+
+    private async Task LoadDriverRoutes()
+    {
+        try
+        {
+            // Önce mevcut endpoint'i deneyerek driver'ın kendi rotalarını çekmeyi dene
+            var allRoutes = await routeService.GetAllRoutesAsync();
+
+            if (allRoutes != null)
+            {
+                // Driver sadece kendi rotalarını görebilsin
+                recentRoutes = allRoutes.Where(r => r.DriverId == currentUserId)
+                                      .OrderByDescending(r => r.StartTime)
+                                      .ToList();
+            }
+            else
+            {
+                recentRoutes = new List<RouteResultDto>();
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Eğer driver'ın GetAllRoutes'a yetkisi yoksa
+            Console.WriteLine("Driver has no access to GetAllRoutes - need specific endpoint");
+            recentRoutes = new List<RouteResultDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading driver routes: {ex.Message}");
+            recentRoutes = new List<RouteResultDto>();
+        }
+    }
+
+    private async Task<List<ResultUserDto>> LoadDrivers()
+    {
+        try
+        {
+            // Driver rolü tüm kullanıcıları göremez
+            if (isDriver)
+            {
+                return new List<ResultUserDto>();
+            }
+
+            var allUsers = await userService.GetAllUsersAsync();
+            return allUsers?.Where(u => u.Roles?.Contains("Driver") == true).ToList() ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading drivers: {ex.Message}");
+            return new();
+        }
+    }
+
+    private async Task<List<ResultNotificationDto>> LoadNotifications()
+    {
+        try
+        {
+            if (!notificationService.IsConnected)
+            {
+                await notificationService.InitializeAsync();
+            }
+            await notificationService.GetNotificationsAsync();
+            return notificationService.Notifications?.Where(n => !n.IsRead).OrderByDescending(n => n.CreatedDate).ToList() ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading notifications: {ex.Message}");
+            return new();
+        }
+    }
+
+    private void CalculateDriverStatistics(List<RouteResultDto> routes)
+    {
+        // Driver kendi rotalarına erişemediği için şimdilik varsayılan değerler
+        // TODO: Driver-specific API endpoint'i eklendiğinde gerçek verilerle güncelle
+        
+        if (routes == null || !routes.Any())
+        {
+            // Varsayılan değerler - gerçek API endpoint'i eklenene kadar
+            myRoutes = 0;
+            completedJobs = 0;
+            todayTasks = 0;
+            myPerformanceScore = 0;
+            return;
+        }
+
+        var myAllRoutes = routes.Where(r => r.DriverId == currentUserId).ToList();
+        
+        // Benim Rotalarım (bu hafta)
+        myRoutes = myAllRoutes.Count(r => r.StartTime >= DateTime.Now.AddDays(-7));
+        
+        // Tamamlanan İşler (bu ay)
+        completedJobs = myAllRoutes.Count(r => r.Status == RouteStatus.Completed && r.StartTime >= DateTime.Now.AddDays(-30));
+        
+        // Bugünkü Görevler
+        todayTasks = myAllRoutes.Count(r => r.StartTime.Date == DateTime.Today && r.Status != RouteStatus.Completed);
+        
+        // Performans Skoru
+        var totalAssigned = myAllRoutes.Count(r => r.StartTime >= DateTime.Now.AddDays(-30));
+        myPerformanceScore = totalAssigned > 0 ? ((double)completedJobs / totalAssigned) * 100 : 0;
+    }
+
+    private void CalculateStatistics(List<RouteResultDto> routes, List<ResultWasteBinDto> bins, List<ResultUserDto> drivers, WasteBinStatsDto wasteBinStats)
+    {
+        // Route statistics
+        totalRoutes = routes?.Count ?? 0;
+
+        // Calculate route trend (simplified)
+        var thisWeekRoutes = routes?.Count(r => r.StartTime >= DateTime.Now.AddDays(-7)) ?? 0;
+        var lastWeekRoutes = routes?.Count(r => r.StartTime >= DateTime.Now.AddDays(-14) && r.StartTime < DateTime.Now.AddDays(-7)) ?? 0;
+        routeTrend = lastWeekRoutes > 0 ? (int)(((double)(thisWeekRoutes - lastWeekRoutes) / lastWeekRoutes) * 100) : 0;
+
+        // Bin statistics
+        activeBins = bins?.Count(b => b.DeviceStatus == "Active") ?? 0;
+        var totalBins = bins?.Count ?? 1;
+        binEfficiency = totalBins > 0 ? ((double)activeBins / totalBins) * 100 : 0;
+
+        // Driver statistics
+        totalDrivers = drivers?.Count ?? 0;
+        activeDrivers = routes?.Where(r => r.Status != RouteStatus.Completed)
+                              .Select(r => r.DriverId)
+                              .Distinct()
+                              .Count() ?? 0;
+
+        // Efficiency calculations
+        var completedRoutes = routes?.Where(r => r.Status == RouteStatus.Completed).ToList() ?? new();
+        if (completedRoutes.Any())
+        {
+            // Simple efficiency calculation based on completed routes vs total routes
+            efficiencyScore = ((double)completedRoutes.Count / totalRoutes) * 100;
+
+            // Collection efficiency based on bin fill levels
+            var avgFillLevel = bins?.Where(b => b.FillLevel.HasValue).Average(b => b.FillLevel) ?? 0;
+            collectionEfficiency = Math.Max(0, 100 - avgFillLevel);
+
+            // CO2 savings (estimated)
+            co2Saved = completedRoutes.Sum(r => r.EstimatedCO2Kg);
+        }
+
+        // Bin status breakdown
+        binStats = new BinStatusStats
+            {
+                ActiveCount = bins?.Count(b => b.DeviceStatus == "Active") ?? 0,
+                MaintenanceCount = bins?.Count(b => b.DeviceStatus == "Maintenance") ?? 0,
+                FaultyCount = bins?.Count(b => b.DeviceStatus == "Faulty") ?? 0,
+                TotalCount = bins?.Count ?? 0
+            };
+    }
+
+    private async Task RefreshDashboard()
+    {
+        if (isRefreshing) return;
+
+        isRefreshing = true;
+        StateHasChanged();
+
+        try
+        {
+            await LoadDashboardData();
+        }
+        finally
+        {
+            isRefreshing = false;
+            StateHasChanged();
+        }
+    }
+    private async Task ExportReport()
+    {
+        try
+        {
+            isRefreshing = true;
+            StateHasChanged();
+
+            var reportData = GenerateReportData();
+            var csvContent = GenerateCSVContent(reportData);
+            var fileName = $"EcoRoute_Dashboard_Raporu_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+
+            await JS.InvokeVoidAsync("downloadCsvFile", csvContent, fileName);
+
+            // Başarı mesajı göster
+            await JS.InvokeVoidAsync("alert", "Rapor başarıyla indirildi!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error exporting report: {ex.Message}");
+            await JS.InvokeVoidAsync("alert", "Rapor indirirken hata oluştu: " + ex.Message);
+        }
+        finally
+        {
+            isRefreshing = false;
+            StateHasChanged();
+        }
+    }
+
+    private object GenerateReportData()
+    {
+        return new
+        {
+            RaporTarihi = DateTime.Now.ToString("dd.MM.yyyy HH:mm"),
+            KullaniciRolu = isSuperAdmin ? "Super Admin" : isManager ? "Manager" : "Driver",
+
+            // Genel İstatistikler
+            ToplamRotalar = totalRoutes,
+            AktifAtikKutulari = activeBins,
+            ToplamSurucu = totalDrivers,
+            AktifSurucu = activeDrivers,
+            VerimlilikSkoru = $"%{efficiencyScore:F1}",
+            ToplamaVerimliligi = $"%{collectionEfficiency:F1}",
+            CO2Tasarruf = $"{FormatCO2Value(co2Saved)} kg",
+            RotaTrendi = $"{(routeTrend >= 0 ? "+" : "")}{routeTrend}%",
+
+            // Atık Kutusu Durumu
+            AktifKutular = binStats.ActiveCount,
+            BakimdaKutular = binStats.MaintenanceCount,
+            ArizaliKutular = binStats.FaultyCount,
+            ToplamKutular = binStats.TotalCount,
+
+            // Driver-specific (eğer driver ise)
+            BenimRotalarim = isDriver ? myRoutes : 0,
+            TamamlananIsler = isDriver ? completedJobs : 0,
+            BugunkuGorevler = isDriver ? todayTasks : 0,
+            PerformansSkorum = isDriver ? $"%{myPerformanceScore:F1}" : "N/A",
+
+            // Son Rotalar (sadece sayı)
+            SonRotalarSayisi = recentRoutes?.Count ?? 0,
+            AktifUyarilar = recentAlerts?.Count ?? 0
+        };
+    }
+
+    private string GenerateCSVContent(object data)
+    {
+        var properties = data.GetType().GetProperties();
+        var csv = new System.Text.StringBuilder();
+
+        // Header
+        csv.AppendLine("EcoRoute Dashboard Raporu");
+        csv.AppendLine($"Oluşturulma Tarihi: {DateTime.Now:dd.MM.yyyy HH:mm}");
+        csv.AppendLine($"Kullanıcı Rolü: {(isSuperAdmin ? "Super Admin" : isManager ? "Manager" : "Driver")}");
+        csv.AppendLine("");
+
+        // Data
+        csv.AppendLine("Metrik,Değer");
+
+        foreach (var prop in properties)
+        {
+            var name = GetTurkishPropertyName(prop.Name);
+            var value = prop.GetValue(data)?.ToString() ?? "";
+            csv.AppendLine($"\"{name}\",\"{value}\"");
+        }
+
+        // Son rotalar detayı
+        if (recentRoutes?.Any() == true)
+        {
+            csv.AppendLine("");
+            csv.AppendLine("Son Rotalar Detayı");
+            csv.AppendLine("Başlama Saati,Sürücü,Durum,Mesafe (km)");
+
+            foreach (var route in recentRoutes.Take(10))
+            {
+                var driver = GetDriverName(route.DriverId);
+                var status = GetRouteStatusText(route.Status);
+                csv.AppendLine($"\"{route.StartTime:HH:mm}\",\"{driver}\",\"{status}\",\"{route.TotalDistanceKm:F1}\"");
+            }
+        }
+
+        return csv.ToString();
+    }
+
+    private string GetTurkishPropertyName(string propertyName)
+    {
+        return propertyName switch
+        {
+            "RaporTarihi" => "Rapor Tarihi",
+            "KullaniciRolu" => "Kullanıcı Rolü",
+            "ToplamRotalar" => "Toplam Rotalar",
+            "AktifAtikKutulari" => "Aktif Atık Kutuları",
+            "ToplamSurucu" => "Toplam Sürücü",
+            "AktifSurucu" => "Aktif Sürücü",
+            "VerimlilikSkoru" => "Verimlilik Skoru",
+            "ToplamaVerimliligi" => "Toplama Verimliliği",
+            "CO2Tasarruf" => "CO₂ Tasarruf",
+            "RotaTrendi" => "Rota Trendi",
+            "AktifKutular" => "Aktif Kutular",
+            "BakimdaKutular" => "Bakımda Kutular",
+            "ArizaliKutular" => "Arızalı Kutular",
+            "ToplamKutular" => "Toplam Kutular",
+            "BenimRotalarim" => "Benim Rotalarım",
+            "TamamlananIsler" => "Tamamlanan İşler",
+            "BugunkuGorevler" => "Bugünkü Görevler",
+            "PerformansSkorum" => "Performans Skorum",
+            "SonRotalarSayisi" => "Son Rotalar Sayısı",
+            "AktifUyarilar" => "Aktif Uyarılar",
+            _ => propertyName
+        };
+    }
+
+    // Helper Methods
+    private string GetWelcomeMessage()
+    {
+        if (isDriver)
+            return "Kişisel dashboard'unuzdan günlük görevlerinizi ve performansınızı takip edebilirsiniz";
+        else if (isManager)
+            return "Yönetici dashboard'unuzdan sistem genelindeki operasyonları takip edebilirsiniz";
+        else if (isSuperAdmin)
+            return "Süper yönetici dashboard'unuzdan tüm sistem operasyonlarını takip edebilirsiniz";
+        
+        return "EcoRoute sisteminizin genel durumunu buradan takip edebilirsiniz";
+    }
+
+    private string FormatCO2Value(double value)
+    {
+        // Fix the floating point precision issue
+        return value.ToString("F1"); // This will show 43.1 instead of 43.160000000000004
+    }
+
+    private string GetDriverName(string driverId)
+    {
+        if (string.IsNullOrEmpty(driverId))
+            return "Bilinmeyen Sürücü";
+
+        // Driver ise sadece kendi adını gösterebilir
+        if (isDriver)
+        {
+            return driverId == currentUserId ? "Ben" : "Diğer Sürücü";
+        }
+
+        // Admin/Manager için normal işlem
+        if (drivers == null)
+            return "Bilinmeyen Sürücü";
+
+        var driver = drivers.FirstOrDefault(d => d.Id == driverId);
+        return driver != null ? $"{driver.Name} {driver.Surname}" : "Bilinmeyen Sürücü";
+    }
+
+    private string GetVehiclePlate(string vehicleId)
+    {
+        // This would need to be loaded from vehicle service
+        return !string.IsNullOrEmpty(vehicleId) ? $"Araç-{vehicleId.Substring(0, Math.Min(8, vehicleId.Length))}" : "Bilinmeyen Araç";
+    }
+
+    private string GetRouteStatusClass(RouteStatus status)
+    {
+        return status switch
+        {
+            RouteStatus.Scheduled => "bg-primary-100 text-primary-800 dark:bg-primary-900/20 dark:text-primary-300",
+            RouteStatus.Active => "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300",
+            RouteStatus.Completed => "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300",
+            _ => "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+        };
+    }
+
+    private string GetRouteStatusText(RouteStatus status)
+    {
+        return status switch
+        {
+            RouteStatus.Scheduled => "Planlanmış",
+            RouteStatus.Active => "Aktif",
+            RouteStatus.Completed => "Tamamlanmış",
+            _ => status.ToString()
+        };
+    }
+
+    private int CalculateRouteProgress(RouteResultDto route)
+    {
+        if (route.Steps == null || !route.Steps.Any())
+            return 0;
+
+        var completedSteps = route.Steps.Count(s => s.IsCompleted);
+        return (int)((double)completedSteps / route.Steps.Count * 100);
+    }
+
+    private string GetProgressBarColor(int progress)
+    {
+        return progress switch
+        {
+            >= 90 => "bg-primary-500",
+            >= 60 => "bg-primary-400",
+            >= 30 => "bg-yellow-500",
+            _ => "bg-red-500"
+        };
+    }
+
+    private string GetAlertBorderClass(string type)
+    {
+        return type switch
+        {
+            "Error" => "border-l-red-500 bg-red-50 dark:bg-red-900/20",
+            "Warning" => "border-l-yellow-500 bg-yellow-50 dark:bg-yellow-900/20",
+            "Success" => "border-l-primary-500 bg-primary-50 dark:bg-primary-900/20",
+            _ => "border-l-primary-500 bg-primary-50 dark:bg-primary-900/20"
+        };
+    }
+
+    private string GetAlertIconClass(string type)
+    {
+        return type switch
+        {
+            "Error" => "bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400",
+            "Warning" => "bg-yellow-100 text-yellow-600 dark:bg-yellow-900/40 dark:text-yellow-400",
+            "Success" => "bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400",
+            _ => "bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400"
+        };
+    }
+
+    private string GetAlertIcon(string type)
+    {
+        return type switch
+        {
+            "Error" => "fas fa-exclamation-circle",
+            "Warning" => "fas fa-exclamation-triangle",
+            "Success" => "fas fa-check-circle",
+            _ => "fas fa-info-circle"
+        };
+    }
+
+    private string GetTimeAgo(DateTime date)
+    {
+        var timeSpan = DateTime.Now - date;
+
+        if (timeSpan.TotalMinutes < 1)
+            return "Az önce";
+        else if (timeSpan.TotalMinutes < 60)
+            return $"{(int)timeSpan.TotalMinutes} dk önce";
+        else if (timeSpan.TotalHours < 24)
+            return $"{(int)timeSpan.TotalHours} saat önce";
+        else if (timeSpan.TotalDays < 7)
+            return $"{(int)timeSpan.TotalDays} gün önce";
+        else
+            return date.ToString("dd.MM.yyyy");
+    }
+
+    public class BinStatusStats
+    {
+        public int ActiveCount { get; set; }
+        public int MaintenanceCount { get; set; }
+        public int FaultyCount { get; set; }
+        public int TotalCount { get; set; }
+    }
 }
+<script>
+    window.downloadCsvFile = (csvContent, fileName) => {
+        // UTF-8 BOM ekle (Türkçe karakterler için)
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+
+        // Download linki oluştur
+        const link = document.createElement('a');
+        if (link.download !== undefined) {
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+    };
+</script>

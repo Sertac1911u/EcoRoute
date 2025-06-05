@@ -15,7 +15,6 @@ namespace EcoRoute.RouteOptimization.Controllers
             _routeService = routeService;
         }
 
-        // Test endpoint: http://localhost:5006/api/wastebindebug/test?id=guid1&id=guid2
         [HttpGet("test")]
         public async Task<IActionResult> TestWasteBinFetch([FromQuery] List<Guid> id)
         {

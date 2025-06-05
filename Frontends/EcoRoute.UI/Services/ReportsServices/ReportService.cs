@@ -22,9 +22,7 @@ namespace EcoRoute.UI.Services.ReportsServices
             _logger = logger;
         }
 
-        /// <summary>
-        /// Sets the authorization header with JWT token from local storage
-        /// </summary>
+
         private async Task SetAuthorizationHeader()
         {
             var token = await _localStorage.GetItemAsync<string>("authToken");
@@ -34,9 +32,7 @@ namespace EcoRoute.UI.Services.ReportsServices
             }
         }
 
-        /// <summary>
-        /// Generic method to get data from the API with proper error handling
-        /// </summary>
+
         private async Task<TResult> GetAsync<TResult>(string endpoint) where TResult : new()
         {
             await SetAuthorizationHeader();

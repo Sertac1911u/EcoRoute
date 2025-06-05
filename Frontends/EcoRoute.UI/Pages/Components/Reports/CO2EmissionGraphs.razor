@@ -5,7 +5,6 @@
 @implements IAsyncDisposable
 
 <div class="space-y-6 animate-fadeIn">
-    <!-- Statistik Özet Kartları -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
@@ -52,7 +51,6 @@
         </div>
     </div>
 
-    <!-- CO2 Alan Grafiği -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -79,7 +77,6 @@
         </div>
     </div>
 
-    <!-- CO2 ve Rota Sayısı Karşılaştırma Grafiği -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -133,14 +130,12 @@
 
             ReportList = await ReportService.GetCO2EmissionReportAsync();
 
-            // DOM'un hazır olmasını bekle
             await Task.Delay(100, _cancellationTokenSource?.Token ?? CancellationToken.None);
 
             await RenderCharts();
         }
         catch (OperationCanceledException)
         {
-            // İptal edildi, hiçbir şey yapma
         }
         catch (Exception ex)
         {
@@ -167,7 +162,6 @@
         {
             var chartData = ReportList.OrderBy(r => r.Date).ToList();
 
-            // Zaman aralığına göre verileri filtrele
             if (Timeframe == "weekly")
             {
                 chartData = chartData.TakeLast(7).ToList();
@@ -177,10 +171,8 @@
             var co2Values = chartData.Select(r => r.CO2Kg).ToArray();
             var routeCounts = chartData.Select(r => r.RouteCount).ToArray();
 
-            // CO2 Alan Grafiği - Güvenli çağrı
             await SafeJSInvoke("renderCO2Chart", chartLabels, co2Values);
 
-            // CO2 ve Rota Sayısı Karşılaştırma Grafiği - Güvenli çağrı
             await SafeJSInvoke("renderCO2CompareChart", chartLabels, co2Values, routeCounts);
         }
         catch (Exception ex)
@@ -206,14 +198,12 @@
         _cancellationTokenSource?.Cancel();
         _cancellationTokenSource?.Dispose();
 
-        // Chart instance'larını temizle
         try
         {
             await JS.InvokeVoidAsync("cleanupCO2Charts");
         }
         catch
         {
-            // Sessizce göz ardı et
         }
     }
 
@@ -246,7 +236,6 @@
 }
 
 <script>
-    // CO2 Alan Grafiği - Null check ile geliştirilmiş
     window.renderCO2Chart = (labels, data) => {
         try {
             if (!window.Chart) {
@@ -266,7 +255,6 @@
                 return;
             }
 
-            // Define gradient fill
             const gradient = ctx.createLinearGradient(0, 0, 0, 300);
             gradient.addColorStop(0, 'rgba(59,130,246,0.3)');
             gradient.addColorStop(1, 'rgba(59,130,246,0.02)');
@@ -363,7 +351,6 @@
         }
     };
 
-    // CO2 ve Rota Sayısı Karşılaştırma Grafiği - Null check ile geliştirilmiş
     window.renderCO2CompareChart = (labels, co2Data, routeData) => {
         try {
             if (!window.Chart) {
@@ -507,7 +494,6 @@
         }
     };
 
-    // Chart cleanup function
     window.cleanupCO2Charts = () => {
         try {
             if (window._co2ChartInstance) {

@@ -33,10 +33,8 @@ namespace EcoRoute.UI.Services.RouteOptimizationServices
             {
                 var result = await _httpClient.GetFromJsonAsync<List<RouteResultDto>>("routeoptimization/route/all");
 
-                // Make sure to handle null values properly to avoid "Unknown" display issues
                 if (result != null)
                 {
-                    // Process each route to ensure vehicle and driver IDs are properly preserved
                     foreach (var route in result)
                     {
                         route.DriverId = route.DriverId ?? string.Empty;
@@ -128,7 +126,6 @@ namespace EcoRoute.UI.Services.RouteOptimizationServices
                 var response = await _httpClient.PostAsync($"routeoptimization/route/{routeId}/reoptimize", null);
                 response.EnsureSuccessStatusCode();
 
-                // After reoptimization, get the complete updated route
                 var updatedRoute = await GetRouteByIdAsync(routeId);
                 return updatedRoute;
             }
@@ -158,7 +155,6 @@ namespace EcoRoute.UI.Services.RouteOptimizationServices
             await _httpClient.PutAsync($"routeoptimization/route/steps/{stepId}/complete", null);
         }
 
-        // *** SIMÜLASYON METODLARI ***
         public async Task StartRouteSimulationAsync(Guid routeId)
         {
             try
@@ -217,7 +213,7 @@ namespace EcoRoute.UI.Services.RouteOptimizationServices
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error simulating all routes: {ex.Message}");
-                return 0; // Hata durumunda 0 döndür
+                return 0;
             }
         }
     }

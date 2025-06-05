@@ -26,21 +26,17 @@ namespace EcoRoute.DataCollection.Services.WasteBinServices
             if (createWasteBinDto.SensorCount < 0 || createWasteBinDto.SensorCount > 20)
                 throw new ArgumentException("Sensör adedi 0-20 arasında olmalıdır.");
 
-            // 1. Mapleme
             var wasteBin = _mapper.Map<WasteBin>(createWasteBinDto);
             wasteBin.WasteBinId = Guid.NewGuid();
 
-            // 2. Veritabanına kaydet
             await _context.WasteBins.AddAsync(wasteBin);
             await _context.SaveChangesAsync();
 
-            // 3. Sensörleri oluştur
             if (createWasteBinDto.SensorCount > 0)
             {
                 await _sensorService.CreateSensorsForWasteBinAsync(wasteBin.WasteBinId, createWasteBinDto.SensorCount);
             }
 
-            // 4. Result DTO oluştur ve bildirimi gönder
             var resultDto = _mapper.Map<ResultWasteBinDto>(wasteBin);
             await _notificationService.SendWasteBinCreatedNotificationAsync(resultDto);
         }
@@ -51,12 +47,10 @@ namespace EcoRoute.DataCollection.Services.WasteBinServices
             var wasteBin = await _context.WasteBins.FirstOrDefaultAsync(w => w.WasteBinId == id);
             if (wasteBin != null)
             {
-                // Önce sensörleri sil
                 await _sensorService.DeleteSensorsByWasteBinIdAsync(id);
 
                 var resultDto = _mapper.Map<ResultWasteBinDto>(wasteBin);
 
-                // Sonra waste bin'i sil
                 _context.WasteBins.Remove(wasteBin);
                 await _context.SaveChangesAsync();
 
@@ -82,7 +76,7 @@ namespace EcoRoute.DataCollection.Services.WasteBinServices
             var result = _mapper.Map<GetByIdWasteBinDto>(wasteById);
             if (result != null)
             {
-                result.Id = wasteById.WasteBinId; // Mapping'i manuel olarak düzelt
+                result.Id = wasteById.WasteBinId; 
             }
             return result;
         }
@@ -100,13 +94,13 @@ namespace EcoRoute.DataCollection.Services.WasteBinServices
             {
                 var currentSensorCount = updateWasteBin.Sensors.Count;
 
-                // WasteBin özelliklerini güncelle
                 updateWasteBin.Label = updateWasteBinDto.Label;
                 updateWasteBin.Address = updateWasteBinDto.Address;
                 updateWasteBin.Latitude = updateWasteBinDto.Latitude;
                 updateWasteBin.Longitude = updateWasteBinDto.Longitude;
                 updateWasteBin.IsFilled = updateWasteBinDto.IsFilled;
                 updateWasteBin.FillLevel = updateWasteBinDto.FillLevel;
+                updateWasteBin.estimatedFillLevel = updateWasteBinDto.estimatedFillLevel;
                 updateWasteBin.DeviceStatus = updateWasteBinDto.DeviceStatus;
                 updateWasteBin.SensorCount = updateWasteBinDto.SensorCount;
                 updateWasteBin.LastUpdated = updateWasteBinDto.LastUpdated;
@@ -114,7 +108,6 @@ namespace EcoRoute.DataCollection.Services.WasteBinServices
 
                 _context.WasteBins.Update(updateWasteBin);
 
-                // Sensör sayısı değiştiyse sensörleri güncelle
                 if (updateWasteBinDto.SensorCount != currentSensorCount)
                 {
                     await _sensorService.UpdateSensorsForWasteBinAsync(updateWasteBinDto.WasteBinId, updateWasteBinDto.SensorCount);

@@ -12,9 +12,6 @@
             <i class="fas fa-chart-line text-primary-500 dark:text-primary-400"></i>
             Raporlar Paneli
         </h2>
-        <span class="px-3 py-1 bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-300 text-xs font-medium rounded-full">
-            Beta
-        </span>
     </div>
 
     <div class="px-6 pt-4 pb-2 border-b border-gray-200 dark:border-slate-800 overflow-x-auto">
@@ -113,7 +110,6 @@
     {
         if (IsLoading || ActiveTab == tabId) return;
 
-        // Önceki istekleri iptal et
         _cancellationTokenSource?.Cancel();
         _cancellationTokenSource = new CancellationTokenSource();
 
@@ -129,18 +125,14 @@
             LoadingMessage = GetLoadingMessage(tabId);
             StateHasChanged();
 
-            // Kısa bir bekleme ekleyerek UI'ın güncellenmesini sağla
             await Task.Delay(100, _cancellationTokenSource?.Token ?? CancellationToken.None);
 
-            // Tab değişimini gerçekleştir
             StateHasChanged();
 
-            // Component'in render olmasını bekle
             await Task.Delay(500, _cancellationTokenSource?.Token ?? CancellationToken.None);
         }
         catch (OperationCanceledException)
         {
-            // İptal edildi, hiçbir şey yapma
             return;
         }
         catch (Exception ex)
@@ -192,13 +184,11 @@
         animation: fadeIn 0.4s ease-out;
     }
 
-    /* For nice transitions */
     .transition-all {
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Loading animation */
     @@keyframes spin {
         to
 
@@ -212,12 +202,10 @@
         animation: spin 1s linear infinite;
     }
 
-    /* Disabled state styling */
     button:disabled {
         pointer-events: none;
     }
 
-    /* Custom scrollbar for all panels */
     ::-webkit-scrollbar {
         width: 6px;
         height: 6px;
@@ -237,7 +225,6 @@
             background: rgba(0,0,0,0.2);
         }
 
-    /* Dark mode scrollbar adjustments */
     .dark ::-webkit-scrollbar-track {
         background: rgba(255,255,255,0.05);
     }

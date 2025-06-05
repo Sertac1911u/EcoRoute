@@ -66,19 +66,16 @@
     private bool isCreateTicketModalOpen = false;
     private bool showCloseTicketConfirmation = false;
     private Guid ticketIdToClose;
-    private Guid currentTicketId; // Add this to store the current ticket ID
+    private Guid currentTicketId;
 
-    // Loading and submission states
     private bool isLoading = true;
     private bool isSubmittingTicket = false;
     private bool isClosingTicket = false;
 
-    // User roles
     private bool IsAdmin = false;
     private bool IsManager = false;
     private bool IsDriver = false;
 
-    // Sorting properties
     private string sortColumn = "CreateDate";
     private bool ascending = false;
 
@@ -173,7 +170,6 @@
     {
         try
         {
-            // Store the ticket ID before loading details
             currentTicketId = ticket.Id;
             
             selectedTicket = await SupportTicketService.GetSupportTicketByIdAsync(ticket.Id);
@@ -187,7 +183,6 @@
     private void CloseTicketDetailsModal()
     {
         selectedTicket = null;
-        // Don't reset the current ticket ID here
     }
 
     private void OpenCreateTicketModal()
@@ -233,7 +228,6 @@
             await SupportTicketService.AddResponseAsync(content);
             ToastService.ShowSuccess("Yanıtınız başarıyla gönderildi.");
             
-            // Refresh the ticket details with the current ticket ID
             if (currentTicketId != Guid.Empty)
             {
                 selectedTicket = await SupportTicketService.GetSupportTicketByIdAsync(currentTicketId);
@@ -253,7 +247,6 @@
 
     private void ShowCloseTicketConfirmation(Guid ticketId)
     {
-        // Only set the ID if it's valid
         if (ticketId != Guid.Empty)
         {
             ticketIdToClose = ticketId;
@@ -274,7 +267,6 @@
     {
         if (isClosingTicket) return;
 
-        // Check if we have a valid ticket ID
         if (ticketIdToClose == Guid.Empty)
         {
             ToastService.ShowError("Geçersiz bilet kimliği! Lütfen sayfayı yenileyin ve tekrar deneyin.");
@@ -285,17 +277,14 @@
         isClosingTicket = true;
         try
         {
-            // Log the ticket ID being closed for debugging
             Console.WriteLine($"Attempting to close ticket with ID: {ticketIdToClose}");
             
             var success = await SupportTicketService.CloseTicketAsync(ticketIdToClose);
             ToastService.ShowSuccess("Destek talebi başarıyla kapatıldı.");
             showCloseTicketConfirmation = false;
             
-            // Refresh data
             await LoadSupportTickets();
             
-            // If this ticket was the selected ticket, update it
             if (selectedTicket != null && selectedTicket.Id == ticketIdToClose)
             {
                 selectedTicket = await SupportTicketService.GetSupportTicketByIdAsync(ticketIdToClose);

@@ -17,7 +17,6 @@ namespace EcoRoute.DtoLayer.IdentityDtos
         public string Role { get; set; } 
         public string Password { get; set; }
 
-        //
         public string PhoneNumber { get; set; }
         public bool IsActive { get; set; } = true;
     }

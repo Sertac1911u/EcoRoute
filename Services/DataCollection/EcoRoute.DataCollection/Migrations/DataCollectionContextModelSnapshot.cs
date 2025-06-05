@@ -99,6 +99,9 @@ namespace EcoRoute.DataCollection.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<double?>("estimatedFillLevel")
+                        .HasColumnType("float");
+
                     b.HasKey("WasteBinId");
 
                     b.ToTable("WasteBins");

@@ -66,7 +66,7 @@
             "Success" => $"{baseClasses} bg-green-100 text-green-500 dark:bg-green-900/30 dark:text-green-400",
             "Warning" => $"{baseClasses} bg-yellow-100 text-yellow-500 dark:bg-yellow-900/30 dark:text-yellow-400",
             "Error" => $"{baseClasses} bg-red-100 text-red-500 dark:bg-red-900/30 dark:text-red-400",
-            _ => $"{baseClasses} bg-blue-100 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400" // Info
+            _ => $"{baseClasses} bg-blue-100 text-blue-500 dark:bg-blue-900/30 dark:text-blue-400" 
         };
     }
 
@@ -77,29 +77,25 @@
             "Success" => "fas fa-check",
             "Warning" => "fas fa-exclamation-triangle",
             "Error" => "fas fa-times-circle",
-            _ => "fas fa-info-circle" // Info
+            _ => "fas fa-info-circle" 
         };
     }
 
     private string FormatDate(DateTime date)
     {
-        // Bugün ise sadece saat göster
         if (date.Date == DateTime.Today)
         {
             return $"Bugün {date:HH:mm}";
         }
-        // Dün ise "Dün" yaz
         else if (date.Date == DateTime.Today.AddDays(-1))
         {
             return $"Dün {date:HH:mm}";
         }
-        // Son bir hafta içindeyse günü yaz
         else if ((DateTime.Today - date.Date).TotalDays < 7)
         {
             string dayName = System.Globalization.CultureInfo.GetCultureInfo("tr-TR").DateTimeFormat.GetDayName(date.DayOfWeek);
             return $"{dayName} {date:HH:mm}";
         }
-        // Diğer durumlar için tam tarih
         else
         {
             return date.ToString("dd.MM.yyyy HH:mm");

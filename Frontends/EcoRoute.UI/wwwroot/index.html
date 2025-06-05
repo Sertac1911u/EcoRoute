@@ -37,7 +37,7 @@
                             200: '#9fe3be',
                             300: '#74d8a3',
                             400: '#4acd87',
-                            500: '#2ba86d', // Primary color
+                            500: '#2ba86d', 
                             600: '#1f8c58',
                             700: '#166e44',
                             800: '#0e5031',
@@ -49,7 +49,7 @@
                             200: '#a1d0f8',
                             300: '#7abef5',
                             400: '#54acf2',
-                            500: '#3089d6', // Secondary color
+                            500: '#3089d6', 
                             600: '#246fb3',
                             700: '#19568f',
                             800: '#0f3d6c',
@@ -90,7 +90,6 @@
             font-family: var(--font-family);
         }
 
-        /* Font Classes */
         .font-open-sans {
             font-family: 'Open Sans', sans-serif;
         }
@@ -106,7 +105,6 @@
         .font-playfair {
             font-family: 'Playfair Display', serif;
         }
-        /* Animations */
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -211,15 +209,11 @@
 
 <body>
     <div id="app">
-        <!-- Geliştirilmiş Initial Loading Screen -->
         <div id="initial-loader" class="fixed inset-0 bg-white dark:bg-gray-900 flex items-center justify-center z-50 transition-opacity duration-500">
             <div class="text-center space-y-6">
-                <!-- Ana Logo ve Spinner -->
                 <div class="relative">
-                    <!-- Dış loading ring -->
                     <div class="w-20 h-20 border-4 border-gray-200 dark:border-gray-700 border-t-primary-500 rounded-full animate-spin mx-auto"></div>
 
-                    <!-- İç logo -->
                     <div class="absolute inset-0 flex items-center justify-center">
                         <div class="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center shadow-lg">
                             <i class="fas fa-recycle text-white text-lg animate-pulse"></i>
@@ -227,17 +221,14 @@
                     </div>
                 </div>
 
-                <!-- Branding -->
                 <div class="space-y-2">
                     <h1 class="text-2xl font-bold text-primary-600 dark:text-primary-400 tracking-tight">EcoRoute</h1>
                     <p class="text-sm text-gray-600 dark:text-gray-400 font-medium">Akıllı Atık Yönetimi</p>
                 </div>
 
-                <!-- Loading Text ve Progress Dots -->
                 <div class="space-y-3">
                     <p class="text-sm text-gray-500 dark:text-gray-400">Uygulama başlatılıyor...</p>
 
-                    <!-- Animated Dots -->
                     <div class="flex justify-center space-x-1">
                         <div class="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
                         <div class="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
@@ -245,7 +236,6 @@
                     </div>
                 </div>
 
-                <!-- Progress Bar (optional) -->
                 <div class="w-48 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mx-auto">
                     <div class="h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full animate-pulse"></div>
                 </div>
@@ -262,21 +252,16 @@
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="js/script.js"></script>
 
-    <!-- Theme manager script -->
     <script src="js/themeManager.js"></script>
 
-    <!-- Script yükleme sırasını değiştirdik -->
     <script src="js/googlemaps.js"></script>
     <script src="js/notification.js"></script>
     <script src="js/news/unified-google-maps.js"></script>
-    <!--<script src="js/waste-bin-markers.js"></script>-->
-    <!-- Uygulama durumunu iyileştirmek için script -->
     <script>
         window.initGoogleMapsCallback = () => {
             console.log("✅ Google Maps API yüklendi ve hazır.");
         };
 
-        // Sayfa yüklendiğinde veya sayfa yeniden yüklendiğinde harita durumunu sıfırla
         window.addEventListener('load', function () {
             console.log("Page loaded, resetting map state");
             if (window.googleMapsInterop && window.googleMapsInterop.resetMapState) {
@@ -284,7 +269,6 @@
             }
         });
 
-        // Sayfa yenilendiğinde veya kapatıldığında son durumu temizle
         window.addEventListener('beforeunload', function () {
             console.log("Page unloading, cleaning up maps");
             if (window.googleMapsInterop && window.googleMapsInterop.resetMapState) {
@@ -299,7 +283,6 @@
 
                 document.documentElement.style.setProperty('--font-family', fontCssValue);
 
-                // Also save the font preference to localStorage for persistence
                 localStorage.setItem('selectedFont', fontCssValue);
 
                 console.log(`Applied font: ${fontCssValue}`);
@@ -314,48 +297,38 @@
             }
         };
 
-        // Load saved font when page loads
         document.addEventListener('DOMContentLoaded', function () {
             window.fontManager.loadSavedFont();
         });
 
-        // Chart Helper Functions - Tüm chart component'larında kullanmak için
-        // Bu kodu _Host.cshtml veya ana layout dosyasına eklemelisiniz
 
         window.ChartHelper = {
-            // Güvenli chart rendering
             safeRenderChart: function (canvasId, chartConfig, instanceKey) {
                 try {
-                    // Chart.js yüklü mü kontrol et
                     if (!window.Chart) {
                         console.warn('Chart.js is not loaded');
                         return false;
                     }
 
-                    // Canvas elementi var mı kontrol et
                     const canvas = document.getElementById(canvasId);
                     if (!canvas) {
                         console.warn(`Canvas element '${canvasId}' not found`);
                         return false;
                     }
 
-                    // Context alınabilir mi kontrol et
                     const ctx = canvas.getContext('2d');
                     if (!ctx) {
                         console.warn(`Could not get 2D context for canvas '${canvasId}'`);
                         return false;
                     }
 
-                    // Önceki chart instance'ını temizle
                     if (instanceKey && window[instanceKey]) {
                         window[instanceKey].destroy();
                         window[instanceKey] = null;
                     }
 
-                    // Yeni chart oluştur
                     const chart = new Chart(ctx, chartConfig);
 
-                    // Instance'ı sakla
                     if (instanceKey) {
                         window[instanceKey] = chart;
                     }
@@ -367,7 +340,6 @@
                 }
             },
 
-            // Chart temizleme
             cleanupChart: function (instanceKey) {
                 try {
                     if (instanceKey && window[instanceKey]) {
@@ -381,7 +353,6 @@
                 return false;
             },
 
-            // Tüm chart instance'larını temizle
             cleanupAllCharts: function () {
                 const chartInstances = [
                     '_co2ChartInstance',
@@ -411,7 +382,6 @@
                 });
             },
 
-            // DOM hazır olana kadar bekle
             waitForElement: function (elementId, maxAttempts = 10, interval = 100) {
                 return new Promise((resolve, reject) => {
                     let attempts = 0;
@@ -437,10 +407,8 @@
             }
         };
 
-        // Güncellenen CO2 chart fonksiyonları - ChartHelper kullanarak
         window.renderCO2Chart = async function (labels, data) {
             try {
-                // DOM hazır olana kadar bekle
                 await window.ChartHelper.waitForElement('co2Chart');
 
                 const chartConfig = {
@@ -521,7 +489,6 @@
             }
         };
 
-        // Güncellenen CO2 Compare chart fonksiyonu
         window.renderCO2CompareChart = async function (labels, co2Data, routeData) {
             try {
                 await window.ChartHelper.waitForElement('co2CompareChart');
@@ -614,7 +581,6 @@
             }
         };
 
-        // Driver Routes Chart - Güvenli versiyon
         window.renderDriverRoutesChart = async function (driverNames, routeCounts) {
             try {
                 await window.ChartHelper.waitForElement('driverRoutesChart');
@@ -673,7 +639,6 @@
             }
         };
 
-        // Route Performance Chart - Güvenli versiyon
         window.renderRoutePerfChart = async function (labels, data) {
             try {
                 await window.ChartHelper.waitForElement('routePerfChart');
@@ -754,7 +719,6 @@
             }
         };
 
-        // Sayfa kapanırken tüm chart'ları temizle
         window.addEventListener('beforeunload', function () {
             window.ChartHelper.cleanupAllCharts();
         });
@@ -773,7 +737,6 @@
         };
     </script>
     <style>
-        /* Spinner Animation */
         @keyframes spin {
             from {
                 transform: rotate(0deg);
@@ -788,7 +751,6 @@
             animation: spin 1s linear infinite;
         }
 
-        /* Bounce Animation for Dots */
         @keyframes bounce {
             0%, 80%, 100% {
                 transform: scale(0);
@@ -803,7 +765,6 @@
             animation: bounce 1.4s ease-in-out infinite both;
         }
 
-        /* Pulse Animation */
         @keyframes pulse {
             0%, 100% {
                 opacity: 1;
@@ -818,13 +779,11 @@
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
 
-        /* Fade Out Animation for Loading Screen */
         .fade-out {
             opacity: 0;
             pointer-events: none;
         }
 
-        /* Primary Colors for Loading */
         .text-primary-500 {
             color: #2ba86d;
         }
@@ -849,7 +808,6 @@
             border-top-color: #2ba86d;
         }
 
-        /* Dark Mode Support */
         .dark .bg-white {
             background-color: #111827;
         }
@@ -878,7 +836,6 @@
             border-color: #374151;
         }
 
-        /* Responsive Design */
         @media (max-width: 640px) {
             #initial-loader h1 {
                 font-size: 1.5rem;
@@ -896,12 +853,10 @@
         }
     </style>
 
-    <!-- Enhanced Loading Management Script -->
     <script>
-        // Loading manager
         window.loadingManager = {
             startTime: Date.now(),
-            minLoadingTime: 1500, // Minimum 1.5 saniye loading göster
+            minLoadingTime: 1500,
 
             hideLoader: function () {
                 const loader = document.getElementById('initial-loader');
@@ -913,7 +868,6 @@
                 }
             },
 
-            // Auto hide when Blazor is ready with minimum time check
             init: function () {
                 const checkBlazorAndTime = () => {
                     const elapsedTime = Date.now() - this.startTime;
@@ -922,30 +876,25 @@
                         document.querySelector('.blazor-error-boundary');
 
                     if (isBlazorReady && elapsedTime >= this.minLoadingTime) {
-                        // Blazor hazır ve minimum süre geçti
                         this.hideLoader();
                     } else if (isBlazorReady && elapsedTime < this.minLoadingTime) {
-                        // Blazor hazır ama minimum süre henüz geçmedi
                         const remainingTime = this.minLoadingTime - elapsedTime;
                         setTimeout(() => {
                             this.hideLoader();
                         }, remainingTime);
                     } else {
-                        // Blazor henüz hazır değil, tekrar kontrol et
                         setTimeout(checkBlazorAndTime, 200);
                     }
                 };
 
-                // Start checking after DOM is loaded
                 if (document.readyState === 'loading') {
                     document.addEventListener('DOMContentLoaded', () => {
-                        setTimeout(checkBlazorAndTime, 300); // 300ms bekle sonra kontrol et
+                        setTimeout(checkBlazorAndTime, 300); 
                     });
                 } else {
                     setTimeout(checkBlazorAndTime, 300);
                 }
 
-                // Fallback: Hide after maximum 8 seconds
                 setTimeout(() => {
                     console.log('Loading timeout reached, hiding loader');
                     this.hideLoader();
@@ -953,10 +902,8 @@
             }
         };
 
-        // Initialize loading manager
         window.loadingManager.init();
 
-        // Dark mode detection
         if (localStorage.getItem('darkMode') === 'true' ||
             (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');

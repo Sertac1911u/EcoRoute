@@ -1,0 +1,361 @@
+﻿@using EcoRoute.DtoLayer.IdentityDtos
+@using EcoRoute.DtoLayer.RouteOptimizationDtos
+
+
+<div class="overflow-x-auto">
+    <table class="min-w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
+        <thead class="bg-gray-100 dark:bg-gray-700">
+            <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSortTable.InvokeAsync("StartTime")'>
+                    <div class="flex items-center">
+                        Başlangıç
+                        @if (SortField == "StartTime")
+                        {
+                            <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort ml-1 text-gray-400"></i>
+                        }
+                    </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSortTable.InvokeAsync("Driver")'>
+                    <div class="flex items-center">
+                        Sürücü
+                        @if (SortField == "Driver")
+                        {
+                            <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort ml-1 text-gray-400"></i>
+                        }
+                    </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSortTable.InvokeAsync("Vehicle")'>
+                    <div class="flex items-center">
+                        Araç
+                        @if (SortField == "Vehicle")
+                        {
+                            <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort ml-1 text-gray-400"></i>
+                        }
+                    </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSortTable.InvokeAsync("Status")'>
+                    <div class="flex items-center">
+                        Durum
+                        @if (SortField == "Status")
+                        {
+                            <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort ml-1 text-gray-400"></i>
+                        }
+                    </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSortTable.InvokeAsync("Distance")'>
+                    <div class="flex items-center">
+                        Mesafe (km)
+                        @if (SortField == "Distance")
+                        {
+                            <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort ml-1 text-gray-400"></i>
+                        }
+                    </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @onclick='() => OnSortTable.InvokeAsync("Duration")'>
+                    <div class="flex items-center">
+                        Süre (dk)
+                        @if (SortField == "Duration")
+                        {
+                            <i class="fas @(SortAscending ? "fa-sort-up" : "fa-sort-down") ml-1"></i>
+                        }
+                        else
+                        {
+                            <i class="fas fa-sort ml-1 text-gray-400"></i>
+                        }
+                    </div>
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">İşlemler</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+            @if (Routes == null)
+            {
+                <tr>
+                    <td colspan="7" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                        <div class="flex justify-center items-center">
+                            <i class="fas fa-circle-notch fa-spin mr-2"></i> Yükleniyor...
+                        </div>
+                    </td>
+                </tr>
+            }
+            else if (!Routes.Any())
+            {
+                <tr>
+                    <td colspan="7" class="px-4 py-4 text-center text-gray-500 dark:text-gray-400">
+                        <div class="flex flex-col justify-center items-center p-6">
+                            <i class="fas fa-route text-4xl mb-2 text-gray-400"></i>
+                            <p>Görüntülenecek rota bulunamadı.</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">Yeni bir rota ekleyin veya farklı filtreler deneyin.</p>
+                        </div>
+                    </td>
+                </tr>
+            }
+            else
+            {
+                @for (int i = 0; i < Routes.Count; i++)
+                {
+                    var route = Routes[i];
+                    var rowIndex = ((CurrentPage - 1) * PageSize) + i + 1;
+                    var isSimulating = ActiveSimulations.ContainsKey(route.Id);
+                    var loadingState = RouteLoadingStates.ContainsKey(route.Id) ? RouteLoadingStates[route.Id] : null;
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer @(ExpandedRouteId == route.Id ? "bg-gray-50 dark:bg-gray-700" : "")"
+                        @onclick="@(() => OnToggleExpand.InvokeAsync(route.Id))">
+                        <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">@FormatDateTime(route.StartTime)</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                            <div class="flex items-center">
+                                <i class="fas fa-user-hard-hat text-lg mr-3 text-primary-500"></i>
+                                <span>@GetDriverName(route.DriverId)</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                            <div class="flex items-center">
+                                <i class="fas fa-truck text-lg mr-3 text-blue-500"></i>
+                                <span>@GetVehiclePlate(route.VehicleId)</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm">
+                            <span class="@GetStatusBadgeClass(route.Status) px-2 py-1 rounded-full text-xs flex items-center">
+                                @if (isSimulating || (loadingState?.IsStartingSimulation == true))
+                                {
+                                    <i class="fas fa-spinner fa-spin mr-1"></i>
+                                }
+                                @GetStatusText(route.Status)
+                            </span>
+                        </td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@route.TotalDistanceKm.ToString("F1")</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">@route.EstimatedDurationMin</td>
+                        <td class="px-4 py-4 whitespace-nowrap text-sm">
+                            <div class="flex space-x-3" @onclick:stopPropagation>
+                                @if (route.Status != RouteStatus.Completed && !isSimulating)
+                                {
+                                    <button class="text-orange-500 hover:text-orange-700 text-lg tooltip-container disabled:opacity-50 disabled:cursor-not-allowed"
+                                            @onclick="() => OnCompleteRoute.InvokeAsync(route.Id)"
+                                            disabled="@(loadingState?.IsCompleting == true)">
+                                       
+                                    </button>
+                                }
+                                <button class="text-primary-500 hover:text-primary-700 text-lg tooltip-container" @onclick="() => OnFocusRouteOnMap.InvokeAsync(route.Id)">
+                                    <i class="fas fa-map-marker"></i>
+                                    <span class="tooltip">Haritada Göster</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    @if (ExpandedRouteId == route.Id)
+                    {
+                        <tr class="@(route.Status == RouteStatus.Completed ? "bg-gray-50 dark:bg-gray-800/50" : "bg-gray-50 dark:bg-gray-800") border-t animate-expandRow">
+                            <td colspan="7" class="px-6 py-6">
+                                <DriverRouteExpandedDetails Route="@route"
+                                                      IsSimulating="@isSimulating"
+                                                      LoadingState="@loadingState"
+                                                      OnStartSimulation="@OnStartSimulation"
+                                                      OnStopSimulation="@OnStopSimulation"
+                                                      OnUpdateSimulationSpeed="@OnUpdateSimulationSpeed"
+                                                      OnCompleteRoute="@OnCompleteRoute" />
+                            </td>
+                        </tr>
+                    }
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (FilteredRoutes != null && TotalPages > 1)
+{
+    <div class="flex justify-center mt-4">
+        <div class="flex space-x-1">
+            <button @onclick="() => OnChangePage.InvokeAsync(1)"
+                    disabled="@(CurrentPage == 1)"
+                    class="@(CurrentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                <i class="fas fa-angle-double-left"></i>
+            </button>
+            <button @onclick="() => OnChangePage.InvokeAsync(CurrentPage - 1)"
+                    disabled="@(CurrentPage == 1)"
+                    class="@(CurrentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                <i class="fas fa-angle-left"></i>
+            </button>
+
+            @for (int i = StartPage; i <= EndPage; i++)
+            {
+                var pageNumber = i;
+                <button @onclick="() => OnChangePage.InvokeAsync(pageNumber)"
+                        class="@(CurrentPage == pageNumber ? "bg-primary-500 text-white" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                    @pageNumber
+                </button>
+            }
+
+            <button @onclick="() => OnChangePage.InvokeAsync(CurrentPage + 1)"
+                    disabled="@(CurrentPage == TotalPages)"
+                    class="@(CurrentPage == TotalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                <i class="fas fa-angle-right"></i>
+            </button>
+            <button @onclick="() => OnChangePage.InvokeAsync(TotalPages)"
+                    disabled="@(CurrentPage == TotalPages)"
+                    class="@(CurrentPage == TotalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                <i class="fas fa-angle-double-right"></i>
+            </button>
+        </div>
+    </div>
+}
+
+<div class="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
+    Toplam @(FilteredRoutes?.Count ?? 0) rota
+</div>
+
+<style>
+    .tooltip-container {
+        position: relative;
+    }
+
+        .tooltip-container .tooltip {
+            visibility: hidden;
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            text-align: center;
+            border-radius: 4px;
+            padding: 5px 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+
+            .tooltip-container .tooltip::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: rgba(0,0,0,0.8) transparent transparent transparent;
+            }
+
+        .tooltip-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+    @@keyframes expandRow {
+        from {
+            opacity: 0;
+            max-height: 0;
+            transform: scaleY(0);
+            transform-origin: top;
+        }
+
+        to {
+            opacity: 1;
+            max-height: 1000px;
+            transform: scaleY(1);
+            transform-origin: top;
+        }
+    }
+
+    .animate-expandRow {
+        animation: expandRow 0.3s ease-out forwards;
+    }
+</style>
+
+@code {
+    [Parameter] public List<RouteResultDto> Routes { get; set; } = new();
+    [Parameter] public List<ResultUserDto> Drivers { get; set; } = new();
+    [Parameter] public List<ResultVehicleDto> Vehicles { get; set; } = new();
+    [Parameter] public Dictionary<Guid, bool> ActiveSimulations { get; set; } = new();
+    [Parameter] public Dictionary<Guid, RouteLoadingState> RouteLoadingStates { get; set; } = new();
+    [Parameter] public Guid ExpandedRouteId { get; set; }
+    [Parameter] public int CurrentPage { get; set; }
+    [Parameter] public int TotalPages { get; set; }
+    [Parameter] public int StartPage { get; set; }
+    [Parameter] public int EndPage { get; set; }
+    [Parameter] public int PageSize { get; set; }
+    [Parameter] public List<RouteResultDto> FilteredRoutes { get; set; } = new();
+    [Parameter] public string SortField { get; set; } = "";
+    [Parameter] public bool SortAscending { get; set; }
+
+    [Parameter] public EventCallback<string> OnSortTable { get; set; }
+    [Parameter] public EventCallback<Guid> OnToggleExpand { get; set; }
+    [Parameter] public EventCallback<int> OnChangePage { get; set; }
+    [Parameter] public EventCallback<Guid> OnCompleteRoute { get; set; }
+    [Parameter] public EventCallback<Guid> OnFocusRouteOnMap { get; set; }
+    [Parameter] public EventCallback<Guid> OnStartSimulation { get; set; }
+    [Parameter] public EventCallback<Guid> OnStopSimulation { get; set; }
+    [Parameter] public EventCallback<(Guid routeId, int speed)> OnUpdateSimulationSpeed { get; set; }
+
+    private string GetDriverName(string driverId)
+    {
+        if (string.IsNullOrEmpty(driverId) || Drivers == null)
+            return "Bilinmeyen Sürücü";
+
+        var driver = Drivers.FirstOrDefault(d => d.Id == driverId);
+        return driver != null ? $"{driver.Name} {driver.Surname}" : "Bilinmeyen Sürücü";
+    }
+
+    private string GetVehiclePlate(string vehicleId)
+    {
+        if (string.IsNullOrEmpty(vehicleId) || Vehicles == null)
+            return "Bilinmeyen Araç";
+
+        if (Guid.TryParse(vehicleId, out Guid vId))
+        {
+            var vehicle = Vehicles.FirstOrDefault(v => v.Id == vId);
+            return vehicle != null ? vehicle.Plate : "Bilinmeyen Araç";
+        }
+
+        return "Bilinmeyen Araç";
+    }
+
+    private string GetStatusText(RouteStatus status)
+    {
+        return status switch
+        {
+            RouteStatus.Scheduled => "Planlanmış",
+            RouteStatus.Active => "Aktif",
+            RouteStatus.Completed => "Tamamlanmış",
+            _ => status.ToString()
+        };
+    }
+
+    private string GetStatusBadgeClass(RouteStatus status)
+    {
+        return status switch
+        {
+            RouteStatus.Scheduled => "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300",
+            RouteStatus.Active => "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300",
+            RouteStatus.Completed => "bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300",
+            _ => "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+        };
+    }
+
+    private string FormatDateTime(DateTime dateTime)
+    {
+        return dateTime.ToString("dd.MM.yyyy HH:mm");
+    }
+}

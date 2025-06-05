@@ -7,7 +7,6 @@
 {
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-modal-show">
-            <!-- Modal Header -->
             <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
                 <h2 class="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
                     <i class="fas fa-route mr-3 text-primary-500"></i> Yeni Rota Oluştur
@@ -19,10 +18,8 @@
                 </button>
             </div>
 
-            <!-- Modal Content -->
             <div class="p-6">
                 <EditForm Model="newRoute" OnValidSubmit="CreateRouteSubmit">
-                    <!-- Temel Bilgiler -->
                     <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg mb-5">
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center border-b border-gray-200 dark:border-gray-600 pb-2">
                             <i class="fas fa-info-circle mr-2 text-blue-500"></i> Temel Bilgiler
@@ -85,7 +82,6 @@
                         </div>
                     </div>
 
-                    <!-- Başlangıç Noktası -->
                     <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg mb-5">
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center border-b border-gray-200 dark:border-gray-600 pb-2">
                             <i class="fas fa-map-marker-alt mr-2 text-red-500"></i> Başlangıç/Bitiş Noktası
@@ -108,14 +104,12 @@
                         </div>
                     </div>
 
-                    <!-- Sürücü ve Araç Seçimi -->
                     <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg mb-5">
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center border-b border-gray-200 dark:border-gray-600 pb-2">
                             <i class="fas fa-users mr-2 text-amber-500"></i> Sürücü ve Araç
                         </h3>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Sürücü Seçimi -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Sürücü Seçimi</label>
                                 <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 @(IsCreating ? "opacity-50" : "")">
@@ -155,7 +149,6 @@
                                 </div>
                             </div>
 
-                            <!-- Araç Seçimi -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Araç Seçimi</label>
                                 <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 @(IsCreating ? "opacity-50" : "")">
@@ -197,7 +190,6 @@
                         </div>
                     </div>
 
-                    <!-- Atık Kutuları Seçimi -->
                     <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg mb-5">
                         <div class="flex justify-between items-center mb-4 border-b border-gray-200 dark:border-gray-600 pb-2">
                             <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
@@ -246,7 +238,6 @@
                         </div>
                     </div>
 
-                    <!-- Notlar -->
                     <div class="bg-gray-50 dark:bg-gray-700 p-5 rounded-lg mb-5">
                         <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center border-b border-gray-200 dark:border-gray-600 pb-2">
                             <i class="fas fa-sticky-note mr-2 text-yellow-500"></i> Notlar
@@ -259,7 +250,6 @@
                                   disabled="@IsCreating"></textarea>
                     </div>
 
-                    <!-- Özet ve Butonlar -->
                     <div class="flex flex-col-reverse md:flex-row justify-between items-start md:items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <div class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                             <div class="flex items-center">
@@ -300,7 +290,6 @@
     </div>
 }
 
-<!-- Loading Overlay -->
 @if (IsCreating)
 {
     <div class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-60">
@@ -317,7 +306,6 @@
 }
 
 <style>
-    /* Modal Animation */
     @@keyframes modalShow {
         from
 
@@ -337,7 +325,6 @@
         animation: modalShow 0.2s ease-out forwards;
     }
 
-    /* Line clamp for address text */
     .line-clamp-1 {
         display: -webkit-box;
         -webkit-line-clamp: 1;
@@ -361,7 +348,6 @@
     private List<ResultWasteBinDto> filteredBins = new List<ResultWasteBinDto>();
     private CancellationTokenSource _debounceTokenSource = new CancellationTokenSource();
 
-    // Fixed start/end point (Çorlu Belediyesi)
     private double fixedStartLat = 41.1634;
     private double fixedStartLng = 27.7951;
 
@@ -369,7 +355,6 @@
     {
         if (IsVisible && newRoute.WasteBinIds.Count == 0)
         {
-            // Initialize new route
             newRoute = new CreateRouteDto
                 {
                     ScheduledStart = DateTime.Now.AddHours(1),
@@ -419,7 +404,7 @@
 
     private async Task FilterBinsWithDebounce()
     {
-        if (IsCreating) return; // Don't filter while creating
+        if (IsCreating) return; 
 
         try
         {
@@ -442,7 +427,7 @@
 
     private void ToggleBin(Guid binId, object isChecked)
     {
-        if (IsCreating) return; // Don't allow changes while creating
+        if (IsCreating) return; 
 
         if ((bool)isChecked)
         {
@@ -459,19 +444,18 @@
 
     private async Task CreateRouteSubmit()
     {
-        if (IsCreating) return; // Prevent multiple submissions
+        if (IsCreating) return; 
         await OnCreateRoute.InvokeAsync(newRoute);
     }
 
     private async Task CloseModal()
     {
-        if (IsCreating) return; // Prevent closing during creation
+        if (IsCreating) return; 
 
         IsVisible = false;
         await IsVisibleChanged.InvokeAsync(false);
         await OnClose.InvokeAsync();
 
-        // Reset form
         newRoute = new CreateRouteDto();
         binSearchText = "";
         filteredBins.Clear();

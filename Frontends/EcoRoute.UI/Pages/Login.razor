@@ -144,7 +144,6 @@
     {
         bool isValid = true;
 
-        // Username validation
         if (string.IsNullOrWhiteSpace(username))
         {
             usernameError = "Kullanıcı adı gereklidir";
@@ -160,7 +159,6 @@
             usernameError = string.Empty;
         }
 
-        // Password validation
         if (string.IsNullOrWhiteSpace(password))
         {
             passwordError = "Şifre gereklidir";
@@ -193,7 +191,6 @@
 
         errorMessage = string.Empty;
 
-        // Form validation
         if (!ValidateForm())
         {
             StateHasChanged();

@@ -108,7 +108,6 @@ namespace EcoRoute.DataCollection.Services.SensorServices
 
             if (newSensorCount > currentCount)
             {
-                // Yeni sensörler ekle
                 var sensorsToAdd = new List<Sensor>();
                 for (int i = currentCount + 1; i <= newSensorCount; i++)
                 {
@@ -128,7 +127,6 @@ namespace EcoRoute.DataCollection.Services.SensorServices
             }
             else if (newSensorCount < currentCount)
             {
-                // Fazla sensörleri sil
                 var sensorsToRemove = existingSensors.Skip(newSensorCount).ToList();
                 _context.Sensors.RemoveRange(sensorsToRemove);
             }

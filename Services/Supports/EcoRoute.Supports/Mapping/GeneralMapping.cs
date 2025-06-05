@@ -13,7 +13,6 @@ namespace EcoRoute.Supports.Mapping
             CreateMap<SupportTicket, ResultSupportTicketDto>();
             CreateMap<SupportTicket, GetByIdSupportTicketDto>();
 
-            // TicketResponse mappings
             CreateMap<CreateTicketResponseDto, TicketResponse>();
             CreateMap<TicketResponse, ResultTicketResponseDto>();
         }

@@ -4,8 +4,7 @@ namespace EcoRoute.UI.Helpers
 {
     public static class BinUIHelpers
     {
-        // Doluluk hesaplaması için sabitler
-        private const double DAILY_FILL_RATE = 5.0; // Günlük ortalama doluluk artışı yüzdesi
+        private const double DAILY_FILL_RATE = 5.0;
 
         #region Device Status Helpers
         public static string GetDeviceStatusColor(string status)

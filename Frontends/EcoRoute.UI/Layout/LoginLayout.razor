@@ -5,10 +5,8 @@
             <i class="fas fa-leaf text-primary-500 text-3xl mr-2 animate-pulse"></i>
             <span class="text-xl font-bold text-primary-600 dark:text-primary-400">EcoRoute</span>
         </div>
-        <!-- Dark mode butonunu kaldırdım -->
     </div>
 
-    <!-- Background Elements (Decorative) -->
     <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div class="absolute top-20 left-10 w-32 h-32 bg-primary-500 opacity-10 dark:opacity-5 rounded-full filter blur-xl animate-float"></div>
         <div class="absolute bottom-10 right-10 w-40 h-40 bg-green-500 opacity-10 dark:opacity-5 rounded-full filter blur-xl animate-float-delay"></div>
@@ -22,13 +20,11 @@
         </div>
     </div>
 
-    <!-- Footer (footer'ı koruduk) -->
     <footer class="bg-white dark:bg-gray-900 text-center py-4 text-sm text-gray-600 dark:text-gray-400 transition-colors duration-300 shadow-md">
         <p>© 2025 EcoRoute. Tüm hakları saklıdır.</p>
     </footer>
 
     <style>
-        /* Custom animations */
         @@keyframes fadeIn {
             from {
                 opacity: 0;
@@ -119,7 +115,6 @@
     </style>
 
     <script>
-        // Dark mode preference kontrolünü korudum
         if (localStorage.getItem('darkMode') === 'true' ||
             (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');

@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EcoRoute.RouteOptimization.Controllers
 {
-    [Authorize(Roles = "SuperAdmin,Manager")]
+    [Authorize(Roles = "SuperAdmin,Manager,Driver")]
     [Route("api/[controller]")]
     [ApiController]
     public class VehicleController : ControllerBase

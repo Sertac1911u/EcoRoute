@@ -4,7 +4,6 @@
 @implements IAsyncDisposable
 
 <div class="space-y-6 animate-fadeIn">
-    <!-- İstatistik Kartları -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
@@ -51,7 +50,6 @@
         </div>
     </div>
 
-    <!-- Sensör Tipleri Dağılımı -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-4">
@@ -101,7 +99,6 @@
         </div>
     </div>
 
-    <!-- Son Güncelleme Zamanları -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -135,7 +132,6 @@
         </div>
     </div>
 
-    <!-- Cihaz Kurulum Zaman Çizelgesi -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -175,16 +171,13 @@
         await LoadData();
     }
 
-    // *** MISSING METHOD ADDED HERE ***
     private async Task RefreshData()
     {
         try
         {
-            // Cancel any existing operations
             _cancellationTokenSource?.Cancel();
             _cancellationTokenSource = new CancellationTokenSource();
 
-            // Reload the data
             await LoadData();
         }
         catch (Exception ex)
@@ -207,7 +200,6 @@
         }
         catch (OperationCanceledException)
         {
-            // İptal edildi
         }
         catch (Exception ex)
         {
@@ -224,7 +216,6 @@
     {
         try
         {
-            // Sensör tipleri dağılımı
             var sensorTypeGroups = SensorList
                 .GroupBy(s => string.IsNullOrEmpty(s.Type) ? "Bilinmeyen" : s.Type)
                 .Select(g => new { Type = g.Key, Count = g.Count() })
@@ -235,7 +226,6 @@
             var typeColors = GetColorPalette(typeLabels.Length);
             await SafeJSInvoke("renderSensorTypeChart", typeLabels, typeCounts, typeColors);
 
-            // Sensör durumları - IsActive boolean özelliği kullanılıyor
             var activeCount = ActiveSensors;
             var inactiveCount = InactiveSensors;
 
@@ -244,7 +234,6 @@
             var statusColors = new[] { "rgba(16,185,129,0.7)", "rgba(239,68,68,0.7)" };
             await SafeJSInvoke("renderSensorStatusChart", statusLabels, statusCounts, statusColors);
 
-            // Son güncelleme zamanları
             var now = DateTime.Now;
             var lastDayCount = SensorList.Count(s => s.LastUpdate.HasValue && (now - s.LastUpdate.Value).TotalHours <= 24);
             var lastWeekCount = SensorList.Count(s => s.LastUpdate.HasValue && (now - s.LastUpdate.Value).TotalHours > 24 && (now - s.LastUpdate.Value).TotalHours <= 168);
@@ -263,7 +252,6 @@
             };
             await SafeJSInvoke("renderLastUpdateChart", updateLabels, updateCounts, updateColors);
 
-            // Kurulum zaman çizelgesi
             var installationData = GetInstallationTimelineData();
             await SafeJSInvoke("renderInstallationTimelineChart", installationData.Labels, installationData.Counts);
         }
@@ -287,7 +275,6 @@
 
     private (string[] Labels, int[] Counts) GetInstallationTimelineData()
     {
-        // Son 12 ayın kurulum verilerini alıyoruz
         var now = DateTime.Now;
         var months = Enumerable.Range(0, 12)
             .Select(i => now.AddMonths(-i))
@@ -309,16 +296,16 @@
     private string[] GetColorPalette(int count)
     {
         var baseColors = new[] {
-            "rgba(16,185,129,0.7)",   // emerald
-            "rgba(59,130,246,0.7)",   // blue
-            "rgba(139,92,246,0.7)",   // violet
-            "rgba(245,158,11,0.7)",   // amber
-            "rgba(239,68,68,0.7)",    // red
-            "rgba(236,72,153,0.7)",   // pink
-            "rgba(6,182,212,0.7)",    // cyan
-            "rgba(34,197,94,0.7)",    // green
-            "rgba(168,85,247,0.7)",   // purple
-            "rgba(249,115,22,0.7)"    // orange
+            "rgba(16,185,129,0.7)",   
+            "rgba(59,130,246,0.7)",   
+            "rgba(139,92,246,0.7)",   
+            "rgba(245,158,11,0.7)",   
+            "rgba(239,68,68,0.7)",   
+            "rgba(236,72,153,0.7)",   
+            "rgba(6,182,212,0.7)",   
+            "rgba(34,197,94,0.7)",    
+            "rgba(168,85,247,0.7)",   
+            "rgba(249,115,22,0.7)"    
         };
 
         if (count <= baseColors.Length)

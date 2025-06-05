@@ -25,7 +25,6 @@
     {
         <div class="origin-top-right absolute right-0 mt-2 w-80 rounded-xl shadow-xl bg-white dark:bg-gray-800 ring-1 ring-gray-200 dark:ring-gray-700 focus:outline-none z-50 transition-all duration-200 overflow-hidden animate-slideDown"
              @onclick:stopPropagation="true">
-            <!-- Header -->
             <div class="flex justify-between items-center px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-primary-50 to-secondary-50 dark:from-gray-700 dark:to-gray-800">
                 <h3 class="text-base font-semibold text-gray-800 dark:text-white flex items-center">
                     <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/30 mr-2">
@@ -43,7 +42,6 @@
                 }
             </div>
 
-            <!-- Notification List -->
             <div class="max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
                 @if (notifications.Count == 0)
                 {
@@ -103,7 +101,6 @@
                 }
             </div>
 
-            <!-- Footer -->
             @if (notifications.Count > 0)
             {
                 <div class="border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
@@ -118,14 +115,12 @@
     }
 </div>
 
-<!-- Click outside handler -->
 @if (isNotificationMenuOpen)
 {
     <div class="fixed inset-0 z-30" @onclick="CloseNotificationMenu"></div>
 }
 
 <style>
-    /* Custom scrollbar */
     .scrollbar-thin::-webkit-scrollbar {
         width: 4px;
     }
@@ -143,7 +138,6 @@
         background-color: #475569;
     }
 
-    /* Limit text to 2 lines */
     .line-clamp-2 {
         display: -webkit-box;
         -webkit-line-clamp: 2;
@@ -151,7 +145,6 @@
         overflow: hidden;
     }
 
-    /* Notification badge animation */
     @@keyframes pulse {
         0%
 
@@ -173,7 +166,6 @@
         animation: pulse 2s infinite;
     }
 
-    /* Slide down animation */
     @@keyframes slideDown {
         from
 
@@ -193,7 +185,6 @@
         animation: slideDown 0.2s ease-out;
     }
 
-    /* Hover scale animation */
     .group:hover .group-hover\:scale-105 {
         transform: scale(1.05);
     }
@@ -218,7 +209,6 @@
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity.IsAuthenticated)
         {
-            // Register for notification events
             notificationService.OnNotificationsUpdated += OnNotificationsUpdated;
             notificationService.OnNotificationReceived += OnNotificationReceived;
 
@@ -235,14 +225,13 @@
     private async Task LoadNotifications()
     {
         await notificationService.GetNotificationsAsync();
-        notifications = notificationService.Notifications.Take(10).ToList(); // Show only 10 most recent
+        notifications = notificationService.Notifications.Take(10).ToList();
         unreadCount = notificationService.UnreadCount;
         StateHasChanged();
     }
 
     private void OnNotificationsUpdated()
     {
-        // Run on UI thread
         InvokeAsync(() =>
         {
             notifications = notificationService.Notifications.Take(10).ToList();
@@ -253,10 +242,8 @@
 
     private async void OnNotificationReceived(ResultNotificationDto notification)
     {
-        // Show toast notification
         await JS.InvokeVoidAsync("showToast", notification.Title, notification.Message, notification.Type.ToLower(), 5000);
 
-        // Update UI
         await InvokeAsync(() =>
         {
             StateHasChanged();
@@ -285,19 +272,16 @@
 
     private async Task HandleNotificationClick(ResultNotificationDto notification)
     {
-        // Mark as read
         if (!notification.IsRead)
         {
             await notificationService.MarkAsReadAsync(notification.Id);
         }
 
-        // Navigate if URL is provided
         if (!string.IsNullOrEmpty(notification.Url))
         {
             NavigationManager.NavigateTo(notification.Url);
         }
 
-        // Close menu
         CloseNotificationMenu();
     }
 
@@ -311,7 +295,7 @@
             "Success" => "border-green-500",
             "Warning" => "border-yellow-500",
             "Error" => "border-red-500",
-            _ => "border-primary-500" // Info
+            _ => "border-primary-500" 
         };
     }
 
@@ -324,7 +308,7 @@
             "Success" => $"{baseClasses} bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400",
             "Warning" => $"{baseClasses} bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400",
             "Error" => $"{baseClasses} bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400",
-            _ => $"{baseClasses} bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400" // Info
+            _ => $"{baseClasses} bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400" 
         };
     }
 
@@ -335,7 +319,7 @@
             "Success" => "fas fa-check",
             "Warning" => "fas fa-exclamation-triangle",
             "Error" => "fas fa-times-circle",
-            _ => "fas fa-info-circle" // Info
+            _ => "fas fa-info-circle" 
         };
     }
 
@@ -361,11 +345,9 @@
 
     public async ValueTask DisposeAsync()
     {
-        // Unsubscribe from events
         notificationService.OnNotificationsUpdated -= OnNotificationsUpdated;
         notificationService.OnNotificationReceived -= OnNotificationReceived;
 
-        // Dispose of the notification service
         await notificationService.DisposeAsync();
     }
 }

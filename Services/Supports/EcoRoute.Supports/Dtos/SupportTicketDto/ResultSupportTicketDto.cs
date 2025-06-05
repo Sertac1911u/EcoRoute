@@ -13,7 +13,6 @@ namespace EcoRoute.Supports.Dtos.SupportTicketDto
         public DateTime CreateDate { get; set; }
         public string? AttachmentPath { get; set; }
 
-        // Kullanıcı bilgileri
         public string? UserId { get; set; }
         public string? UserName { get; set; }
 

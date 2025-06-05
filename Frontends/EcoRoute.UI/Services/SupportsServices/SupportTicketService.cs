@@ -62,7 +62,6 @@ namespace EcoRoute.UI.Services.SupportsServices
 
                 response.EnsureSuccessStatusCode();
 
-                // Try to get ID from Location header first
                 var locationHeader = response.Headers.Location;
                 if (locationHeader != null)
                 {
@@ -77,7 +76,6 @@ namespace EcoRoute.UI.Services.SupportsServices
                     }
                 }
 
-                // If Location header doesn't work, try to parse the response body
                 try
                 {
                     var result = await response.Content.ReadFromJsonAsync<Guid>();
@@ -85,7 +83,6 @@ namespace EcoRoute.UI.Services.SupportsServices
                 }
                 catch (Exception ex)
                 {
-                    // If we got a 201 but couldn't extract an ID, just create a new GUID
                     _logger.LogWarning($"Couldn't parse response content: {ex.Message}");
                     return Guid.NewGuid();
                 }
@@ -104,11 +101,9 @@ namespace EcoRoute.UI.Services.SupportsServices
 
             try
             {
-                // Extract the ticket ID for debugging
                 var supportTicketId = content.FirstOrDefault(c => c.Headers.ContentDisposition?.Name?.Trim('"') == "SupportTicketId");
                 var ticketIdValue = supportTicketId != null ? await supportTicketId.ReadAsStringAsync() : "Not found";
 
-                // Log the content being sent
                 _logger.LogInformation("Sending reply to ticket ID: {TicketId}", ticketIdValue);
                 _logger.LogInformation("Content keys: {Keys}",
                     string.Join(", ", content.Select(c => c.Headers.ContentDisposition?.Name?.Trim('"'))));
@@ -171,7 +166,6 @@ namespace EcoRoute.UI.Services.SupportsServices
 
             try
             {
-                // Check if ID is valid before making the request
                 if (id == Guid.Empty)
                 {
                     _logger.LogError("Cannot close ticket with empty GUID");

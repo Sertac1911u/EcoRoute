@@ -7,7 +7,7 @@
         public string Message { get; set; }
         public string Type { get; set; } 
         public string UserId { get; set; }
-        public string UserRole { get; set; } = ""; // Eklenmesi gereken satır
+        public string UserRole { get; set; } = ""; 
 
         public string Url { get; set; } 
         public bool IsRead { get; set; }

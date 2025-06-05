@@ -57,11 +57,5 @@ namespace EcoRoute.IdentityServer.Controllers
 
             return Ok("User created successfully.");
         }
-        [HttpGet("ping")]
-        public IActionResult Ping()
-        {
-            return Ok("pong");
-        }
-
     }
 }

@@ -21,14 +21,11 @@
 
 @attribute [Authorize(Roles = "SuperAdmin, Manager")]
 
-<!-- Main Container -->
 <div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden mb-6 relative">
-    <!-- Beautiful Loading Overlay -->
     @if (isLoading)
     {
         <div class="absolute inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-40 flex items-center justify-center">
             <div class="text-center max-w-sm">
-                <!-- Modern Loading Animation -->
                 <div class="relative mb-6 flex justify-center">
                     <div class="relative w-20 h-20">
                         <div class="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
@@ -36,7 +33,6 @@
                     </div>
                 </div>
 
-                <!-- Loading Text with Animation -->
                 <div class="space-y-3">
                     <h3 class="text-xl font-semibold text-gray-800 dark:text-white">
                         Rotalar Yükleniyor
@@ -54,7 +50,6 @@
         </div>
     }
 
-    <!-- Header Section -->
     <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
         <div>
             <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Rota Yönetimi</h2>
@@ -111,14 +106,11 @@
         </div>
     </div>
 
-    <!-- Content Area - Only Show When Not Loading -->
     @if (!isLoading)
     {
-        <!-- Map Section -->
         <div class="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
             <div class="rounded-lg overflow-hidden shadow-md">
                 <div id="admin-observer-map" class="w-full h-96 relative">
-                    <!-- Loading Indicator -->
                     <div id="map-loading-indicator" class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 bg-opacity-75 dark:bg-opacity-75 z-10">
                         <div class="text-center">
                             <i class="fas fa-circle-notch fa-spin text-4xl text-primary-500 mb-2"></i>
@@ -129,7 +121,6 @@
             </div>
         </div>
 
-        <!-- Filter Section -->
         <div class="p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 filter-section">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
@@ -185,7 +176,6 @@
             </div>
         </div>
 
-        <!-- Routes Table Section -->
         <div class="p-6">
             <RouteTable Routes="@displayedRoutes"
                         Drivers="@drivers"
@@ -213,7 +203,6 @@
     }
     else
     {
-        <!-- Loading State for Table Area -->
         <div class="p-8">
             <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
                 <div class="flex items-center justify-center space-x-3">
@@ -225,7 +214,6 @@
     }
 </div>
 
-<!-- Create Route Modal -->
 <CreateRouteModal @bind-IsVisible="@showCreateModal"
                   Drivers="@availableDrivers"
                   Vehicles="@availableVehicles"
@@ -234,7 +222,6 @@
                   OnCreateRoute="@CreateRoute"
                   OnClose="@CloseCreateModal" />
 
-<!-- Loading Overlay for global operations -->
 @if (isSimulatingAll || isRefreshing)
 {
     <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -260,7 +247,6 @@
 }
 
 <style>
-    /* Enhanced Loading Animations */
     @@keyframes bounce {
         0%, 80%, 100% {
             transform: translateY(0);
@@ -275,12 +261,10 @@
         animation: bounce 1.4s infinite ease-in-out both;
     }
 
-    /* Smooth transitions */
     .transition-all {
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Tooltip Styles */
     .tooltip-container {
         position: relative;
     }
@@ -319,7 +303,6 @@
             opacity: 1;
         }
 
-    /* Modal Animation */
     @@keyframes modalShow {
         from {
             opacity: 0;
@@ -336,7 +319,6 @@
         animation: modalShow 0.2s ease-out forwards;
     }
 
-    /* Line clamp for address text */
     .line-clamp-1 {
         display: -webkit-box;
         -webkit-line-clamp: 1;
@@ -346,7 +328,6 @@
 </style>
 
 @code {
-    // Data
     private List<RouteResultDto> routes;
     private List<RouteResultDto> filteredRoutes = new List<RouteResultDto>();
     private List<RouteResultDto> displayedRoutes => GetDisplayedRoutes();
@@ -356,38 +337,32 @@
     private List<ResultVehicleDto> availableVehicles => GetAvailableVehicles();
     private List<ResultWasteBinDto> wasteBins;
 
-    // UI state flags
     private bool showCreateModal = false;
     private bool mainMapInitialized = false;
     private Guid expandedRouteId;
     private DotNetObjectReference<RoutesManager> _objectReference;
     private CancellationTokenSource _debounceTokenSource = new CancellationTokenSource();
 
-    // Loading states - Enhanced
-    private bool isLoading = false;         // Ana veri yükleme
-    private bool isRefreshing = false;      // Sayfa yenileme
+    private bool isLoading = false;       
+    private bool isRefreshing = false;   
     private bool isSimulatingAll = false;
     private bool isCreatingRoute = false;
     private Dictionary<Guid, RouteLoadingState> routeLoadingStates = new();
 
-    // Simulation tracking
     private Dictionary<Guid, bool> activeSimulations = new Dictionary<Guid, bool>();
 
-    // Filters
     private string driverFilter = "";
     private RouteStatus? statusFilter;
     private DateTime? startDateFilter;
     private DateTime? endDateFilter;
     private string searchText = "";
 
-    // Pagination
     private int currentPage = 1;
     private int pageSize = 10;
     private int totalPages => filteredRoutes == null ? 0 : (int)Math.Ceiling(filteredRoutes.Count / (double)pageSize);
     private int startPage => Math.Max(1, currentPage - 2);
     private int endPage => Math.Min(totalPages, startPage + 4);
 
-    // Sorting
     private string sortField = "StartTime";
     private bool sortAscending = false;
 
@@ -760,7 +735,7 @@
 
     private async Task CreateRoute(CreateRouteDto newRoute)
     {
-        if (isCreatingRoute) return; // Prevent multiple calls
+        if (isCreatingRoute) return;
 
         if (newRoute.WasteBinIds.Count == 0)
         {
@@ -828,7 +803,7 @@
         if (!routeLoadingStates.ContainsKey(routeId))
             routeLoadingStates[routeId] = new RouteLoadingState();
 
-        if (routeLoadingStates[routeId].IsCompleting) return; // Prevent multiple calls
+        if (routeLoadingStates[routeId].IsCompleting) return; 
 
         try
         {
@@ -865,7 +840,7 @@
         if (!routeLoadingStates.ContainsKey(routeId))
             routeLoadingStates[routeId] = new RouteLoadingState();
 
-        if (routeLoadingStates[routeId].IsStartingSimulation) return; // Prevent multiple calls
+        if (routeLoadingStates[routeId].IsStartingSimulation) return;
 
         try
         {
@@ -917,7 +892,7 @@
         if (!routeLoadingStates.ContainsKey(routeId))
             routeLoadingStates[routeId] = new RouteLoadingState();
 
-        if (routeLoadingStates[routeId].IsStoppingSimulation) return; // Prevent multiple calls
+        if (routeLoadingStates[routeId].IsStoppingSimulation) return;
 
         try
         {
@@ -959,7 +934,7 @@
 
     private async Task SimulateAllRoutes()
     {
-        if (isSimulatingAll) return; // Prevent multiple calls
+        if (isSimulatingAll) return; 
 
         try
         {
@@ -1003,7 +978,6 @@
         await JS.InvokeVoidAsync("googleMapsInterop.focusRouteOnMap", routeId);
     }
 
-    // Helper methods for UI
     private string GetDriverName(string driverId)
     {
         if (string.IsNullOrEmpty(driverId) || drivers == null)
@@ -1039,7 +1013,6 @@
         StateHasChanged();
     }
 
-    // JavaScript interop methods
     [JSInvokable]
     public void OnMapInitialized()
     {
@@ -1056,7 +1029,7 @@
     [JSInvokable]
     public async Task RefreshData()
     {
-        if (isRefreshing) return; // Prevent multiple calls
+        if (isRefreshing) return;
 
         try
         {

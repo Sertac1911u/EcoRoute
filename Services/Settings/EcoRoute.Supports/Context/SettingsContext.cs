@@ -20,7 +20,6 @@ namespace EcoRoute.Supports.Context
         {
             base.OnModelCreating(modelBuilder);
 
-            // Sabit GUID'ler (her yerde bu ID'leri kullanacağız)
             var font1Id = Guid.Parse("11111111-1111-1111-1111-111111111111");
             var font2Id = Guid.Parse("11111111-1111-1111-1111-111111111112");
             var font3Id = Guid.Parse("11111111-1111-1111-1111-111111111113");
@@ -91,11 +90,10 @@ namespace EcoRoute.Supports.Context
                 new Avatar { Id = Guid.NewGuid(), Name = "Avatar 15", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Ayaz" }
             );
 
-            // SYSTEM SETTING - Default seed (FK'ler sabit!)
             modelBuilder.Entity<SystemSetting>().HasData(
                 new SystemSetting
                 {
-                    Id = Guid.Parse("44444444-4444-4444-4444-444444444444"), // Farklı migration'da sorun olmaması için sabit ver
+                    Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
                     DarkMode = false,
                     ThemeColor = "#2ba86d",
                     EnableAnimations = true,
@@ -114,7 +112,6 @@ namespace EcoRoute.Supports.Context
                 }
             );
 
-            // İsteğe bağlı: SystemSetting tablosunda UserId zorunlu değil!
             modelBuilder.Entity<SystemSetting>()
                 .Property(s => s.UserId)
                 .IsRequired(false);

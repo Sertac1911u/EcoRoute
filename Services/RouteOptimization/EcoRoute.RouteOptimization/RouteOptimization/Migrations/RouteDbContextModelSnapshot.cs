@@ -147,6 +147,68 @@ namespace EcoRoute.RouteOptimization.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Vehicles");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111111"),
+                            Description = "1. Araç",
+                            Plate = "59 ABC 1001"
+                        },
+                        new
+                        {
+                            Id = new Guid("22222222-2222-2222-2222-222222222222"),
+                            Description = "2. Araç",
+                            Plate = "59 DEF 1002"
+                        },
+                        new
+                        {
+                            Id = new Guid("33333333-3333-3333-3333-333333333333"),
+                            Description = "3. Araç",
+                            Plate = "59 GHI 1003"
+                        },
+                        new
+                        {
+                            Id = new Guid("44444444-4444-4444-4444-444444444444"),
+                            Description = "4. Araç",
+                            Plate = "59 JKL 1004"
+                        },
+                        new
+                        {
+                            Id = new Guid("55555555-5555-5555-5555-555555555555"),
+                            Description = "5. Araç",
+                            Plate = "59 MNO 1005"
+                        },
+                        new
+                        {
+                            Id = new Guid("66666666-6666-6666-6666-666666666666"),
+                            Description = "6. Araç",
+                            Plate = "59 PQR 1006"
+                        },
+                        new
+                        {
+                            Id = new Guid("77777777-7777-7777-7777-777777777777"),
+                            Description = "7. Araç",
+                            Plate = "59 STU 1007"
+                        },
+                        new
+                        {
+                            Id = new Guid("88888888-8888-8888-8888-888888888888"),
+                            Description = "8. Araç",
+                            Plate = "59 VWX 1008"
+                        },
+                        new
+                        {
+                            Id = new Guid("99999999-9999-9999-9999-999999999999"),
+                            Description = "9. Araç",
+                            Plate = "59 YZA 1009"
+                        },
+                        new
+                        {
+                            Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                            Description = "10. Araç",
+                            Plate = "59 BCD 1010"
+                        });
                 });
 
             modelBuilder.Entity("EcoRoute.RouteOptimization.Entities.RouteStep", b =>

@@ -27,7 +27,6 @@ namespace EcoRoute.RouteOptimization.Dtos
         public string? Notes { get; set; }
         public string? RouteName { get; set; }
 
-        // Fixed coordinates for Çorlu
         public double StartLatitude { get; set; } = 41.1634;
         public double StartLongitude { get; set; } = 27.7951;
         public double EndLatitude { get; set; } = 41.1634;

@@ -43,7 +43,7 @@ namespace EcoRoute.IdentityServer
                     builder
                         .WithOrigins(
                             "http://localhost:5004",
-                            "http://localhost:5054" // bunu mutlaka ekle!
+                            "http://localhost:5054" 
                         )
                         .AllowAnyHeader()
                         .AllowAnyMethod()
@@ -119,7 +119,7 @@ namespace EcoRoute.IdentityServer
             app.UseStaticFiles();
 
             app.UseRouting();
-            app.UseCors("AllowBlazorClient"); // Add this line BEFORE UseAuthentication and UseAuthorization
+            app.UseCors("AllowBlazorClient"); 
 
             app.UseIdentityServer();
 

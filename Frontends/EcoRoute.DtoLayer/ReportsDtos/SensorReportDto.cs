@@ -12,7 +12,7 @@ namespace EcoRoute.DtoLayer.ReportsDtos
         public Guid WasteBinId { get; set; }
         public bool IsActive { get; set; }
         public string Type { get; set; }
-        public string Status { get; set; } // Aktif/Pasif olarak dönüştürülmüş metin
+        public string Status { get; set; } 
         public DateTime? InstallationDate { get; set; }
         public DateTime? LastUpdate { get; set; }
     }

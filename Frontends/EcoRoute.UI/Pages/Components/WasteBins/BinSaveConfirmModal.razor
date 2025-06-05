@@ -1,5 +1,4 @@
-﻿<!-- Save Confirm Modal-->
-@if (ShowModal)
+﻿@if (ShowModal)
 {
     <div class="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center">
         <div class="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full shadow-xl p-6 animate-modal-show">
@@ -62,7 +61,7 @@
 @code {
     [Parameter] public bool ShowModal { get; set; }
     [Parameter] public bool IsEdit { get; set; }
-    [Parameter] public bool IsSaving { get; set; } // YENİ PARAMETRE
+    [Parameter] public bool IsSaving { get; set; } 
     [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter] public EventCallback OnConfirm { get; set; }
 }

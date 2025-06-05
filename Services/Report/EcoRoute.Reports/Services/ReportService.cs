@@ -56,7 +56,6 @@ namespace EcoRoute.Reports.Services
                 PropertyNameCaseInsensitive = true
             }) ?? new();
 
-            // Eğer DriverId varsa, isimleri eşle
             var driverIds = reports.Select(r => r.DriverId).Distinct().ToList();
             var driverNames = await GetDriverNamesAsync(driverIds);
 

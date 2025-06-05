@@ -1,0 +1,1265 @@
+﻿@page "/driver-routes"
+@using EcoRoute.DtoLayer.IdentityDtos
+@using EcoRoute.DtoLayer.RouteOptimizationDtos
+@using EcoRoute.DtoLayer.WasteBinDtos
+@using EcoRoute.UI.Pages.Components.Routes
+@using EcoRoute.UI.Services
+@using EcoRoute.UI.Services.RouteOptimizationServices
+@using EcoRoute.UI.Services.WasteBinServices
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Text.Json
+@using Blazored.Toast.Services
+@inject IRouteService RouteService
+@inject WasteBinService WasteBinService
+@inject UserService UserService
+@inject VehicleService VehicleService
+@inject AuthenticationStateProvider AuthProvider
+@inject IToastService ToastService
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@attribute [Authorize(Roles = "Driver")]
+
+<div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden mb-6 relative">
+    @if (isLoading)
+    {
+        <div class="absolute inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm z-40 flex items-center justify-center">
+            <div class="text-center max-w-sm">
+                <div class="relative mb-6 flex justify-center">
+                    <div class="relative w-20 h-20">
+                        <div class="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
+                        <div class="absolute inset-0 border-4 border-primary-500 rounded-full animate-spin border-t-transparent"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="text-xl font-semibold text-gray-800 dark:text-white">
+                        Rotalar Yükleniyor
+                    </h3>
+                    <div class="flex items-center justify-center space-x-1">
+                        <div class="w-2 h-2 bg-primary-500 rounded-full animate-bounce"></div>
+                        <div class="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                        <div class="w-2 h-2 bg-primary-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        Harita ve rota bilgileri hazırlanıyor...
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+        <div>
+            <h2 class="text-2xl font-semibold text-gray-800 dark:text-white">Rota Yönetimi</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                @if (routes != null)
+                {
+                    <span>@routes.Count adet rota yönetiliyor</span>
+                }
+                else if (!isLoading)
+                {
+                    <span>Rota bilgileri yükleniyor...</span>
+                }
+            </p>
+        </div>
+        <div class="flex space-x-3">
+            
+            <button class="flex items-center bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    @onclick="RefreshData"
+                    disabled="@(isRefreshing || isLoading)">
+                @if (isRefreshing)
+                {
+                    <div class="flex items-center">
+                        <div class="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                        <span>Yenileniyor...</span>
+                    </div>
+                }
+                else
+                {
+                    <i class="fas fa-sync-alt mr-2"></i>
+                    <span>Yenile</span>
+                }
+            </button>
+        
+        </div>
+    </div>
+
+    @if (!isLoading)
+    {
+        <div class="p-4 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+            <div class="rounded-lg overflow-hidden shadow-md">
+                <div id="admin-observer-map" class="w-full h-96 relative">
+                    <div id="map-loading-indicator" class="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 bg-opacity-75 dark:bg-opacity-75 z-10">
+                        <div class="text-center">
+                            <i class="fas fa-circle-notch fa-spin text-4xl text-primary-500 mb-2"></i>
+                            <p class="text-gray-600 dark:text-gray-300">Harita yükleniyor...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DriverRoutes.razor'da filter section'ını güncelleyin -->
+        <div class="p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 filter-section">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- md:grid-cols-4'ü md:grid-cols-3 yaptık -->
+                <!-- Sürücü filtresi sadece admin/manager için gösterilsin -->
+                @* Driver için sürücü filtresi gizli *@
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Durum</label>
+                    <select @bind="statusFilter" @bind:event="oninput" @onchange="ApplyFiltersWithDebounce"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white">
+                        <option value="">Tümü</option>
+                        <option value="@RouteStatus.Scheduled">Planlanmış</option>
+                        <option value="@RouteStatus.Active">Aktif</option>
+                        <option value="@RouteStatus.Completed">Tamamlanmış</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Arama</label>
+                    <div class="relative">
+                        <input type="text" placeholder="Ara..." @bind="searchText" @bind:event="oninput" @onkeyup="ApplyFiltersWithDebounce"
+                               class="w-full px-3 py-2 pl-10 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" />
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tarih Aralığı</label>
+                    <div class="flex space-x-2">
+                        <input type="date" @bind="startDateFilter" @bind:event="oninput" @onchange="ApplyFiltersWithDebounce"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" />
+                        <input type="date" @bind="endDateFilter" @bind:event="oninput" @onchange="ApplyFiltersWithDebounce"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white" />
+                    </div>
+                </div>
+
+                <div class="md:col-span-3 flex justify-end mt-4">
+                    <!-- md:col-span-4'ü md:col-span-3 yaptık -->
+                    <button class="flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition duration-300"
+                            @onclick="ClearFilters">
+                        <i class="fas fa-filter-circle-xmark mr-2"></i> Filtreleri Temizle
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="p-6">
+            <DriverRouteTable Routes="@displayedRoutes"
+                        Drivers="@drivers"
+                        Vehicles="@vehicles"
+                        ActiveSimulations="@activeSimulations"
+                        ExpandedRouteId="@expandedRouteId"
+                        CurrentPage="@currentPage"
+                        TotalPages="@totalPages"
+                        StartPage="@startPage"
+                        EndPage="@endPage"
+                        PageSize="@pageSize"
+                        FilteredRoutes="@filteredRoutes"
+                        SortField="@sortField"
+                        SortAscending="@sortAscending"
+                        RouteLoadingStates="@routeLoadingStates"
+                        OnSortTable="@SortTable"
+                        OnToggleExpand="@ToggleExpand"
+                        OnChangePage="@ChangePage"
+                        OnCompleteRoute="@CompleteRoute"
+                        OnFocusRouteOnMap="@FocusRouteOnMap"
+                        OnStartSimulation="@StartRouteSimulation"
+                        OnStopSimulation="@StopSimulation"
+                        OnUpdateSimulationSpeed="@UpdateSimulationSpeed" />
+        </div>
+    }
+    else
+    {
+        <div class="p-8">
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
+                <div class="flex items-center justify-center space-x-3">
+                    <div class="animate-spin rounded-full h-6 w-6 border-2 border-primary-500 border-t-transparent"></div>
+                    <span class="text-gray-600 dark:text-gray-400">Rota verileri hazırlanıyor...</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<CreateRouteModal @bind-IsVisible="@showCreateModal"
+                  Drivers="@availableDrivers"
+                  Vehicles="@availableVehicles"
+                  WasteBins="@wasteBins"
+                  IsCreating="@isCreatingRoute"
+                  OnCreateRoute="@CreateRoute"
+                  OnClose="@CloseCreateModal" />
+
+@if (isSimulatingAll || isRefreshing)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-xl">
+            <div class="flex items-center">
+                <i class="fas fa-spinner fa-spin text-2xl text-primary-500 mr-4"></i>
+                <div>
+                    <p class="text-lg font-semibold text-gray-800 dark:text-white">
+                        @if (isSimulatingAll)
+                        {
+                            <span>Tüm rotalar simüle ediliyor...</span>
+                        }
+                        else if (isRefreshing)
+                        {
+                            <span>Veriler yenileniyor...</span>
+                        }
+                    </p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Lütfen bekleyiniz</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    @@keyframes bounce {
+        0%, 80%, 100% {
+            transform: translateY(0);
+        }
+
+        40% {
+            transform: translateY(-10px);
+        }
+    }
+
+    .animate-bounce {
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+
+    .transition-all {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tooltip-container {
+        position: relative;
+    }
+
+        .tooltip-container .tooltip {
+            visibility: hidden;
+            background-color: rgba(0,0,0,0.8);
+            color: white;
+            text-align: center;
+            border-radius: 4px;
+            padding: 5px 10px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+
+            .tooltip-container .tooltip::after {
+                content: "";
+                position: absolute;
+                top: 100%;
+                left: 50%;
+                margin-left: -5px;
+                border-width: 5px;
+                border-style: solid;
+                border-color: rgba(0,0,0,0.8) transparent transparent transparent;
+            }
+
+        .tooltip-container:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+    @@keyframes modalShow {
+        from {
+            opacity: 0;
+            transform: scale(0.95) translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .animate-modal-show {
+        animation: modalShow 0.2s ease-out forwards;
+    }
+
+    .line-clamp-1 {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+
+@code {
+    private List<RouteResultDto> routes;
+    private List<RouteResultDto> filteredRoutes = new List<RouteResultDto>();
+    private List<RouteResultDto> displayedRoutes => GetDisplayedRoutes();
+    private List<ResultVehicleDto> vehicles;
+    private List<ResultUserDto> drivers;
+    private List<ResultUserDto> availableDrivers => GetAvailableDrivers();
+    private List<ResultVehicleDto> availableVehicles => GetAvailableVehicles();
+    private List<ResultWasteBinDto> wasteBins;
+
+    private bool showCreateModal = false;
+    private bool mainMapInitialized = false;
+    private Guid expandedRouteId;
+    private DotNetObjectReference<DriverRoutes> _objectReference;
+    private CancellationTokenSource _debounceTokenSource = new CancellationTokenSource();
+
+    private bool isLoading = false;
+    private bool isRefreshing = false;
+    private bool isSimulatingAll = false;
+    private bool isCreatingRoute = false;
+    private Dictionary<Guid, RouteLoadingState> routeLoadingStates = new();
+
+    private Dictionary<Guid, bool> activeSimulations = new Dictionary<Guid, bool>();
+
+    private RouteStatus? statusFilter;
+    private DateTime? startDateFilter;
+    private DateTime? endDateFilter;
+    private string searchText = "";
+    private string currentDriverId = string.Empty;
+    private string currentDriverName = string.Empty;
+
+
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages => filteredRoutes == null ? 0 : (int)Math.Ceiling(filteredRoutes.Count / (double)pageSize);
+    private int startPage => Math.Max(1, currentPage - 2);
+    private int endPage => Math.Min(totalPages, startPage + 4);
+
+    private string sortField = "StartTime";
+    private bool sortAscending = false;
+
+    private static readonly JsonSerializerOptions camelCase =
+    new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
+    private List<ResultUserDto> GetAvailableDrivers()
+    {
+        if (drivers == null || routes == null)
+            return new List<ResultUserDto>();
+
+        var busyDriverIds = routes
+            .Where(r => r.Status != RouteStatus.Completed)
+            .Select(r => r.DriverId)
+            .ToHashSet();
+
+        return drivers.Where(d => !busyDriverIds.Contains(d.Id)).ToList();
+    }
+
+    private List<ResultVehicleDto> GetAvailableVehicles()
+    {
+        if (vehicles == null || routes == null)
+            return new List<ResultVehicleDto>();
+
+        var busyVehicleIds = routes
+            .Where(r => r.Status != RouteStatus.Completed)
+            .Select(r => r.VehicleId)
+            .ToHashSet();
+
+        return vehicles.Where(v => !busyVehicleIds.Contains(v.Id.ToString())).ToList();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            _objectReference = DotNetObjectReference.Create(this);
+
+            // Önce mevcut kullanıcı bilgilerini al
+            await LoadCurrentUserInfo();
+
+            // Driver için sadece kendi rotalarını yükle
+            await LoadData();
+            await LoadVehicles();
+            await LoadWasteBins();
+
+            // Driver için kendi bilgilerini drivers listesine ekle
+            await LoadDriverInfo();
+
+            if (routes == null)
+                routes = new List<RouteResultDto>();
+
+            if (filteredRoutes == null)
+                filteredRoutes = new List<RouteResultDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error in OnInitializedAsync: {ex.Message}");
+            ToastService.ShowError("Sayfa yüklenirken bir hata oluştu");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadDriverInfo()
+    {
+        try
+        {
+            // Driver sadece kendi bilgilerini görebilir
+            if (!string.IsNullOrEmpty(currentDriverId) && !string.IsNullOrEmpty(currentDriverName))
+            {
+                var nameParts = currentDriverName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                drivers = new List<ResultUserDto>
+            {
+                new ResultUserDto
+                {
+                    Id = currentDriverId,
+                    Name = nameParts.Length > 0 ? nameParts[0] : currentDriverName,
+                    Surname = nameParts.Length > 1 ? string.Join(" ", nameParts.Skip(1)) : "",
+                    Roles = new List<string> { "Driver" }
+                }
+            };
+
+                Console.WriteLine($"Driver info loaded: {drivers[0].Name} {drivers[0].Surname}");
+            }
+            else
+            {
+                drivers = new List<ResultUserDto>();
+                Console.WriteLine("Driver info could not be loaded");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading driver info: {ex.Message}");
+            drivers = new List<ResultUserDto>();
+        }
+    }
+    private async Task LoadCurrentUserInfo()
+    {
+        try
+        {
+            var authState = await AuthProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity.IsAuthenticated)
+            {
+                currentDriverId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? "";
+
+                // İsim bilgilerini claim'lerden al
+                var firstName = user.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? "";
+                var lastName = user.FindFirst(System.Security.Claims.ClaimTypes.Surname)?.Value ?? "";
+                var fullName = user.FindFirst(System.Security.Claims.ClaimTypes.Name)?.Value ?? "";
+
+                if (!string.IsNullOrEmpty(firstName) || !string.IsNullOrEmpty(lastName))
+                {
+                    currentDriverName = $"{firstName} {lastName}".Trim();
+                }
+                else if (!string.IsNullOrEmpty(fullName))
+                {
+                    currentDriverName = fullName;
+                }
+                else
+                {
+                    currentDriverName = "Mevcut Sürücü";
+                }
+
+                Console.WriteLine($"Current Driver: ID={currentDriverId}, Name={currentDriverName}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading current user info: {ex.Message}");
+            currentDriverName = "Mevcut Sürücü";
+        }
+    }
+
+
+    public async ValueTask DisposeAsync()
+    {
+        await CleanupResources();
+        _objectReference?.Dispose();
+    }
+
+    private async Task CleanupResources()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("googleMapsInterop.resetMapState");
+            await JS.InvokeVoidAsync("googleMapsInterop.disposeResources");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Cleanup error: {ex.Message}");
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            if (firstRender)
+            {
+                await JS.InvokeVoidAsync("initializeGoogleMaps", _objectReference);
+            }
+
+            if (routes != null && filteredRoutes != null && !mainMapInitialized && !isLoading)
+            {
+                await Task.Yield();
+                await InitializeMainMap();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error in OnAfterRenderAsync: {ex.Message}");
+            if (ToastService != null)
+            {
+                ToastService.ShowError("Harita yüklenirken bir hata oluştu: " + ex.Message);
+            }
+        }
+    }
+
+    private async Task InitializeMainMap()
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<bool>("googleMapsInterop.initializeMainMap");
+
+            if (result)
+            {
+                mainMapInitialized = true;
+                await ShowAllRoutesOnMap();
+            }
+            else
+            {
+                mainMapInitialized = false;
+                Console.Error.WriteLine("Map initialization failed");
+            }
+        }
+        catch (Exception ex)
+        {
+            mainMapInitialized = false;
+            Console.Error.WriteLine($"Error initializing main map: {ex.Message}");
+            ToastService.ShowError("Harita yüklenirken bir hata oluştu");
+        }
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            // Tüm rotaları al
+            var allRoutes = await RouteService.GetAllRoutesAsync();
+
+            if (allRoutes != null && !string.IsNullOrEmpty(currentDriverId))
+            {
+                // Driver sadece kendi rotalarını görebilir
+                routes = allRoutes.Where(r => r.DriverId == currentDriverId).ToList();
+                Console.WriteLine($"Loaded {routes.Count} routes for driver {currentDriverId}");
+            }
+            else
+            {
+                routes = new List<RouteResultDto>();
+                Console.WriteLine("No routes found or driver ID is empty");
+            }
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading routes: {ex.Message}");
+            ToastService.ShowError("Rotalar yüklenirken bir hata oluştu");
+            routes = new List<RouteResultDto>();
+        }
+    }
+
+
+  
+    private async Task LoadVehicles()
+    {
+        try
+        {
+            vehicles = await VehicleService.GetAllVehiclesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading vehicles: {ex.Message}");
+            ToastService.ShowError("Araçlar yüklenirken bir hata oluştu");
+        }
+    }
+
+    private async Task LoadWasteBins()
+    {
+        try
+        {
+            wasteBins = await WasteBinService.GetAllWasteBinsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error loading waste bins: {ex.Message}");
+            ToastService.ShowError("Atık kutuları yüklenirken bir hata oluştu");
+        }
+    }
+
+    private List<RouteResultDto> GetDisplayedRoutes()
+    {
+        if (filteredRoutes == null) return new List<RouteResultDto>();
+
+        return filteredRoutes
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+    }
+
+    private void ApplyFilters()
+    {
+        if (routes == null)
+        {
+            filteredRoutes = new List<RouteResultDto>();
+            return;
+        }
+
+        var query = routes.AsEnumerable();
+
+
+
+        if (statusFilter.HasValue)
+        {
+            query = query.Where(r => r.Status == statusFilter);
+        }
+
+        if (startDateFilter.HasValue)
+        {
+            query = query.Where(r => r.StartTime.Date >= startDateFilter.Value.Date);
+        }
+
+        if (endDateFilter.HasValue)
+        {
+            query = query.Where(r => r.StartTime.Date <= endDateFilter.Value.Date);
+        }
+
+        if (!string.IsNullOrEmpty(searchText))
+        {
+            var search = searchText.ToLower();
+            query = query.Where(r =>
+                (GetDriverName(r.DriverId)?.ToLower().Contains(search) == true) ||
+                (GetVehiclePlate(r.VehicleId)?.ToLower().Contains(search) == true) ||
+                (r.WasteType.ToString().ToLower().Contains(search) == true));
+        }
+
+        query = ApplySorting(query);
+
+        filteredRoutes = query.ToList();
+
+        if (currentPage > 1 && (currentPage - 1) * pageSize >= filteredRoutes.Count)
+        {
+            currentPage = 1;
+        }
+    }
+
+    private async Task ApplyFiltersWithDebounce()
+    {
+        try
+        {
+            _debounceTokenSource.Cancel();
+            _debounceTokenSource = new CancellationTokenSource();
+
+            await Task.Delay(250, _debounceTokenSource.Token);
+
+            ApplyFilters();
+            StateHasChanged();
+        }
+        catch (TaskCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Filter error: {ex.Message}");
+        }
+    }
+
+    private IEnumerable<RouteResultDto> ApplySorting(IEnumerable<RouteResultDto> query)
+    {
+        switch (sortField)
+        {
+            case "StartTime":
+                return sortAscending ? query.OrderBy(r => r.StartTime) : query.OrderByDescending(r => r.StartTime);
+            case "Driver":
+                return sortAscending ? query.OrderBy(r => GetDriverName(r.DriverId)) : query.OrderByDescending(r => GetDriverName(r.DriverId));
+            case "Vehicle":
+                return sortAscending ? query.OrderBy(r => GetVehiclePlate(r.VehicleId)) : query.OrderByDescending(r => GetVehiclePlate(r.VehicleId));
+            case "Status":
+                return sortAscending ? query.OrderBy(r => r.Status) : query.OrderByDescending(r => r.Status);
+            case "Distance":
+                return sortAscending ? query.OrderBy(r => r.TotalDistanceKm) : query.OrderByDescending(r => r.TotalDistanceKm);
+            case "Duration":
+                return sortAscending ? query.OrderBy(r => r.EstimatedDurationMin) : query.OrderByDescending(r => r.EstimatedDurationMin);
+            default:
+                return query;
+        }
+    }
+
+    private async Task ShowAllRoutesOnMap()
+    {
+        if (routes == null || !routes.Any())
+        {
+            await LoadData();
+        }
+
+        if (routes != null && routes.Any())
+        {
+            try
+            {
+                var routesJson = JsonSerializer.Serialize(routes, camelCase);
+
+                var wasteBinsJson = "";
+                if (wasteBins != null && wasteBins.Any())
+                {
+                    wasteBinsJson = JsonSerializer.Serialize(wasteBins, camelCase);
+                }
+
+                await JS.InvokeVoidAsync("googleMapsInterop.showAllRoutes", routesJson, wasteBinsJson);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error showing routes on map: {ex}");
+                ToastService.ShowError("Rotalar haritada gösterilemedi");
+            }
+        }
+    }
+
+    private void SortTable(string field)
+    {
+        expandedRouteId = Guid.Empty;
+
+        if (sortField == field)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortField = field;
+            sortAscending = true;
+        }
+
+        ApplyFilters();
+    }
+
+    private void ChangePage(int page)
+    {
+        currentPage = page;
+        expandedRouteId = Guid.Empty;
+    }
+
+    private async Task ClearFilters()
+    {
+        statusFilter = null;
+        startDateFilter = null;
+        endDateFilter = null;
+        searchText = "";
+
+        ApplyFilters();
+        await ShowAllRoutesOnMap();
+    }
+
+    private void ToggleExpand(Guid routeId)
+    {
+        if (expandedRouteId == routeId)
+        {
+            expandedRouteId = Guid.Empty;
+        }
+        else
+        {
+            expandedRouteId = routeId;
+        }
+    }
+
+    private async Task CreateRoute(CreateRouteDto newRoute)
+    {
+        if (isCreatingRoute) return;
+
+        if (newRoute.WasteBinIds.Count == 0)
+        {
+            ToastService.ShowWarning("En az bir atık kutusu seçmelisiniz");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(newRoute.DriverId))
+        {
+            ToastService.ShowWarning("Bir sürücü seçmelisiniz");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(newRoute.VehicleId))
+        {
+            ToastService.ShowWarning("Bir araç seçmelisiniz");
+            return;
+        }
+
+        try
+        {
+            isCreatingRoute = true;
+            StateHasChanged();
+
+            var apiRoute = new ApiCreateRouteDto
+                {
+                    DriverId = newRoute.DriverId.ToString(),
+                    VehicleId = newRoute.VehicleId.ToString(),
+                    WasteType = newRoute.WasteType,
+                    OptimizationType = newRoute.OptimizationType,
+                    StartTime = newRoute.ScheduledStart,
+                    WasteBinIds = newRoute.WasteBinIds,
+                    Notes = newRoute.Notes,
+                    RouteName = newRoute.RouteName,
+                };
+
+            var success = await RouteService.CreateRouteAsync(apiRoute);
+
+            if (success)
+            {
+                ToastService.ShowSuccess("✅ Rota başarıyla oluşturuldu!");
+                showCreateModal = false;
+                await LoadData();
+                await ShowAllRoutesOnMap();
+            }
+            else
+            {
+                ToastService.ShowError("❌ Rota oluşturulurken bir hata oluştu");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error creating route: {ex.Message}");
+            ToastService.ShowError($"❌ Hata: {ex.Message}");
+        }
+        finally
+        {
+            isCreatingRoute = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CompleteRoute(Guid routeId)
+    {
+        if (!routeLoadingStates.ContainsKey(routeId))
+            routeLoadingStates[routeId] = new RouteLoadingState();
+
+        if (routeLoadingStates[routeId].IsCompleting) return;
+
+        try
+        {
+            routeLoadingStates[routeId].IsCompleting = true;
+            StateHasChanged();
+
+            var result = await RouteService.CompleteRouteAsync(routeId);
+            if (result)
+            {
+                ToastService.ShowSuccess("✅ Rota başarıyla tamamlandı!");
+                await LoadData();
+                await ShowAllRoutesOnMap();
+                StateHasChanged();
+            }
+            else
+            {
+                ToastService.ShowError("❌ Rota tamamlanırken bir hata oluştu");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error completing route: {ex.Message}");
+            ToastService.ShowError($"❌ Hata: {ex.Message}");
+        }
+        finally
+        {
+            routeLoadingStates[routeId].IsCompleting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartRouteSimulation(Guid routeId)
+    {
+        if (!routeLoadingStates.ContainsKey(routeId))
+            routeLoadingStates[routeId] = new RouteLoadingState();
+
+        if (routeLoadingStates[routeId].IsStartingSimulation) return;
+
+        try
+        {
+            var route = routes?.FirstOrDefault(r => r.Id == routeId);
+            if (route == null)
+            {
+                ToastService.ShowError("❌ Rota bulunamadı");
+                return;
+            }
+
+            if (route.Status == RouteStatus.Completed)
+            {
+                ToastService.ShowWarning("⚠️ Tamamlanmış rotalar simüle edilemez");
+                return;
+            }
+
+            if (activeSimulations.ContainsKey(routeId))
+            {
+                ToastService.ShowInfo("ℹ️ Bu rota zaten simüle ediliyor");
+                return;
+            }
+
+            routeLoadingStates[routeId].IsStartingSimulation = true;
+            StateHasChanged();
+
+            await RouteService.StartRouteSimulationAsync(routeId);
+            activeSimulations[routeId] = true;
+
+            var routeJson = JsonSerializer.Serialize(route, camelCase);
+            await JS.InvokeVoidAsync("googleMapsInterop.startRouteSimulation", routeId.ToString(), routeJson);
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error starting route simulation: {ex.Message}");
+            ToastService.ShowError($"❌ Simülasyon başlatılamadı: {ex.Message}");
+        }
+        finally
+        {
+            if (routeLoadingStates.ContainsKey(routeId))
+                routeLoadingStates[routeId].IsStartingSimulation = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StopSimulation(Guid routeId)
+    {
+        if (!routeLoadingStates.ContainsKey(routeId))
+            routeLoadingStates[routeId] = new RouteLoadingState();
+
+        if (routeLoadingStates[routeId].IsStoppingSimulation) return;
+
+        try
+        {
+            routeLoadingStates[routeId].IsStoppingSimulation = true;
+            StateHasChanged();
+
+            await JS.InvokeVoidAsync("googleMapsInterop.stopSimulation", routeId.ToString());
+
+            if (activeSimulations.ContainsKey(routeId))
+            {
+                activeSimulations.Remove(routeId);
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error stopping simulation: {ex.Message}");
+            ToastService.ShowError($"❌ Simülasyon durdurulamadı: {ex.Message}");
+        }
+        finally
+        {
+            routeLoadingStates[routeId].IsStoppingSimulation = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UpdateSimulationSpeed((Guid routeId, int speed) data)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("googleMapsInterop.updateSimulationSpeed", data.routeId.ToString(), data.speed);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error updating simulation speed: {ex.Message}");
+        }
+    }
+
+    private async Task SimulateAllRoutes()
+    {
+        if (isSimulatingAll) return;
+
+        try
+        {
+            isSimulatingAll = true;
+            StateHasChanged();
+
+            var activeRoutes = routes?.Where(r => r.Status != RouteStatus.Completed).ToList();
+            if (activeRoutes == null || !activeRoutes.Any())
+            {
+                ToastService.ShowInfo("ℹ️ Simüle edilecek aktif rota bulunamadı");
+                return;
+            }
+
+            var simulatedCount = await RouteService.SimulateAllRoutesAsync();
+
+            if (simulatedCount > 0)
+            {
+                ToastService.ShowSuccess($"🎉 {simulatedCount} rota başarıyla simüle edildi!");
+                await LoadData();
+                await ShowAllRoutesOnMap();
+            }
+            else
+            {
+                ToastService.ShowInfo("ℹ️ Simüle edilecek rota bulunamadı");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"Error simulating all routes: {ex.Message}");
+            ToastService.ShowError($"❌ Toplu simülasyon hatası: {ex.Message}");
+        }
+        finally
+        {
+            isSimulatingAll = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task FocusRouteOnMap(Guid routeId)
+    {
+        await JS.InvokeVoidAsync("googleMapsInterop.focusRouteOnMap", routeId);
+    }
+
+    private string GetDriverName(string driverId)
+    {
+        if (string.IsNullOrEmpty(driverId))
+            return "Bilinmeyen Sürücü";
+
+        // Eğer mevcut driver'ın ID'si ise
+        if (driverId == currentDriverId && !string.IsNullOrEmpty(currentDriverName))
+        {
+            return currentDriverName;
+        }
+
+        // Drivers listesinden kontrol et
+        if (drivers?.Any() == true)
+        {
+            var driver = drivers.FirstOrDefault(d => d.Id == driverId);
+            if (driver != null)
+            {
+                return $"{driver.Name} {driver.Surname}".Trim();
+            }
+        }
+
+        // Son çare olarak "Ben" döndür eğer mevcut kullanıcının ID'si ise
+        if (driverId == currentDriverId)
+        {
+            return "Ben";
+        }
+
+        return "Bilinmeyen Sürücü";
+    }
+
+
+    private string GetVehiclePlate(string vehicleId)
+    {
+        if (string.IsNullOrEmpty(vehicleId) || vehicles == null)
+            return "Bilinmeyen Araç";
+
+        if (Guid.TryParse(vehicleId, out Guid vId))
+        {
+            var vehicle = vehicles.FirstOrDefault(v => v.Id == vId);
+            return vehicle != null ? vehicle.Plate : "Bilinmeyen Araç";
+        }
+
+        return "Bilinmeyen Araç";
+    }
+
+    private void OpenCreateModal()
+    {
+        showCreateModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseCreateModal()
+    {
+        showCreateModal = false;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnMapInitialized()
+    {
+        Console.WriteLine("Map initialized from JS");
+    }
+
+    [JSInvokable]
+    public void ShowToastFromJs(string message)
+    {
+        ToastService.ShowInfo(message);
+        InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public async Task RefreshData()
+    {
+        if (isRefreshing) return;
+
+        try
+        {
+            isRefreshing = true;
+            StateHasChanged();
+
+            expandedRouteId = Guid.Empty;
+            await LoadData();
+            await ShowAllRoutesOnMap();
+            ToastService.ShowSuccess("🔄 Veriler yenilendi");
+            StateHasChanged();
+        }
+        finally
+        {
+            isRefreshing = false;
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public async Task FocusRouteOnMap(string routeId)
+    {
+        if (Guid.TryParse(routeId, out Guid id))
+        {
+            var route = routes?.FirstOrDefault(r => r.Id == id);
+            if (route != null)
+            {
+                expandedRouteId = id;
+                if (filteredRoutes != null && filteredRoutes.Contains(route))
+                {
+                    int index = filteredRoutes.IndexOf(route);
+                    currentPage = (index / pageSize) + 1;
+                }
+                StateHasChanged();
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnSimulationStarted(string routeId)
+    {
+        if (Guid.TryParse(routeId, out Guid id))
+        {
+            if (!activeSimulations.ContainsKey(id))
+            {
+                activeSimulations[id] = true;
+            }
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnSimulationStopped(string routeId)
+    {
+        if (Guid.TryParse(routeId, out Guid id))
+        {
+            if (activeSimulations.ContainsKey(id))
+            {
+                activeSimulations.Remove(id);
+            }
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnSimulationCompleted(string routeId)
+    {
+        if (Guid.TryParse(routeId, out Guid id))
+        {
+            if (activeSimulations.ContainsKey(id))
+            {
+                activeSimulations.Remove(id);
+            }
+            await LoadData();
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public async Task CompleteNextSimulationStep(string routeId)
+    {
+        if (Guid.TryParse(routeId, out Guid id))
+        {
+            try
+            {
+                var result = await RouteService.CompleteNextStepAsync(id);
+
+                var route = routes?.FirstOrDefault(r => r.Id == id);
+                if (route != null)
+                {
+                    var step = route.Steps?.FirstOrDefault(s => s.Id == result.CompletedStepId);
+                    if (step != null)
+                    {
+                        step.IsCompleted = true;
+
+                        string message;
+
+                        if (step.Order == 0)
+                        {
+                            message = "🚀 Başlangıç noktasından ayrıldı";
+                        }
+                        else if (step.Order == route.Steps.Count - 1)
+                        {
+                            message = "🏁 Hedefe varıldı - Rota tamamlandı!";
+                        }
+                        else if (step.WasteBinId.HasValue)
+                        {
+                            message = $"📍 {step.Order}. durak tamamlandı: {step.Address}";
+                        }
+                        else
+                        {
+                            message = $"✅ {step.Order}. adım tamamlandı";
+                        }
+
+                        ToastService.ShowSuccess(message);
+                        StateHasChanged();
+                    }
+                }
+
+                if (result.IsRouteCompleted)
+                {
+                    if (activeSimulations.ContainsKey(id))
+                    {
+                        activeSimulations.Remove(id);
+                    }
+
+                    ToastService.ShowSuccess("🎉 Rota simülasyonu başarıyla tamamlandı!");
+                    await LoadData();
+                    StateHasChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error completing simulation step: {ex.Message}");
+                ToastService.ShowError($"❌ Adım tamamlanırken hata: {ex.Message}");
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task CompleteRouteSimulation(string routeId)
+    {
+        if (Guid.TryParse(routeId, out Guid id))
+        {
+            try
+            {
+                await RouteService.CompleteRouteAsync(id);
+
+                if (activeSimulations.ContainsKey(id))
+                {
+                    activeSimulations.Remove(id);
+                }
+
+                await LoadData();
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error completing route simulation: {ex.Message}");
+            }
+        }
+    }
+}

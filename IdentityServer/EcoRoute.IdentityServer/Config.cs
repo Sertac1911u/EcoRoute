@@ -155,6 +155,7 @@ namespace EcoRoute.IdentityServer
                     ClientSecrets={new Secret("ecoroutesecret".Sha256())},
                     AllowedScopes={
                         "DataCollectionReadPermission",
+                        "DataCollectionFullPermission",
                         "DataProcessingReadPermission",
                         "RouteOptimizationFullPermission",
                         "SupportsReadPermission",

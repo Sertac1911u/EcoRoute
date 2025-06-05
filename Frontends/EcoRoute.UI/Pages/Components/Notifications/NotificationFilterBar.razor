@@ -1,7 +1,6 @@
 ﻿@using Microsoft.AspNetCore.Components
 
 <div class="flex flex-col sm:flex-row flex-wrap gap-3 items-center w-full md:w-auto">
-    <!-- Arama Kutusu -->
     <div class="relative w-full sm:w-auto">
         <input type="text"
                placeholder="Bildirimlerinde ara..."
@@ -20,7 +19,6 @@
     </div>
 
     <div class="flex gap-3 w-full sm:w-auto">
-        <!-- Tür Seçimi -->
         <div class="relative flex-1 sm:flex-none">
             <select class="w-full pl-4 pr-8 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white appearance-none transition-all duration-200"
                     value="@SelectedType"
@@ -36,7 +34,6 @@
             </div>
         </div>
 
-        <!-- Okunma Durumu -->
         <div class="relative flex-1 sm:flex-none">
             <select class="w-full pl-4 pr-8 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-800 dark:text-white appearance-none transition-all duration-200"
                     value="@ReadStatus"

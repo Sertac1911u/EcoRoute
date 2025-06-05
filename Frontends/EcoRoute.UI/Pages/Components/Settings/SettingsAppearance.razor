@@ -8,7 +8,6 @@
         <i class="fas fa-palette mr-2 text-primary-500"></i> Görünüm Ayarları
     </h3>
 
-    <!-- Dark Mode Toggle -->
     <div class="mb-6">
         <div class="flex justify-between items-center">
             <label class="text-gray-700 dark:text-gray-300 font-medium">Karanlık Mod</label>
@@ -20,7 +19,6 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Sistemin karanlık modunu etkinleştir/devre dışı bırak</p>
     </div>
 
-    <!-- Tema Seçimi -->
     <div class="mb-6">
         <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Tema Rengi</label>
         <div class="grid grid-cols-4 gap-3 mb-4">
@@ -66,7 +64,6 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Sistemin ana rengini değiştir</p>
     </div>
 
-    <!-- Font Type Selection -->
     <div class="mb-6">
         <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Yazı Tipi</label>
         <div class="relative">
@@ -85,7 +82,6 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Uygulama için kullanılacak yazı tipini seçin</p>
     </div>
 
-    <!-- Animasyon Efektleri -->
     <div class="mb-0">
         <div class="flex justify-between items-center">
             <label class="text-gray-700 dark:text-gray-300 font-medium">Animasyon Efektleri</label>
@@ -120,7 +116,6 @@
     {
         if (firstRender)
         {
-            // Apply the saved font on component load
             if (Settings.FontTypeId != null)
             {
                 var selectedFont = FontTypes.FirstOrDefault(f => f.Id == Settings.FontTypeId);
@@ -133,20 +128,16 @@
     }
     private async Task FontTypeChanged()
     {
-        // Get the selected font CSS value
         var selectedFont = FontTypes.FirstOrDefault(f => f.Id == Settings.FontTypeId);
         if (selectedFont != null)
         {
-            // Apply the font via JavaScript
             await JS.InvokeVoidAsync("fontManager.applyFont", selectedFont.CssValue);
         }
 
-        // Notify parent that a setting changed
         await NotifySettingChanged();
     }
     private async Task DarkModeChanged()
     {
-        // Apply dark mode immediately
         await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(Settings.DarkMode ? "add" : "remove")}('dark')");
         await NotifySettingChanged();
     }

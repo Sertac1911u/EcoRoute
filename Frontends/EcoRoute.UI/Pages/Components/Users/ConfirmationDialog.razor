@@ -3,32 +3,25 @@
 @if (IsOpen)
 {
     <div class="fixed inset-0 z-50 flex items-center justify-center p-4" @onclick="OnCancel">
-        <!-- Backdrop -->
         <div class="fixed inset-0 bg-black/50"></div>
 
-            <!-- Modal -->
             <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700"
                  @onclick:stopPropagation="true">
 
-                <!-- Header with Icon -->
                 <div class="p-6 text-center">
-                    <!-- Icon Container -->
                     <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-xl @GetIconContainerClass() mb-4">
                         <i class="fas @Icon text-2xl @GetIconColorClass()"></i>
                     </div>
 
-                    <!-- Title -->
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
                         @Title
                     </h3>
 
-                    <!-- Message -->
                     <p class="text-gray-600 dark:text-gray-400 text-sm">
                         @Message
                     </p>
                 </div>
 
-                <!-- Actions -->
                 <div class="flex gap-3 p-6 pt-0">
                     <button class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                             @onclick="OnCancel"

@@ -162,8 +162,7 @@
     {
         uploadedFile = e.File;
 
-        // Validate file size
-        if (uploadedFile.Size > 10485760) // 10MB
+        if (uploadedFile.Size > 10485760) 
         {
             ToastService.ShowWarning("Dosya boyutu 10MB'dan büyük olamaz. Lütfen daha küçük bir dosya seçin.");
             uploadedFile = null;
@@ -172,7 +171,6 @@
 
     private async Task CreateSupportTicket()
     {
-        // Validation
         if (string.IsNullOrEmpty(newTicket.Subject))
         {
             ToastService.ShowWarning("Lütfen bir konu girin.");
@@ -195,7 +193,6 @@
         content.Add(new StringContent(userId ?? ""), "UserId");
         content.Add(new StringContent(userName ?? ""), "UserName");
 
-        // Handle file if present
         if (uploadedFile != null)
         {
             var fileContent = new StreamContent(uploadedFile.OpenReadStream(maxAllowedSize: 10485760)); // 10MB max

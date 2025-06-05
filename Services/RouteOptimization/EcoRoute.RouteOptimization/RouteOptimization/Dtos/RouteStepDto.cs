@@ -10,10 +10,8 @@
         public int Order { get; set; }
         public bool IsCompleted { get; set; }
 
-        // *** NULLABLE yapıldı - başlangıç ve bitiş için null ***
         public Guid? WasteBinId { get; set; }
 
-        // Helper properties
         public bool IsDepotStep => !WasteBinId.HasValue;
         public bool IsWasteBinStep => WasteBinId.HasValue;
         public string StepType => Order switch

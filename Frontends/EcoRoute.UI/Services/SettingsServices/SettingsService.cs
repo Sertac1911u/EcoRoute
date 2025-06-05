@@ -43,7 +43,6 @@ namespace EcoRoute.UI.Services.SettingsServices
                 var authState = await _authStateProvider.GetAuthenticationStateAsync();
                 var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                // Hata ayıklama için log
                 Console.WriteLine($"Current user ID from auth state: {userId}");
 
                 return userId ?? "";
@@ -61,11 +60,9 @@ namespace EcoRoute.UI.Services.SettingsServices
 
             try
             {
-                // Kullanıcı kimliğini kontrol et
                 var userId = await GetCurrentUserIdAsync();
                 Console.WriteLine($"Getting settings for user: {userId}");
 
-                // API'ye isteği gönder
                 var response = await _httpClient.GetFromJsonAsync<SystemSettingDto>("services/settings/Settings");
 
                 if (response != null)
@@ -91,13 +88,10 @@ namespace EcoRoute.UI.Services.SettingsServices
 
             try
             {
-                // İstek yapılmadan önce headers'ı kontrol et
                 Console.WriteLine($"Auth header present: {_httpClient.DefaultRequestHeaders.Authorization != null}");
 
-                // İsteği gönder ve yanıtı al
                 var response = await _httpClient.PutAsJsonAsync("services/settings/Settings", settings);
 
-                // Yanıt detaylarını logla
                 Console.WriteLine($"Update settings response status: {response.StatusCode}");
 
                 if (!response.IsSuccessStatusCode)
@@ -114,9 +108,7 @@ namespace EcoRoute.UI.Services.SettingsServices
                 return false;
             }
         }
-        /// <summary>
-        /// Sistem ayarlarını varsayılana döndürür
-        /// </summary>
+    
         public async Task<bool> ResetToDefaultsAsync()
         {
             await SetAuthHeader();
@@ -133,21 +125,17 @@ namespace EcoRoute.UI.Services.SettingsServices
             }
         }
 
-        /// <summary>
-        /// Tema renklerini getirir
-        /// </summary>
+      
         public async Task<List<ThemeColorDto>> GetThemeColorsAsync()
         {
             await SetAuthHeader();
 
             try
             {
-                // API'den renkleri al
                 var response = await _httpClient.GetFromJsonAsync<List<ThemeColorDto>>("services/settings/Settings/theme-colors");
 
                 if (response != null && response.Any())
                 {
-                    // API sonuçlarını düzenle: Orijinal renk varsa en başa al
                     var originalColor = response.FirstOrDefault(c => c.Name == "Orijinal" || c.Value == "#2ba86d");
                     if (originalColor != null)
                     {
@@ -155,7 +143,6 @@ namespace EcoRoute.UI.Services.SettingsServices
                         response.Insert(0, originalColor);
                     }
 
-                    // Renk tonlarını ekle
                     foreach (var color in response)
                     {
                         AddTailwindShades(color);
@@ -163,7 +150,6 @@ namespace EcoRoute.UI.Services.SettingsServices
                     return response;
                 }
 
-                // API başarısız olursa varsayılan renklere dön
                 return GetDefaultThemeColors();
             }
             catch (Exception ex)
@@ -236,17 +222,13 @@ namespace EcoRoute.UI.Services.SettingsServices
                 { "900", "#4c1d95" }
             };
                     break;
-                // Add more cases for other colors
                 default:
-                    // Generate generic shades if no specific mapping exists
                     color.Shades = GenerateGenericShades(color.Value);
                     break;
             }
         }
         private Dictionary<string, string> GenerateGenericShades(string baseColor)
         {
-            // This is a simplified approach - in a real app you might use a proper color library
-            // to calculate these shades more accurately
             return new Dictionary<string, string>
     {
         { "50", LightenColor(baseColor, 0.85) },
@@ -262,7 +244,6 @@ namespace EcoRoute.UI.Services.SettingsServices
     };
         }
 
-        // Basic color lightening function
         private string LightenColor(string hexColor, double factor)
         {
             if (hexColor.StartsWith("#"))
@@ -279,7 +260,6 @@ namespace EcoRoute.UI.Services.SettingsServices
             return $"#{r:X2}{g:X2}{b:X2}";
         }
 
-        // Basic color darkening function
         private string DarkenColor(string hexColor, double factor)
         {
             if (hexColor.StartsWith("#"))
@@ -295,9 +275,7 @@ namespace EcoRoute.UI.Services.SettingsServices
 
             return $"#{r:X2}{g:X2}{b:X2}";
         }
-        /// <summary>
-        /// Avatarları getirir
-        /// </summary>
+       
         public async Task<List<AvatarDto>> GetAvatarsAsync()
         {
             await SetAuthHeader();
@@ -314,16 +292,12 @@ namespace EcoRoute.UI.Services.SettingsServices
             }
         }
 
-        /// <summary>
-        /// Google Maps API anahtarını test eder
-        /// </summary>
         public async Task<bool> TestGoogleMapsApiAsync(string apiKey)
         {
             await SetAuthHeader();
 
             try
             {
-                // API Key'i JSON olarak gönder
                 var stringContent = new StringContent(
                     JsonSerializer.Serialize(apiKey),
                     System.Text.Encoding.UTF8,
@@ -345,19 +319,18 @@ namespace EcoRoute.UI.Services.SettingsServices
             }
         }
 
-        // Varsayılan değerleri döndüren helper metotlar
         private Task<SystemSettingDto> GetDefaultSettings()
         {
             return Task.FromResult(new SystemSettingDto
             {
                 DarkMode = false,
-                ThemeColor = "#3B82F6", // varsayılan mavi
+                ThemeColor = "#3B82F6",
                 TwoFactorEnabled=false,
                 LocationTracking=false,
                 ActiveSessionLimit=0,
                 SessionTimeout=0,
                 EnableAnimations = true,
-                AvatarUrl = "https://ui-avatars.com/api/?name=Sertaç+Kara\r\n", // varsayılan avatar
+                AvatarUrl = "https://api.dicebear.com/9.x/shapes/svg?seed=TEST",
                 EmailNotifications = true,
                 SmsNotifications = false,
                 PushNotifications = true,
@@ -369,24 +342,22 @@ namespace EcoRoute.UI.Services.SettingsServices
         {
             var colors = new List<ThemeColorDto>
     {
-        // Orijinal renk her zaman ilk sırada
-        new ThemeColorDto { Name = "Orijinal", Value = "#2ba86d" },      // EcoRoute orijinal rengi
+        new ThemeColorDto { Name = "Orijinal", Value = "#2ba86d" },     
         
         // Diğer renkler
-        new ThemeColorDto { Name = "Mavi", Value = "#3B82F6" },           // primary-500
-        new ThemeColorDto { Name = "Kırmızı", Value = "#EF4444" },        // red-500
-        new ThemeColorDto { Name = "Mor", Value = "#8B5CF6" },            // violet-500
-        new ThemeColorDto { Name = "Pembe", Value = "#EC4899" },          // pink-500
-        new ThemeColorDto { Name = "Sarı", Value = "#F59E0B" },           // amber-500
-        new ThemeColorDto { Name = "Turkuaz", Value = "#06B6D4" },        // cyan-500
-        new ThemeColorDto { Name = "Indigo", Value = "#6366F1" },         // indigo-500
-        new ThemeColorDto { Name = "Lime", Value = "#84CC16" },           // lime-500
-        new ThemeColorDto { Name = "Gri", Value = "#6B7280" },            // gray-500
-        new ThemeColorDto { Name = "Turuncu", Value = "#F97316" },        // orange-500
-        new ThemeColorDto { Name = "Teal", Value = "#14B8A6" }            // teal-500
+        new ThemeColorDto { Name = "Mavi", Value = "#3B82F6" },           
+        new ThemeColorDto { Name = "Kırmızı", Value = "#EF4444" },       
+        new ThemeColorDto { Name = "Mor", Value = "#8B5CF6" },            
+        new ThemeColorDto { Name = "Pembe", Value = "#EC4899" },        
+        new ThemeColorDto { Name = "Sarı", Value = "#F59E0B" },          
+        new ThemeColorDto { Name = "Turkuaz", Value = "#06B6D4" },      
+        new ThemeColorDto { Name = "Indigo", Value = "#6366F1" },         
+        new ThemeColorDto { Name = "Lime", Value = "#84CC16" },           
+        new ThemeColorDto { Name = "Gri", Value = "#6B7280" },          
+        new ThemeColorDto { Name = "Turuncu", Value = "#F97316" },      
+        new ThemeColorDto { Name = "Teal", Value = "#14B8A6" }           
     };
 
-            // Add shades to each color
             foreach (var color in colors)
             {
                 AddTailwindShades(color);
@@ -398,7 +369,7 @@ namespace EcoRoute.UI.Services.SettingsServices
         {
             return new List<AvatarDto>
             {
-                new AvatarDto { Name = "Avatar 1", Url = "https://ui-avatars.com/api/?name=Sertaç+Kara\r\n" }
+                new AvatarDto { Name = "Avatar 1", Url = "https://api.dicebear.com/9.x/shapes/svg?seed=TEST" }
             };
         }
         public async Task<List<FontTypeDto>> GetFontTypesAsync()

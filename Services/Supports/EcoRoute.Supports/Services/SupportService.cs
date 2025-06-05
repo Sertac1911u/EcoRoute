@@ -31,32 +31,26 @@ namespace EcoRoute.Supports.Services
             {
                 try
                 {
-                    // ContentRootPath her zaman dolu olur
                     var uploadsFolder = Path.Combine(_env.ContentRootPath, "Uploads", "Attachments");
 
-                    // Klasör yoksa oluştur
                     if (!Directory.Exists(uploadsFolder))
                     {
                         Directory.CreateDirectory(uploadsFolder);
                     }
 
-                    // Benzersiz dosya adı oluştur
                     var fileName = $"{Guid.NewGuid()}_{dto.Attachment.FileName}";
                     var filePath = Path.Combine(uploadsFolder, fileName);
 
-                    // Dosyayı kaydet
                     using (var stream = new FileStream(filePath, FileMode.Create))
                     {
                         await dto.Attachment.CopyToAsync(stream);
                     }
 
-                    // Dosya yolunu URL olarak veritabanında sakla
                     ticket.AttachmentPath = $"/Uploads/Attachments/{fileName}";
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Dosya yükleme hatası: {ex.Message}");
-                    // Dosya yükleme hatası gizle ve devam et
                     ticket.AttachmentPath = null;
                 }
             }
@@ -70,7 +64,6 @@ namespace EcoRoute.Supports.Services
 
             var result = _mapper.Map<ResultSupportTicketDto>(createdTicket);
 
-            // Send notification about new ticket
             await _notificationService.SendTicketCreatedNotificationAsync(result);
 
             return result;
@@ -116,26 +109,22 @@ namespace EcoRoute.Supports.Services
             if (ticket == null)
                 throw new Exception("Ticket not found");
 
-            var isStaff = dto.IsStaff; // Bunu HttpContext üzerinden de yapabilirsin, yukarıda konuştuk.
+            var isStaff = dto.IsStaff;
             var isDriver = !isStaff;
 
             if (isDriver && ticket.Responses.Any())
             {
                 var responses = ticket.Responses.OrderBy(r => r.ResponseDate).ToList();
-                // Hiç staff mesajı var mı?
                 bool hasStaffResponse = responses.Any(r => r.IsStaff);
 
                 if (hasStaffResponse)
                 {
-                    // Son mesaj driver mı? (ve en az bir staff mesajı var)
                     var lastResponse = responses.LastOrDefault();
                     if (lastResponse != null && !lastResponse.IsStaff)
                     {
-                        // En son staff mesajı GELDİKTEN SONRA, arka arkaya driver yazamaz.
                         throw new InvalidOperationException("Yönetici cevap vermeden tekrar yanıt gönderemezsiniz.");
                     }
                 }
-                // Eğer hiç staff mesajı yoksa, driver istediği kadar yazabilir.
             }
 
             var response = new TicketResponse
@@ -175,7 +164,6 @@ namespace EcoRoute.Supports.Services
                 }
             }
 
-            // Update ticket status to "İşlemde" if it was "Açık"
             if (ticket.Status == "Açık")
             {
                 ticket.Status = "İşlemde";
@@ -184,10 +172,8 @@ namespace EcoRoute.Supports.Services
             _context.TicketResponses.Add(response);
             await _context.SaveChangesAsync();
 
-            // Send notification about the new response
             var responseResult = _mapper.Map<ResultTicketResponseDto>(response);
 
-            // If staff responded, notify the ticket creator
             if (isStaff)
             {
                 await _notificationService.SendTicketResponseNotificationAsync(
@@ -196,14 +182,13 @@ namespace EcoRoute.Supports.Services
                     ticket.Id,
                     ticket.UserId);
             }
-            // If user responded, notify staff (send to all)
             else
             {
                 await _notificationService.SendTicketResponseNotificationAsync(
                     responseResult,
                     ticket.Subject,
                     ticket.Id,
-                    ""); // Empty userId means notification will be sent to all
+                    ""); 
             }
         }
 
@@ -217,7 +202,6 @@ namespace EcoRoute.Supports.Services
             ticket.Status = status;
             await _context.SaveChangesAsync();
 
-            // Send notification about status change
             await _notificationService.SendTicketStatusChangedNotificationAsync(
                 ticket.Subject,
                 ticket.Id,
@@ -236,7 +220,6 @@ namespace EcoRoute.Supports.Services
             ticket.Status = "Kapatıldı";
             await _context.SaveChangesAsync();
 
-            // Send notification about ticket being closed
             await _notificationService.SendTicketStatusChangedNotificationAsync(
                 ticket.Subject,
                 ticket.Id,

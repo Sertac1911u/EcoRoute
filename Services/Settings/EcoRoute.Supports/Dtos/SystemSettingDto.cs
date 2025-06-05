@@ -13,15 +13,12 @@
         public int ActiveSessionLimit { get; set; }
 
 
-        // Profil Avatarı
         public string AvatarUrl { get; set; }
 
-        // Bildirim Tercihleri
         public bool EmailNotifications { get; set; }
         public bool SmsNotifications { get; set; }
         public bool PushNotifications { get; set; }
 
-        // Sistem Entegrasyonları
         public string GoogleMapsApiKey { get; set; }
         public Guid? FontTypeId { get; set; }
         public string FontTypeName { get; set; }

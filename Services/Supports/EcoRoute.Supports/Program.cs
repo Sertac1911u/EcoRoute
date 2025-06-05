@@ -7,7 +7,6 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Authentication
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -25,7 +24,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 Encoding.UTF8.GetBytes("dsopkjfewosspjwe12+fqpjrfqepqjasd123x.@ewrkj3241kld"))
         };
 
-        // SaveToken ekleyin - bu, token'ları HttpContext'te saklar
         options.SaveToken = true;
     });
 var options = new WebApplicationOptions
@@ -34,7 +32,6 @@ var options = new WebApplicationOptions
     WebRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot")
 };
 
-// Authorization
 builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("SupportsFullAccess", policy =>
@@ -49,10 +46,8 @@ builder.Services.AddAuthorization(options =>
     });
 });
 
-// HttpContextAccessor'ı ekle
 builder.Services.AddHttpContextAccessor();
 
-// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorUI", policy =>
@@ -64,10 +59,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// HttpClient for notification service
 builder.Services.AddHttpClient<ISupportNotificationService, SupportNotificationService>();
 
-// Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -91,14 +84,12 @@ if (!Directory.Exists(attachmentsFolder))
     Directory.CreateDirectory(attachmentsFolder);
 }
 
-// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// No HTTPS redirection, matching DataCollection service
 app.UseCors("AllowBlazorUI");
 app.UseRouting();
 app.UseAuthentication();

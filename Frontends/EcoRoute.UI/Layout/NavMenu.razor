@@ -19,7 +19,6 @@
     private int notificationCount = 0;
     private bool isDataLoaded = false;
 
-    // Menü öğelerinin stil sınıfı - Default primary renk
     private string GetMenuItemClass(bool expanded)
     {
         return expanded
@@ -27,7 +26,6 @@
             : "menu-item group relative flex items-center justify-center w-full px-3 py-3 text-primary-600 dark:text-primary-400 rounded-2xl hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-700 dark:hover:text-primary-300 transition-all duration-200 ease-out";
     }
 
-    // İkonların stil sınıfı - Default primary renk
     private string GetIconClass(bool expanded)
     {
         return expanded
@@ -35,7 +33,6 @@
             : "text-xl text-primary-500 transition-colors duration-200";
     }
 
-    // Aktif menü öğelerinin stil sınıfı - Düzeltildi
     private string GetActiveMenuItemClass(bool expanded)
     {
         return expanded
@@ -43,7 +40,6 @@
             : "menu-item group relative flex items-center justify-center w-full px-3 py-3 bg-primary-500 text-white rounded-2xl shadow-md";
     }
 
-    // Aktif ikonların stil sınıfı - Düzeltildi
     private string GetActiveIconClass(bool expanded)
     {
         return expanded
@@ -61,11 +57,9 @@
             isManager = user.IsInRole("Manager");
             isDriver = user.IsInRole("Driver");
 
-            // Get saved sidebar state
             var savedState = await localStorage.GetItemAsync<bool?>("sidebarExpanded");
             isExpanded = savedState ?? false;
 
-            // Bildirim sayısını al
             notificationService.OnNotificationsUpdated += OnNotificationsUpdated;
             await notificationService.InitializeAsync();
             notificationCount = notificationService.UnreadCount;
@@ -78,7 +72,6 @@
         catch (Exception ex)
         {
             Console.WriteLine($"NavMenu initialization error: {ex.Message}");
-            // Hata durumunda da yüklenmiş olarak işaretle
             isDataLoaded = true;
             await OnDataLoaded.InvokeAsync();
         }
@@ -117,9 +110,7 @@
 
         @if (!isDataLoaded)
         {
-            <!-- NavMenu Loading State -->
             <div class="flex flex-col h-full animate-pulse">
-                <!-- Header Skeleton -->
                 <div class="flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 px-4">
                     <div class="flex items-center">
                         <div class="h-10 w-10 bg-gray-300 dark:bg-gray-600 rounded-lg"></div>
@@ -133,7 +124,6 @@
                     </div>
                 </div>
 
-                <!-- Menu Items Skeleton -->
                 <div class="flex flex-col flex-grow py-4 px-3 space-y-2">
                     @for (int i = 0; i < 6; i++)
                     {
@@ -150,11 +140,10 @@
         }
         else
         {
-            <!-- Sidebar Header -->
             <div class="navbar flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700 px-4">
                 <div class="flex items-center @(isExpanded ? "" : "justify-center w-full")">
                     <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 shadow-md">
-                        <i class="fas fa-recycle text-white text-lg logo-icon"></i>
+                        <i class="fas fa-route text-white text-lg logo-icon"></i>
                     </div>
                     @if (isExpanded)
                     {
@@ -181,11 +170,9 @@
                 </div>
             }
 
-            <!-- Sidebar Content -->
             <div class="flex flex-col flex-grow py-4 overflow-y-auto @(isExpanded ? "px-3" : "px-2")">
                 <nav class="flex-1 space-y-2">
 
-                    <!-- Dashboard -->
                     <NavLink href="/" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)" Match="NavLinkMatch.All">
                         <i class="fas fa-home @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                         @if (isExpanded)
@@ -196,7 +183,6 @@
 
                     @if (isSuperAdmin)
                     {
-                        <!-- User Management -->
                         <NavLink href="/users" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
                             <i class="fas fa-users @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                             @if (isExpanded)
@@ -208,7 +194,6 @@
 
                     @if (isSuperAdmin || isManager)
                     {
-                        <!-- Bin Management -->
                         <NavLink href="/bins" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
                             <i class="fas fa-dumpster @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                             @if (isExpanded)
@@ -217,7 +202,6 @@
                             }
                         </NavLink>
 
-                        <!-- Route Management -->
                         <NavLink href="/routes" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
                             <i class="fas fa-route @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                             @if (isExpanded)
@@ -226,7 +210,6 @@
                             }
                         </NavLink>
 
-                        <!-- Reporting -->
                         <NavLink href="/reports" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
                             <i class="fas fa-chart-line @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                             @if (isExpanded)
@@ -238,7 +221,6 @@
 
                     @if (isDriver)
                     {
-                        <!-- Driver Routes -->
                         <NavLink href="/driver-routes" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
                             <i class="fas fa-map-marked-alt @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                             @if (isExpanded)
@@ -248,7 +230,6 @@
                         </NavLink>
                     }
 
-                    <!-- Section Divider -->
                     @if (isExpanded)
                     {
                         <div class="py-2 transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">
@@ -257,7 +238,6 @@
                         </div>
                     }
 
-                    <!-- Notifications -->
                     <NavLink href="/notifications" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
                         <div class="relative flex items-center">
                             <i class="fas fa-bell @GetIconClass(isExpanded) group-[.active]:text-white"></i>
@@ -278,7 +258,6 @@
                         }
                     </NavLink>
 
-                    <!-- Settings -->
                     <NavLink href="/settings" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
                         <i class="fas fa-cog @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                         @if (isExpanded)
@@ -287,7 +266,6 @@
                         }
                     </NavLink>
 
-                    <!-- Support -->
                     <NavLink href="/supports" class="@GetMenuItemClass(isExpanded)" ActiveClass="@GetActiveMenuItemClass(isExpanded)">
                         <i class="fas fa-headset @GetIconClass(isExpanded) group-[.active]:text-white"></i>
                         @if (isExpanded)
@@ -298,7 +276,6 @@
                 </nav>
             </div>
 
-            <!-- Footer Section -->
             @if (isExpanded)
             {
                 <div class="px-4 py-3 border-t border-gray-200 dark:border-gray-700 transition-opacity duration-200 @(isTransitioning ? "opacity-0" : "opacity-100")">
@@ -315,9 +292,7 @@
     </div>
 </div>
 
-<!-- Aynı stil kodları -->
 <style>
-    /* Basitleştirilmiş kaydırma çubuğu */
     .scrollbar-thin::-webkit-scrollbar {
         width: 3px;
     }
@@ -335,23 +310,24 @@
         background: #475569;
     }
 
-    /* Optimize edilmiş logo animasyonu */
     .logo-icon {
         animation: logoSpin 4s linear infinite;
         transform-origin: center;
     }
 
     @@keyframes logoSpin {
-        from {
-            transform: rotate(0deg);
-        }
+        from
 
-        to {
-            transform: rotate(360deg);
-        }
+    {
+        transform: rotate(0deg);
     }
 
-    /* NavLink aktif durumu için özel stil */
+    to {
+        transform: rotate(360deg);
+    }
+
+    }
+
     .menu-item[href].active,
     .menu-item[href][aria-current="page"] {
         background: linear-gradient(135deg, var(--tw-color-primary-500), var(--tw-color-primary-600)) !important;
@@ -369,12 +345,10 @@
             color: white !important;
         }
 
-    /* Hover efektleri - optimize edildi */
     .menu-item:hover {
         transform: translateX(2px);
     }
 
-    /* CSS Variables for primary colors */
     :root {
         --tw-color-primary-50: #e7f8ef;
         --tw-color-primary-100: #c5edd8;
@@ -388,7 +362,6 @@
         --tw-color-primary-900: #06321d;
     }
 
-    /* Dark mode variables */
     .dark {
         --tw-color-primary-50: #06321d;
         --tw-color-primary-100: #0e5031;
@@ -402,7 +375,6 @@
         --tw-color-primary-900: #e7f8ef;
     }
 
-    /* Notification badge active durumda düzenleme */
     .active .notification-badge {
         background: rgba(255, 255, 255, 0.2) !important;
         color: white !important;
@@ -414,33 +386,32 @@
         color: white !important;
     }
 
-    /* Notification badge basit animasyon */
     .notification-badge {
         animation: pulse 2s infinite;
     }
 
     @@keyframes pulse {
-        0%, 100% {
-            opacity: 1;
-        }
+        0%, 100%
 
-        50% {
-            opacity: 0.8;
-        }
+    {
+        opacity: 1;
     }
 
-    /* Performans için will-change */
+    50% {
+        opacity: 0.8;
+    }
+
+    }
+
     .menu-item {
         will-change: transform;
     }
 
-    /* Transition optimizasyonu */
     .transition-all {
         transition-property: all;
         transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    /* Aktif durumda text ve icon rengini zorla beyaz yap */
     a[aria-current="page"] {
         background: linear-gradient(135deg, #2ba86d, #1f8c58) !important;
         color: white !important;
@@ -454,7 +425,6 @@
             color: white !important;
         }
 
-    /* Blazor NavLink active class override */
     .navbar .active {
         background: linear-gradient(135deg, #2ba86d, #1f8c58) !important;
         color: white !important;

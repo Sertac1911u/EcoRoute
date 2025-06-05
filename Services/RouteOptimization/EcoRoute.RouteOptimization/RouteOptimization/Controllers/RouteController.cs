@@ -6,8 +6,7 @@ using System.Security.Claims;
 
 namespace EcoRoute.RouteOptimization.Controllers
 {
-    // *** DÜZELTME: Route template değiştirildi ***
-    [Route("api/[controller]")]  // "api/routeoptimization/[controller]" yerine "api/[controller]"
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize]
     public class RouteController : ControllerBase
@@ -22,7 +21,7 @@ namespace EcoRoute.RouteOptimization.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "SuperAdmin,Manager")]
+        [Authorize(Roles = "SuperAdmin,Manager,Driver")]
         public async Task<ActionResult<RouteResultDto>> CreateRoute([FromBody] CreateRouteDto dto)
         {
             try
@@ -42,7 +41,7 @@ namespace EcoRoute.RouteOptimization.Controllers
         }
 
         [HttpGet("all")]
-        [Authorize(Roles = "SuperAdmin,Manager")]
+        [Authorize(Roles = "SuperAdmin,Manager,Driver")]
         public async Task<ActionResult<List<RouteResultDto>>> GetAllRoutes()
         {
             try
@@ -150,7 +149,7 @@ namespace EcoRoute.RouteOptimization.Controllers
         }
 
         [HttpPost("{id}/reoptimize")]
-        [Authorize(Roles = "SuperAdmin,Manager")]
+        [Authorize(Roles = "SuperAdmin,Manager,Driver")]
         public async Task<ActionResult<RouteResultDto>> ReoptimizeRoute(Guid id)
         {
             try
@@ -170,7 +169,7 @@ namespace EcoRoute.RouteOptimization.Controllers
         }
 
         [HttpGet("HasActiveRoute/{vehicleId}")]
-        [Authorize(Roles = "SuperAdmin,Manager")]
+        [Authorize(Roles = "SuperAdmin,Manager,Driver")]
         public ActionResult<bool> VehicleHasActiveRoute(string vehicleId)
         {
             try
@@ -186,7 +185,7 @@ namespace EcoRoute.RouteOptimization.Controllers
         }
 
         [HttpGet("HasActiveRouteForDriver/{driverId}")]
-        [Authorize(Roles = "SuperAdmin,Manager")]
+        [Authorize(Roles = "SuperAdmin,Manager,Driver")]
         public ActionResult<bool> DriverHasActiveRoute(string driverId)
         {
             try
@@ -202,7 +201,7 @@ namespace EcoRoute.RouteOptimization.Controllers
         }
 
         [HttpGet("co2-stats")]
-        [Authorize(Roles = "SuperAdmin,Manager")]
+        [Authorize(Roles = "SuperAdmin,Manager,Driver")]
         public async Task<ActionResult<CO2StatsDto>> GetCO2Stats([FromQuery] int days = 30)
         {
             try
@@ -218,7 +217,7 @@ namespace EcoRoute.RouteOptimization.Controllers
         }
 
         [HttpGet("performance-report")]
-        [Authorize(Roles = "SuperAdmin,Manager")]
+        [Authorize(Roles = "SuperAdmin,Manager,Driver")]
         public async Task<ActionResult<List<RoutePerformanceReportDto>>> GetPerformanceReport()
         {
             try
@@ -233,10 +232,9 @@ namespace EcoRoute.RouteOptimization.Controllers
             }
         }
 
-        // *** SIMÜLASYON ENDPOINT'LERİ ***
 
         [HttpPost("{id}/simulate")]
-        [Authorize(Roles = "SuperAdmin,Manager")]
+        [Authorize(Roles = "SuperAdmin,Manager,Driver")]
         public async Task<IActionResult> StartRouteSimulation(Guid id)
         {
             try
@@ -256,7 +254,7 @@ namespace EcoRoute.RouteOptimization.Controllers
         }
 
         [HttpPost("{id}/complete-next-step")]
-        [Authorize(Roles = "SuperAdmin,Manager")]
+        [Authorize(Roles = "SuperAdmin,Manager,Driver")]
         public async Task<ActionResult<SimulationStepResultDto>> CompleteNextStep(Guid id)
         {
             try
@@ -278,7 +276,7 @@ namespace EcoRoute.RouteOptimization.Controllers
         }
 
         [HttpPost("simulate-all-routes")]
-        [Authorize(Roles = "SuperAdmin,Manager")]
+        [Authorize(Roles = "SuperAdmin,Manager,Driver")]
         public async Task<ActionResult> SimulateAllRoutes()
         {
             try

@@ -13,7 +13,6 @@ namespace EcoRoute.RouteOptimization.Services
         private readonly IOptions<GoogleMapsOptions> _googleMapsOptions;
         private readonly RouteDbContext _context;
 
-        // Constants for fuel and CO2 calculations
         private const double FUEL_CONSUMPTION_PER_KM = 0.15; // 100km'de 15L dizel tüketimi
         private const double CO2_PER_LITER_DIESEL = 2.68; // 1L dizel = 2.68 kg CO2
 
@@ -173,14 +172,12 @@ namespace EcoRoute.RouteOptimization.Services
 
             step.IsCompleted = true;
 
-            // Eğer tüm adımlar tamamlandıysa rotayı tamamlanmış olarak güncelle
             if (step.RouteTask.Steps.All(s => s.IsCompleted))
             {
                 step.RouteTask.Status = RouteStatus.Completed;
             }
             else if (step.RouteTask.Status == RouteStatus.Scheduled)
             {
-                // İlk adım tamamlandıktan sonra rotayı aktif hale getir
                 step.RouteTask.Status = RouteStatus.Active;
             }
 
@@ -199,18 +196,14 @@ namespace EcoRoute.RouteOptimization.Services
             if (route.Status == RouteStatus.Completed)
                 throw new Exception("Bu rota zaten tamamlanmış.");
 
-            // Store the original IDs before changing status
             var driverId = route.DriverId;
             var vehicleId = route.VehicleId;
 
-            // Update route status
             route.Status = RouteStatus.Completed;
 
-            // Ensure IDs are preserved
             route.DriverId = driverId ?? string.Empty;
             route.VehicleId = vehicleId ?? string.Empty;
 
-            // Mark all steps as completed
             foreach (var step in route.Steps)
             {
                 step.IsCompleted = true;
@@ -258,7 +251,6 @@ namespace EcoRoute.RouteOptimization.Services
             }).ToList();
         }
 
-        // *** DÜZELTME: CreateOptimizedRouteAsync ***
         public async Task<RouteResultDto> CreateOptimizedRouteAsync(CreateRouteDto dto)
         {
             var wasteBins = await GetWasteBinsByIdsAsync(dto.WasteBinIds);
@@ -277,16 +269,14 @@ namespace EcoRoute.RouteOptimization.Services
             if (vehicleBusy)
                 throw new Exception("Bu araç şu anda başka bir rotada kullanılmakta.");
 
-            // Save original waste bin order before any optimization
             var originalWasteBins = new List<WasteBinDto>(wasteBins);
 
-            // Apply fill-level priority sorting if selected
             bool optimizeWaypoints = dto.OptimizationType == OptimizationType.EnKisaMesafe;
 
             if (dto.OptimizationType == OptimizationType.DolulukOncelikli)
             {
                 wasteBins = wasteBins.OrderByDescending(b => b.FillLevel ?? 0).ToList();
-                optimizeWaypoints = false; // Disable Google's optimization for fill-level priority
+                optimizeWaypoints = false; 
             }
 
             var usedBinIds = await _context.RouteSteps
@@ -299,9 +289,8 @@ namespace EcoRoute.RouteOptimization.Services
                 throw new Exception("Seçilen atık kutularından bazıları başka aktif rotalarda kullanılmakta.");
 
             var origin = $"{FIXED_START_LAT},{FIXED_START_LNG}";
-            var destination = origin; // Return to same point
+            var destination = origin; 
 
-            // Process waypoints (all waste bins)
             var waypoints = wasteBins.Select(b => $"{b.Latitude},{b.Longitude}").ToList();
             var waypointsParam = string.Join("|", waypoints);
 
@@ -333,21 +322,18 @@ namespace EcoRoute.RouteOptimization.Services
             double totalDistance = 0;
             int totalDuration = 0;
 
-            // Google Maps legs'leri topla
             foreach (var leg in legs.EnumerateArray())
             {
                 totalDistance += leg.GetProperty("distance").GetProperty("value").GetDouble(); // metre
                 totalDuration += leg.GetProperty("duration").GetProperty("value").GetInt32();  // saniye
             }
 
-            // Fix for issue #1: Make sure StartTime is not the default value
             var startTime = dto.StartTime;
             if (startTime == DateTime.MinValue)
             {
                 startTime = DateTime.Now;
             }
 
-            // Create RouteTask entity
             var routeTask = new RouteTask
             {
                 Id = Guid.NewGuid(),
@@ -367,11 +353,9 @@ namespace EcoRoute.RouteOptimization.Services
                 OverviewPolyline = overviewPolyline
             };
 
-            // *** DÜZELTME: DOĞRU ADIM OLUŞTURMA ***
             var stepEntities = new List<RouteStep>();
             int order = 0;
 
-            // 1. ADIM: Başlangıç noktası (Depot)
             stepEntities.Add(new RouteStep
             {
                 Id = Guid.NewGuid(),
@@ -381,15 +365,13 @@ namespace EcoRoute.RouteOptimization.Services
                 Longitude = FIXED_START_LNG,
                 Order = order++,
                 IsCompleted = false,
-                WasteBinId = null // Başlangıç noktası için waste bin ID yok
+                WasteBinId = null 
             });
 
-            // 2. Google optimization'dan ordered waste bins oluştur
             var orderedWasteBins = new List<WasteBinDto>();
 
             if (optimizeWaypoints && route.TryGetProperty("waypoint_order", out var waypointOrderElement))
             {
-                // Google'ın optimize ettiği sıra
                 var waypointOrder = waypointOrderElement.EnumerateArray().Select(x => x.GetInt32()).ToList();
                 foreach (var index in waypointOrder)
                 {
@@ -399,11 +381,9 @@ namespace EcoRoute.RouteOptimization.Services
             }
             else
             {
-                // Fill-level priority için önceden sıralanmış liste
                 orderedWasteBins = wasteBins.ToList();
             }
 
-            // 3. WASTE BIN ADIMLARI: Her waste bin için bir adım
             foreach (var wasteBin in orderedWasteBins)
             {
                 stepEntities.Add(new RouteStep
@@ -419,7 +399,6 @@ namespace EcoRoute.RouteOptimization.Services
                 });
             }
 
-            // 4. SON ADIM: Bitiş noktası (Depot'a dönüş)
             stepEntities.Add(new RouteStep
             {
                 Id = Guid.NewGuid(),
@@ -429,15 +408,13 @@ namespace EcoRoute.RouteOptimization.Services
                 Longitude = FIXED_START_LNG,
                 Order = order++,
                 IsCompleted = false,
-                WasteBinId = null // Bitiş noktası için waste bin ID yok
+                WasteBinId = null
             });
 
-            // Veritabanına kaydet
             await _context.RouteTasks.AddAsync(routeTask);
             await _context.RouteSteps.AddRangeAsync(stepEntities);
             await _context.SaveChangesAsync();
 
-            // KONTROL: Oluşturulan adımları logla
             Console.WriteLine($"[ROUTE CREATION] RouteId: {routeTask.Id}");
             Console.WriteLine($"[ROUTE CREATION] Total steps: {stepEntities.Count}");
             Console.WriteLine($"[ROUTE CREATION] WasteBin count: {orderedWasteBins.Count}");
@@ -446,7 +423,6 @@ namespace EcoRoute.RouteOptimization.Services
                 Console.WriteLine($"[STEP] Order: {step.Order}, Address: {step.Address}, WasteBinId: {step.WasteBinId}");
             }
 
-            // Return DTO
             return new RouteResultDto
             {
                 Id = routeTask.Id,
@@ -546,7 +522,7 @@ namespace EcoRoute.RouteOptimization.Services
             double startLng = lastCompletedStep?.Longitude ?? FIXED_START_LNG;
 
             var origin = $"{startLat},{startLng}";
-            var destination = $"{FIXED_START_LAT},{FIXED_START_LNG}"; // Always return to depot
+            var destination = $"{FIXED_START_LAT},{FIXED_START_LNG}"; 
 
             var waypoints = wasteBins.Select(b => $"{b.Latitude},{b.Longitude}").ToList();
             var waypointsParam = string.Join("|", waypoints);
@@ -612,7 +588,6 @@ namespace EcoRoute.RouteOptimization.Services
             var newSteps = new List<RouteStep>();
             int order = completedSteps.Count;
 
-            // Add waste bin steps
             foreach (var bin in orderedWasteBins)
             {
                 var newStep = new RouteStep
@@ -631,7 +606,6 @@ namespace EcoRoute.RouteOptimization.Services
                 newSteps.Add(newStep);
             }
 
-            // Add final return step (if not already completed)
             var hasReturnStep = completedSteps.Any(s => !s.WasteBinId.HasValue && s.Order > 0);
             if (!hasReturnStep)
             {
@@ -755,7 +729,6 @@ namespace EcoRoute.RouteOptimization.Services
             {
                 var completedSteps = r.Steps.Count(s => s.IsCompleted);
 
-                // İstersen EfficiencyScore’u kendi formülünle hesapla
                 double efficiency = r.TotalDistanceKm == 0
                     ? 0
                     : Math.Round(r.TotalDistanceKm / Math.Max(1, completedSteps), 2);
@@ -778,7 +751,6 @@ namespace EcoRoute.RouteOptimization.Services
             .ToList();
         }
 
-        // *** SIMÜLASYON METODLARI ***
         public async Task StartRouteSimulationAsync(Guid routeId)
         {
             var route = await _context.RouteTasks
@@ -791,12 +763,10 @@ namespace EcoRoute.RouteOptimization.Services
             if (route.Status == RouteStatus.Completed)
                 throw new Exception("Bu rota zaten tamamlanmış.");
 
-            // Rotayı aktif duruma getir
             route.Status = RouteStatus.Active;
             await _context.SaveChangesAsync();
         }
 
-        // *** DÜZELTME: CompleteNextStepAsync ***
         public async Task<SimulationStepResultDto> CompleteNextStepAsync(Guid routeId)
         {
             var route = await _context.RouteTasks
@@ -809,26 +779,21 @@ namespace EcoRoute.RouteOptimization.Services
             if (route.Status == RouteStatus.Completed)
                 throw new Exception("Bu rota zaten tamamlanmış.");
 
-            // Tamamlanmamış ilk adımı bul
             var nextStep = route.Steps.FirstOrDefault(s => !s.IsCompleted);
 
             if (nextStep == null)
                 throw new Exception("Tamamlanacak adım bulunamadı.");
 
-            // Debug log
             Console.WriteLine($"[COMPLETE STEP] RouteId: {routeId}, StepId: {nextStep.Id}, Order: {nextStep.Order}, Address: {nextStep.Address}");
 
-            // Adımı tamamla
             nextStep.IsCompleted = true;
 
-            // İstatistikleri hesapla
             var totalSteps = route.Steps.Count;
             var completedSteps = route.Steps.Count(s => s.IsCompleted);
             var progressPercentage = (double)completedSteps / totalSteps * 100;
 
             Console.WriteLine($"[PROGRESS] Completed: {completedSteps}/{totalSteps} ({progressPercentage:F1}%)");
 
-            // Rota tamamen tamamlandı mı kontrol et
             bool isRouteCompleted = completedSteps == totalSteps;
 
             if (isRouteCompleted)
@@ -838,14 +803,12 @@ namespace EcoRoute.RouteOptimization.Services
             }
             else if (route.Status == RouteStatus.Scheduled)
             {
-                // İlk adım tamamlandıktan sonra rotayı aktif hale getir
                 route.Status = RouteStatus.Active;
                 Console.WriteLine($"[ROUTE ACTIVATED] RouteId: {routeId}");
             }
 
             await _context.SaveChangesAsync();
 
-            // Sonraki adımı bul (varsa)
             var nextStepAfterCompletion = route.Steps.FirstOrDefault(s => !s.IsCompleted);
 
             return new SimulationStepResultDto
@@ -865,7 +828,6 @@ namespace EcoRoute.RouteOptimization.Services
 
         public async Task<int> SimulateAllRoutesAsync()
         {
-            // Tamamlanmamış rotaları al
             var incompleteRoutes = await _context.RouteTasks
                 .Include(r => r.Steps)
                 .Where(r => r.Status != RouteStatus.Completed)
@@ -877,25 +839,21 @@ namespace EcoRoute.RouteOptimization.Services
             {
                 try
                 {
-                    // Her rotayı tam simüle et (tüm adımları tamamla)
                     var incompleteSteps = route.Steps.Where(s => !s.IsCompleted).ToList();
 
                     if (incompleteSteps.Any())
                     {
-                        // Tüm adımları tamamla
                         foreach (var step in incompleteSteps)
                         {
                             step.IsCompleted = true;
                         }
 
-                        // Rota durumunu tamamlandı olarak işaretle
                         route.Status = RouteStatus.Completed;
                         simulatedCount++;
                     }
                 }
                 catch (Exception ex)
                 {
-                    // Hata durumunda o rota atlanır, diğerlerine devam edilir
                     Console.Error.WriteLine($"Rota {route.Id} simüle edilirken hata: {ex.Message}");
                 }
             }

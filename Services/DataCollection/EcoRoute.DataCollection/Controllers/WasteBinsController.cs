@@ -70,7 +70,6 @@ namespace EcoRoute.DataCollection.Controllers
             }
         }
 
-        // Service-to-service endpoint - geçici olarak anonymous
         [HttpGet("selected")]
         public async Task<IActionResult> GetWasteBinsByIds([FromQuery] List<Guid> id)
         {

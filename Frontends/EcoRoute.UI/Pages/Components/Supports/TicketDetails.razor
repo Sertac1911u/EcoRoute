@@ -25,9 +25,7 @@
         </div>
 
         <div class="flex flex-col md:flex-row h-[75vh]">
-            <!-- Chat/Messages Area -->
             <div class="w-full md:w-3/5 p-5 overflow-y-auto flex flex-col">
-                <!-- Original Message -->
                 <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-xl mb-4 animate-slideIn">
                     <div class="flex items-start mb-2">
                         <div class="flex-shrink-0 mr-3">
@@ -56,7 +54,6 @@
                     }
                 </div>
 
-                <!-- Responses -->
                 @if (Ticket.Responses != null && Ticket.Responses.Any())
                 {
                     <div class="space-y-4">
@@ -108,10 +105,8 @@
                 <div class="flex-grow"></div>
             </div>
 
-            <!-- Reply and Actions Area -->
             <div class="w-full md:w-2/5 bg-gray-50 dark:bg-gray-700 p-5 overflow-y-auto border-t md:border-t-0 md:border-l border-gray-200 dark:border-gray-600">
                 <div class="flex flex-col h-full">
-                    <!-- Ticket Information -->
                     <div class="mb-4">
                         <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Destek Talebi Bilgileri</h4>
                         <div class="grid grid-cols-2 gap-3">
@@ -136,13 +131,11 @@
 
                   
 
-                    <!-- Reply Form -->
                     @if (Ticket.Status != "Kapatıldı")
                     {
                         <div class="flex-grow">
                             <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Yanıt Gönder</h4>
 
-                            @* Check if user is allowed to reply *@
                             @if (CanReply())
                             {
                                 <div class="space-y-3">
@@ -171,7 +164,7 @@
                                         }
                                         else
                                         {
-                                            <div></div> <!-- Empty div for spacing -->
+                                            <div></div> 
                                         }
 
                                         <button @onclick="SendReply" disabled="@isSubmittingReply" class="px-4 py-2 bg-primary-500 hover:bg-primary-600 rounded-lg text-white transition-all duration-300 transform hover:scale-105 shadow-md">
@@ -269,7 +262,6 @@
     [Parameter] public EventCallback<MultipartFormDataContent> OnSubmitReply { get; set; }
     [Parameter] public EventCallback<Guid> OnCloseTicket { get; set; }
 
-    // IMPORTANT: We need to store the ticket ID separately because it's not included in the GetByIdSupportTicketDto
     [Parameter] public Guid TicketId { get; set; }
 
     private string replyMessage = "";
@@ -295,10 +287,8 @@
 
     private bool CanReply()
     {
-        // Admins and managers can always reply
         if (IsAdmin || IsManager) return true;
 
-        // For drivers, check if last message was from staff or if there are no responses yet
         if (IsDriver)
         {
             if (Ticket.Responses == null || !Ticket.Responses.Any())
@@ -377,8 +367,7 @@
     {
         uploadedFile = e.File;
 
-        // Validate file size
-        if (uploadedFile.Size > 10485760) // 10MB
+        if (uploadedFile.Size > 10485760)
         {
             ToastService.ShowWarning("Dosya boyutu 10MB'dan büyük olamaz. Lütfen daha küçük bir dosya seçin.");
             uploadedFile = null;
@@ -387,7 +376,6 @@
 
     private async Task CloseTicketClicked()
     {
-        // Make sure we have a valid ID
         if (TicketId != Guid.Empty)
         {
             await OnCloseTicket.InvokeAsync(TicketId);
@@ -414,28 +402,24 @@
         {
             var content = new MultipartFormDataContent();
 
-            // CRITICAL FIX: Use the TicketId parameter that's passed in, not Ticket.Id which doesn't exist
             content.Add(new StringContent(TicketId.ToString()), "SupportTicketId");
             content.Add(new StringContent(replyMessage), "Message");
             content.Add(new StringContent((IsAdmin || IsManager).ToString()), "IsStaff");
 
-            // Add user details
             content.Add(new StringContent(userId ?? ""), "UserId");
             content.Add(new StringContent(userName ?? ""), "UserName");
             content.Add(new StringContent(firstName ?? ""), "FirstName");
             content.Add(new StringContent(lastName ?? ""), "LastName");
             content.Add(new StringContent(role ?? ""), "Role");
 
-            // Add file if present
             if (uploadedFile != null)
             {
-                var fileContent = new StreamContent(uploadedFile.OpenReadStream(maxAllowedSize: 10485760)); // 10MB max
+                var fileContent = new StreamContent(uploadedFile.OpenReadStream(maxAllowedSize: 10485760));
                 content.Add(fileContent, "Attachment", uploadedFile.Name);
             }
 
             await OnSubmitReply.InvokeAsync(content);
 
-            // Clear form
             replyMessage = "";
             uploadedFile = null;
         }

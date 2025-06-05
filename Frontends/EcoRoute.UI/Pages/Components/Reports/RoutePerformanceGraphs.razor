@@ -5,7 +5,6 @@
 @implements IAsyncDisposable
 
 <div class="space-y-6 animate-fadeIn">
-    <!-- Statistik Özet Kartları -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
@@ -54,7 +53,6 @@
         </div>
     </div>
 
-    <!-- Rota Verimlilik Çizgi Grafiği -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -81,7 +79,6 @@
         </div>
     </div>
 
-    <!-- Sürücü Bazlı Verimlilik Radar Grafiği -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -107,7 +104,6 @@
         </div>
     </div>
 
-    <!-- Mesafe ve Süre Karşılaştırması -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -160,7 +156,6 @@
         }
         catch (OperationCanceledException)
         {
-            // İptal edildi
         }
         catch (Exception ex)
         {
@@ -371,7 +366,6 @@
             if (window.ChartHelper) {
                 return window.ChartHelper.safeRenderChart('routePerfChart', chartConfig, '_routePerfChartInstance');
             } else {
-                // Fallback
                 const canvas = document.getElementById('routePerfChart');
                 if (!canvas || !window.Chart) return false;
 

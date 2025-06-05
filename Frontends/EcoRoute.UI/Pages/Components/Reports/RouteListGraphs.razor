@@ -4,7 +4,6 @@
 @implements IAsyncDisposable
 
 <div class="space-y-6 animate-fadeIn">
-    <!-- İstatistik Kartları -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
@@ -51,7 +50,6 @@
         </div>
     </div>
 
-    <!-- Durum Dağılımı ve Zaman Grafiği -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-4">
@@ -71,7 +69,6 @@
             </div>
         </div>
 
-        <!-- Rota Oluşturma Zaman Grafiği -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -99,7 +96,6 @@
         </div>
     </div>
 
-    <!-- Sürücü Bazlı Rota Sayısı -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -125,7 +121,6 @@
         </div>
     </div>
 
-    <!-- CO2 ve Mesafe Oranı -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -176,7 +171,6 @@
         }
         catch (OperationCanceledException)
         {
-            // İptal edildi
         }
         catch (Exception ex)
         {
@@ -240,7 +234,6 @@
 
         if (Timeframe == "weekly")
         {
-            // Son 7 günün verileri
             for (int i = 6; i >= 0; i--)
             {
                 var date = now.AddDays(-i);
@@ -250,7 +243,6 @@
         }
         else
         {
-            // Son 30 günün verileri
             for (int i = 29; i >= 0; i--)
             {
                 var date = now.AddDays(-i);
@@ -488,7 +480,6 @@
         try {
             await (window.ChartHelper?.waitForElement('driverRouteChart') ?? Promise.resolve());
 
-            // Create a color palette for the bars
             const colors = counts.map((count, index) => {
                 const hue = (index * 20) % 360;
                 return `hsla(${hue}, 75%, 60%, 0.7)`;
@@ -566,7 +557,6 @@
         try {
             await (window.ChartHelper?.waitForElement('co2DistanceChart') ?? Promise.resolve());
 
-            // Create scatter plot data points
             const data = [];
             for (let i = 0; i < distances.length; i++) {
                 data.push({

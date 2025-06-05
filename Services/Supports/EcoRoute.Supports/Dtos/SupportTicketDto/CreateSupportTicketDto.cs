@@ -8,7 +8,6 @@
         public string? Category { get; set; }
         public IFormFile? Attachment { get; set; }
 
-        // Kullanıcı bilgileri
         public string? UserId { get; set; }
         public string? UserName { get; set; }
     }

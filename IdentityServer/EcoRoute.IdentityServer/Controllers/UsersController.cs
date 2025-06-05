@@ -32,10 +32,8 @@ namespace EcoRoute.IdentityServer.Controllers
 
             foreach (var user in users)
             {
-                // Rol burada çekiliyor
                 var roles = await _userManager.GetRolesAsync(user);
 
-                // Eğer kullanıcı SuperAdmin ise listeye ekleme
                 if (roles.Contains("SuperAdmin"))
                     continue;
 
@@ -95,7 +93,6 @@ namespace EcoRoute.IdentityServer.Controllers
             if (!updateResult.Succeeded)
                 return BadRequest(updateResult.Errors);
 
-            // 🟨 ROL güncelle
             if (!string.IsNullOrWhiteSpace(model.Role))
             {
                 var currentRoles = await _userManager.GetRolesAsync(user);
@@ -103,10 +100,8 @@ namespace EcoRoute.IdentityServer.Controllers
                 await _userManager.AddToRoleAsync(user, model.Role);
             }
 
-            // 🔐 ŞİFRE güncelle (yeni şifre girildiyse)
             if (!string.IsNullOrWhiteSpace(model.Password))
             {
-                // Kullanıcının önceki şifresi varsa kaldır
                 var token = await _userManager.GeneratePasswordResetTokenAsync(user);
                 var passwordResult = await _userManager.ResetPasswordAsync(user, token, model.Password);
 
@@ -177,7 +172,7 @@ namespace EcoRoute.IdentityServer.Controllers
             foreach (var user in users)
             {
                 var roles = await _userManager.GetRolesAsync(user);
-                var role = roles.FirstOrDefault(); // çoklu rol desteği yoksa tekini al
+                var role = roles.FirstOrDefault(); 
 
                 result.Add(new UserActivityReportDto
                 {
@@ -185,7 +180,7 @@ namespace EcoRoute.IdentityServer.Controllers
                     UserName = user.UserName,
                     Role = role,
                     LastLoginDate = user.LastLoginDate,
-                    OperationCount = 0 // bu veriyi bir yerden topluyorsan buraya koyabilirsin
+                    OperationCount = 0 
                 });
             }
 

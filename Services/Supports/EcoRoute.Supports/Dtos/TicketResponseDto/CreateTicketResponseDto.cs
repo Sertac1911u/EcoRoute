@@ -7,7 +7,6 @@
         public bool IsStaff { get; set; } = false;
         public IFormFile? Attachment { get; set; }
 
-        // Kullanıcı bilgileri
         public string? UserId { get; set; }
         public string? UserName { get; set; }
     }

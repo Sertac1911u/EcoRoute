@@ -8,12 +8,10 @@ namespace EcoRoute.Notifications.Hubs
     [Authorize]
     public class NotificationHub : Hub
     {
-        // NotificationHub.cs içinde
         public async Task JoinGroup(string userId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, userId);
 
-            // Kullanıcının rollerini al
             var user = Context.User;
             if (user.Identity.IsAuthenticated)
             {
@@ -34,7 +32,6 @@ namespace EcoRoute.Notifications.Hubs
         {
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, userId);
 
-            // Rol gruplarından da çıkış yap
             var user = Context.User;
             if (user.Identity.IsAuthenticated)
             {

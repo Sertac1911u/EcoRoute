@@ -43,91 +43,91 @@ namespace EcoRoute.Settings.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("aaa09375-9210-4c3e-8a10-a470605aadef"),
+                            Id = new Guid("20101f65-5a0d-43a3-9192-f48f048cd748"),
                             Name = "Avatar 1",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Can"
                         },
                         new
                         {
-                            Id = new Guid("c6c1d684-6a48-440f-8295-28ea05aaea0c"),
+                            Id = new Guid("6dd374fc-ef36-488c-93b5-e84b0f10e3bb"),
                             Name = "Avatar 2",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Olivia"
                         },
                         new
                         {
-                            Id = new Guid("6a761e65-69cc-4495-ba89-a5b8b9d20090"),
+                            Id = new Guid("bfab2c85-221b-4be2-b5e2-776249bd5d53"),
                             Name = "Avatar 3",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Atlas"
                         },
                         new
                         {
-                            Id = new Guid("bdd6e1bc-a4d3-4b14-9c7e-2db63b3f3414"),
+                            Id = new Guid("4f485da0-2331-454b-98b8-3e8cf5af9fd1"),
                             Name = "Avatar 4",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Deniz"
                         },
                         new
                         {
-                            Id = new Guid("6cce009f-c386-4e07-a861-db3ef77ab823"),
+                            Id = new Guid("f1d0748d-07f6-41d5-be33-a23856ae6e75"),
                             Name = "Avatar 5",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Nova"
                         },
                         new
                         {
-                            Id = new Guid("452023df-7041-49a6-b734-5126425b0df1"),
+                            Id = new Guid("c62abf20-405e-4adc-9372-bb8b7f302e20"),
                             Name = "Avatar 6",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Emir"
                         },
                         new
                         {
-                            Id = new Guid("9ef68935-8de3-4738-b6e1-079bc2fd8dc4"),
+                            Id = new Guid("c0327eb9-af32-4f79-82b1-a60e02b67323"),
                             Name = "Avatar 7",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Jasper"
                         },
                         new
                         {
-                            Id = new Guid("aafd1b74-1c4b-4fdf-a059-4803351e48ea"),
+                            Id = new Guid("d7ea1dd4-49ee-4b20-b1dd-15b6602aada2"),
                             Name = "Avatar 8",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Lina"
                         },
                         new
                         {
-                            Id = new Guid("996fe3c8-2dbd-4df4-92b1-20b66b95c58f"),
+                            Id = new Guid("ae0bda01-f887-4803-8bb5-2527b5bf2675"),
                             Name = "Avatar 9",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Arda"
                         },
                         new
                         {
-                            Id = new Guid("5d4e5768-ca9e-4bcf-8f55-372448562cfb"),
+                            Id = new Guid("a8d597cf-673b-459b-8c85-561886d54cce"),
                             Name = "Avatar 10",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Felix"
                         },
                         new
                         {
-                            Id = new Guid("c3a2e93c-d9f6-4f7f-9f3f-2ed508943d4b"),
+                            Id = new Guid("62d4523f-3b8c-46bd-bb2e-7bc32b20b9af"),
                             Name = "Avatar 11",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Zeynep"
                         },
                         new
                         {
-                            Id = new Guid("f3c2c6ab-ed9d-47c4-bb8d-bf1346ba2d37"),
+                            Id = new Guid("e084c1bf-589e-40d8-b230-bec3cb15c62e"),
                             Name = "Avatar 12",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Leo"
                         },
                         new
                         {
-                            Id = new Guid("ac9f3a06-0b84-4947-8ad9-c9eacac72ebf"),
+                            Id = new Guid("d273d50a-c072-41a9-9890-a90377db7e94"),
                             Name = "Avatar 13",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Selin"
                         },
                         new
                         {
-                            Id = new Guid("5cdff67f-c74f-4f5d-a5a3-8759ba4f0408"),
+                            Id = new Guid("72311dd4-6ee7-414c-a6ea-2db9e38aaeb3"),
                             Name = "Avatar 14",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Riley"
                         },
                         new
                         {
-                            Id = new Guid("b5854e59-78df-439e-9d63-1502b8383628"),
+                            Id = new Guid("6e9d8329-afdf-41c5-b4f1-0b132a4ae1f8"),
                             Name = "Avatar 15",
                             Url = "https://api.dicebear.com/9.x/shapes/svg?seed=Ayaz"
                         });
@@ -366,73 +366,73 @@ namespace EcoRoute.Settings.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("9f9a823f-2b81-4985-939a-bd22ac1d3c91"),
+                            Id = new Guid("6ba60634-3355-45f6-b41c-35acab2690bd"),
                             Name = "Orijinal",
                             Value = "#2ba86d"
                         },
                         new
                         {
-                            Id = new Guid("9dce0c0f-af8c-4137-84ba-be874c630e4b"),
+                            Id = new Guid("bb5e61aa-ecd6-4c9b-8dde-e31141754128"),
                             Name = "Mavi",
                             Value = "#3B82F6"
                         },
                         new
                         {
-                            Id = new Guid("641f071d-884f-416d-bb65-070a39c0fe8d"),
+                            Id = new Guid("8db7d2ab-469d-4102-8d46-9c7c44e96c69"),
                             Name = "Kırmızı",
                             Value = "#EF4444"
                         },
                         new
                         {
-                            Id = new Guid("cba6b11a-4151-4447-a546-4097d96ea327"),
+                            Id = new Guid("40ff0e18-2cf0-40ed-bd84-a5f2102a8a25"),
                             Name = "Mor",
                             Value = "#8B5CF6"
                         },
                         new
                         {
-                            Id = new Guid("ab027dcb-da39-408e-9eae-44641a93b63e"),
+                            Id = new Guid("c111b3a5-785d-4b1a-8c5f-a9d610a7b77f"),
                             Name = "Pembe",
                             Value = "#EC4899"
                         },
                         new
                         {
-                            Id = new Guid("3de0037a-bfdd-4369-aca4-2efeb25d83ff"),
+                            Id = new Guid("a1feda7f-6cb1-44dc-a0c2-13ecf1a58b22"),
                             Name = "Sarı",
                             Value = "#F59E0B"
                         },
                         new
                         {
-                            Id = new Guid("fa15e5fd-2656-418d-8351-3c07b444136f"),
+                            Id = new Guid("00c75b32-92ac-472d-9ee9-6e62f1b322d4"),
                             Name = "Turkuaz",
                             Value = "#06B6D4"
                         },
                         new
                         {
-                            Id = new Guid("033f8fb5-270e-4621-a78a-b9377d66bb04"),
+                            Id = new Guid("fc01088f-e866-4c4d-8cbb-1e8f01f35f39"),
                             Name = "Indigo",
                             Value = "#6366F1"
                         },
                         new
                         {
-                            Id = new Guid("5034ce99-ce6c-4cb6-84a8-54026b359d78"),
+                            Id = new Guid("46de22db-6ac2-498d-9ac6-c163b687618d"),
                             Name = "Lime",
                             Value = "#84CC16"
                         },
                         new
                         {
-                            Id = new Guid("afdb6015-7e65-4ee6-b1de-100a2a6d76d7"),
+                            Id = new Guid("06f59e97-0966-4b25-a42b-eee16ab7b443"),
                             Name = "Gri",
                             Value = "#6B7280"
                         },
                         new
                         {
-                            Id = new Guid("4b1f0e59-b2e9-4320-8f90-4715a20f1b58"),
+                            Id = new Guid("cfe022ca-f0e7-43f9-aaa0-a5607ba18381"),
                             Name = "Turuncu",
                             Value = "#F97316"
                         },
                         new
                         {
-                            Id = new Guid("539847fb-39b3-496c-875d-76b8f5e632f3"),
+                            Id = new Guid("5b70c0a0-f29d-44bc-8445-f889b7e53d42"),
                             Name = "Teal",
                             Value = "#14B8A6"
                         });

@@ -20,7 +20,6 @@ namespace EcoRoute.IdentityServer.Tools
                 new Claim("Username", user.Username ?? string.Empty)
             };
 
-            // Rolleri ekle ve her role göre scope'ları belirle
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
@@ -54,7 +53,8 @@ namespace EcoRoute.IdentityServer.Tools
 
                         break;
                     case "Driver":
-                    case "Customer": 
+                    case "Customer":
+                        claims.Add(new Claim("scope", "DataCollectionFullPermission"));
                         claims.Add(new Claim("scope", "DataCollectionReadPermission"));
                         claims.Add(new Claim("scope", "DataProcessingReadPermission"));
                         claims.Add(new Claim("scope", "RouteOptimizationFullPermission"));

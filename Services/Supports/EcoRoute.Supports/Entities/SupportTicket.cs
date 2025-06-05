@@ -11,11 +11,9 @@
         public DateTime CreateDate { get; set; } = DateTime.Now;
         public string? AttachmentPath { get; set; }
 
-        // Kullanıcı bilgileri
         public string? UserId { get; set; }
         public string? UserName { get; set; }
 
-        // Navigation properties
         public virtual ICollection<TicketResponse> Responses { get; set; } = new List<TicketResponse>();
     }
 }

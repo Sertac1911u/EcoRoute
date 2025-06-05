@@ -4,9 +4,7 @@
 @implements IAsyncDisposable
 
 <div class="space-y-6 animate-fadeIn">
-    <!-- İstatistik Kartları -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <!-- Toplam Kullanıcı -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
                 <div class="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center mr-3">
@@ -18,7 +16,6 @@
             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">aktif hesap</span>
         </div>
 
-        <!-- Son 24 Saat Giriş -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
                 <div class="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mr-3">
@@ -30,7 +27,6 @@
             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">aktif kullanıcı</span>
         </div>
 
-        <!-- En Çok Rota Yapan -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
                 <div class="w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mr-3">
@@ -42,7 +38,6 @@
             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">@(TopDriverByRoutes?.RouteCount ?? 0) rota</span>
         </div>
 
-        <!-- En Uzun Mesafe -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
                 <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
@@ -54,7 +49,6 @@
             <span class="text-xs text-gray-500 dark:text-gray-400 mt-1">@($"{TopDriverByDistance?.TotalDistance:N1}") km</span>
         </div>
 
-        <!-- Ortalama Rota/Sürücü -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700 flex flex-col justify-between h-32">
             <div class="flex items-center mb-2">
                 <div class="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mr-3">
@@ -67,9 +61,7 @@
         </div>
     </div>
 
-    <!-- İlk Satır Grafikler -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- En Aktif Sürücüler (Rota Sayısı) -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -88,7 +80,6 @@
             </div>
         </div>
 
-        <!-- Sürücü Mesafe Performansı -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -108,9 +99,7 @@
         </div>
     </div>
 
-    <!-- İkinci Satır Grafikler -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Kullanıcı Rolleri Dağılımı -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -129,7 +118,6 @@
             </div>
         </div>
 
-        <!-- En Son Rota Oluşturanlar -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -169,7 +157,6 @@
         </div>
     </div>
 
-    <!-- Son Giriş Aktivite Zaman Çizelgesi -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border border-gray-100 dark:border-slate-700">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-slate-800 dark:text-white flex items-center">
@@ -266,7 +253,6 @@
         }
         catch (OperationCanceledException)
         {
-            // İptal edildi
         }
         catch (Exception ex)
         {

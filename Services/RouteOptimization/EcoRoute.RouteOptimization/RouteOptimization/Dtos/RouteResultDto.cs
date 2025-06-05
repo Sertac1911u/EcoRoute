@@ -20,7 +20,6 @@ namespace EcoRoute.RouteOptimization.Dtos
         public string? Notes { get; set; }
         public List<RouteStepDto> Steps { get; set; } = new List<RouteStepDto>();
 
-        // Computed properties
         public int TotalSteps => Steps?.Count ?? 0;
         public int CompletedSteps => Steps?.Count(s => s.IsCompleted) ?? 0;
         public int RemainingSteps => TotalSteps - CompletedSteps;

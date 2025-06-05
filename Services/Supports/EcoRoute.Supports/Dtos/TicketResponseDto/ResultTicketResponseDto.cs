@@ -8,7 +8,6 @@
         public bool IsStaff { get; set; }
         public string? AttachmentPath { get; set; }
 
-        // Kullanıcı bilgileri
         public string? UserId { get; set; }
         public string? UserName { get; set; }
 

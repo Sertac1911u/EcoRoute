@@ -35,7 +35,7 @@
 
 @code {
     [Parameter] public string Message { get; set; } = "İşlem tamamlandı";
-    [Parameter] public string Type { get; set; } = "success"; // success, error, info, warning
+    [Parameter] public string Type { get; set; } = "success";
     [Parameter] public bool Visible { get; set; } = true;
 
     private string Title => Type switch

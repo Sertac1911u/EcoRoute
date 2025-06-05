@@ -5,13 +5,11 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Config dosyalarını oku (ocelot.json + appsettings.json)
 builder.Configuration
     .AddJsonFile("ocelot.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
     .AddEnvironmentVariables();
 
-// Important: Add CORS policy before other services
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(builder =>
@@ -22,11 +20,10 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Authentication (JWT)
 builder.Services.AddAuthentication("OcelotAuthenticationScheme")
     .AddJwtBearer("OcelotAuthenticationScheme", options =>
     {
-        options.Authority = builder.Configuration["IdentityServerUrl"]; // Örnek: http://localhost:5001
+        options.Authority = builder.Configuration["IdentityServerUrl"]; 
         options.RequireHttpsMetadata = false;
 
         options.TokenValidationParameters = new TokenValidationParameters
@@ -42,7 +39,6 @@ builder.Services.AddAuthentication("OcelotAuthenticationScheme")
             ClockSkew = TimeSpan.Zero
         };
 
-        // SignalR can send the token via query string when WebSockets are used
         options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -59,25 +55,19 @@ builder.Services.AddAuthentication("OcelotAuthenticationScheme")
         };
     });
 
-// Ocelot middleware ekle
 builder.Services.AddOcelot(builder.Configuration);
 
 var app = builder.Build();
 
-// IMPORTANT: Order of middleware matters!
 
-// Add CORS first
 app.UseCors();
 
-// Basic middlewares
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Diagnostic endpoint (optional)
 app.MapGet("/", () => "EcoRoute Gateway Running...");
 
-// Special handling for SignalR preflight requests
 app.Use(async (context, next) =>
 {
     if (context.Request.Method == "OPTIONS" && context.Request.Path.StartsWithSegments("/notificationHub"))
@@ -93,7 +83,6 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// Ocelot at the end
 await app.UseOcelot();
 
 app.Run();

@@ -3,7 +3,6 @@
 <tr class="bg-gray-50 dark:bg-gray-700 animate-expandRow">
     <td colspan="7" class="px-6 py-6">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Genel Bilgiler -->
             <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
@@ -41,67 +40,108 @@
                 </div>
             </div>
 
-            <!-- Doluluk Durumu -->
-            <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="!text-lg font-semibold text-gray-800 dark:text-white flex items-center">
-                        <i class="fas fa-chart-line mr-2 text-amber-500"></i>
-                        Doluluk Durumu
-                    </h3>
+            <div class="space-y-4">
+                <!-- Mevcut Doluluk Durumu -->
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="!text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <i class="fas fa-chart-line mr-2 text-amber-500"></i>
+                            Doluluk Durumu
+                        </h3>
+                    </div>
+
+                    <div class="flex flex-col items-center justify-center space-y-3 py-2">
+                        <div class="relative w-32 h-32">
+                            <svg class="w-full h-full" viewBox="0 0 36 36">
+                                <path class="stroke-current text-gray-200 dark:text-gray-700" fill="none" stroke-width="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="@GetStrokeFillColor(Bin.FillLevel) stroke-current" fill="none" stroke-width="3.8" stroke-linecap="round"
+                                      stroke-dasharray="@((Bin.FillLevel ?? 0) * 100 / 100), 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831">
+                                    <animate attributeName="stroke-dasharray"
+                                             from="0, 100"
+                                             to="@((Bin.FillLevel ?? 0) * 100 / 100), 100"
+                                             dur="1s"
+                                             fill="freeze"
+                                             calcMode="spline"
+                                             keyTimes="0; 1"
+                                             keySplines="0.42 0 0.58 1" />
+                                </path>
+                                <text x="18" y="20.5" class="fill-current font-bold text-gray-700 dark:text-gray-200" text-anchor="middle" font-size="@(Bin.FillLevel >= 100 ? "6" : "7")">@(Bin.FillLevel ?? 0)%</text>
+                            </svg>
+                        </div>
+
+                        <div class="text-center">
+                            <span class="inline-block px-3 py-1 rounded-full @GetFillStatusBadge(Bin.FillLevel)">
+                                @GetFillStatusText(Bin.FillLevel)
+                            </span>
+                        </div>
+
+                        <div class="mt-2 space-y-2">
+                            <div class="flex justify-between items-center border-t border-gray-200 dark:border-gray-700 pt-2">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini dolma tarihi:</span>
+                                <span class="font-medium text-gray-700 dark:text-gray-300">@GetEstimatedFillDate(Bin.FillLevel)</span>
+                            </div>
+
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">3 Gün Sonra Doluluk:</span>
+                                <span class="font-medium @GetTextColorByFillLevel(GetEstimatedFillRate(Bin.FillLevel, 3))">
+                                    %@GetEstimatedFillRate(Bin.FillLevel, 3).ToString("0")
+                                </span>
+                            </div>
+
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">7 Gün Sonra Doluluk:</span>
+                                <span class="font-medium @GetTextColorByFillLevel(GetEstimatedFillRate(Bin.FillLevel, 7))">
+                                    %@GetEstimatedFillRate(Bin.FillLevel, 7).ToString("0")
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            Son güncelleme: @Bin.UpdatedAt.ToString("dd.MM.yyyy HH:mm")
+                        </div>
+                    </div>
                 </div>
 
-                <div class="flex flex-col items-center justify-center space-y-3 py-2">
-                    <div class="relative w-32 h-32">
-                        <svg class="w-full h-full" viewBox="0 0 36 36">
-                            <path class="stroke-current text-gray-200 dark:text-gray-700" fill="none" stroke-width="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                            <path class="@GetStrokeFillColor(Bin.FillLevel) stroke-current" fill="none" stroke-width="3.8" stroke-linecap="round"
-                                  stroke-dasharray="@((Bin.FillLevel ?? 0) * 100 / 100), 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831">
-                                <animate attributeName="stroke-dasharray"
-                                         from="0, 100"
-                                         to="@((Bin.FillLevel ?? 0) * 100 / 100), 100"
-                                         dur="1s"
-                                         fill="freeze"
-                                         calcMode="spline"
-                                         keyTimes="0; 1"
-                                         keySplines="0.42 0 0.58 1" />
-                            </path>
-                            <text x="18" y="20.5" class="fill-current font-bold text-gray-700 dark:text-gray-200" text-anchor="middle" font-size="@(Bin.FillLevel >= 100 ? "6" : "7")">@(Bin.FillLevel ?? 0)%</text>
-                        </svg>
+                <!-- Tahmini Doluluk Durumu -->
+                <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 border-l-4 border-purple-500">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="!text-lg font-semibold text-gray-800 dark:text-white flex items-center">
+                            <i class="fas fa-crystal-ball mr-2 text-purple-500"></i>
+                            Tahmini Doluluk
+                        </h3>
                     </div>
 
-                    <div class="text-center">
-                        <span class="inline-block px-3 py-1 rounded-full @GetFillStatusBadge(Bin.FillLevel)">
-                            @GetFillStatusText(Bin.FillLevel)
-                        </span>
-                    </div>
-
-                    <div class="mt-2 space-y-2">
-                        <div class="flex justify-between items-center border-t border-gray-200 dark:border-gray-700 pt-2">
-                            <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini dolma tarihi:</span>
-                            <span class="font-medium text-gray-700 dark:text-gray-300">@GetEstimatedFillDate(Bin.FillLevel)</span>
+                    <div class="flex flex-col items-center justify-center space-y-3 py-2">
+                        <div class="relative w-28 h-28">
+                            <svg class="w-full h-full" viewBox="0 0 36 36">
+                                <path class="stroke-current text-gray-200 dark:text-gray-700" fill="none" stroke-width="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path class="@GetStrokeFillColor(Bin.estimatedFillLevel) stroke-current" fill="none" stroke-width="3.8" stroke-linecap="round"
+                                      stroke-dasharray="@((Bin.estimatedFillLevel ?? 0) * 100 / 100), 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831">
+                                    <animate attributeName="stroke-dasharray"
+                                             from="0, 100"
+                                             to="@((Bin.estimatedFillLevel ?? 0) * 100 / 100), 100"
+                                             dur="1.5s"
+                                             fill="freeze"
+                                             calcMode="spline"
+                                             keyTimes="0; 1"
+                                             keySplines="0.42 0 0.58 1" />
+                                </path>
+                                <text x="18" y="20.5" class="fill-current font-bold text-gray-700 dark:text-gray-200" text-anchor="middle" font-size="@(Bin.estimatedFillLevel >= 100 ? "5" : "6")">@(Bin.estimatedFillLevel ?? 0)%</text>
+                            </svg>
                         </div>
 
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-500 dark:text-gray-400">3 Gün Sonra Doluluk:</span>
-                            <span class="font-medium @GetTextColorByFillLevel(GetEstimatedFillRate(Bin.FillLevel, 3))">
-                                %@GetEstimatedFillRate(Bin.FillLevel, 3).ToString("0")
+                        <div class="text-center">
+                            <span class="inline-block px-3 py-1 rounded-full @GetEstimatedFillStatusBadge(Bin.estimatedFillLevel)">
+                                @GetEstimatedFillStatusText(Bin.estimatedFillLevel)
                             </span>
                         </div>
 
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-500 dark:text-gray-400">7 Gün Sonra Doluluk:</span>
-                            <span class="font-medium @GetTextColorByFillLevel(GetEstimatedFillRate(Bin.FillLevel, 7))">
-                                %@GetEstimatedFillRate(Bin.FillLevel, 7).ToString("0")
-                            </span>
+                        <div class="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+                            AI Tahmin Algoritması
                         </div>
-                    </div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                        Son güncelleme: @Bin.UpdatedAt.ToString("dd.MM.yyyy HH:mm")
                     </div>
                 </div>
             </div>
 
-            <!-- Işık Sensörleri -->
             <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
@@ -138,7 +178,6 @@
                                                 }
                                             </div>
                                             <div class="flex items-center space-x-1">
-                                                <!-- Active Status Toggle -->
                                                 <button class="@(sensor.IsActive ? "text-green-500 hover:text-green-700" : "text-gray-400 hover:text-green-500") text-sm tooltip-container disabled:opacity-50 disabled:cursor-not-allowed"
                                                         @onclick="() => OnToggleSensorStatus.InvokeAsync(new Tuple<Guid, bool, bool>(sensor.SensorId, sensor.IsActive, sensor.IsWorking))"
                                                         disabled="@isLoading">
@@ -153,7 +192,6 @@
                                                     <span class="tooltip">@(sensor.IsActive ? "Pasif Yap" : "Aktif Yap")</span>
                                                 </button>
 
-                                                <!-- Working Status Toggle -->
                                                 @if (sensor.IsActive)
                                                 {
                                                     <button class="@(sensor.IsWorking ? "text-blue-500 hover:text-blue-700" : "text-orange-500 hover:text-blue-500") text-sm tooltip-container disabled:opacity-50 disabled:cursor-not-allowed"
@@ -222,14 +260,12 @@
 
 @code {
     [Parameter] public ResultWasteBinDto Bin { get; set; }
-    [Parameter] public HashSet<Guid> LoadingSensorIds { get; set; } = new HashSet<Guid>(); // YENİ PARAMETRE
+    [Parameter] public HashSet<Guid> LoadingSensorIds { get; set; } = new HashSet<Guid>();
 
-    // Sensor management events
     [Parameter] public EventCallback<Tuple<Guid, bool, bool>> OnToggleSensorStatus { get; set; }
     [Parameter] public EventCallback<Tuple<Guid, bool, bool>> OnToggleSensorWorking { get; set; }
 
-    // Belirli bir tarihteki tahmini doluluk oranı
-    private const double DAILY_FILL_RATE = 5.0; // Günlük ortalama doluluk artışı yüzdesi
+    private const double DAILY_FILL_RATE = 5.0;
 
     private double GetEstimatedFillRate(double? currentFillLevel, int daysFromNow)
     {
@@ -240,7 +276,6 @@
         return Math.Min(estimatedFill, 100);
     }
 
-    // Tahmini dolma tarihi
     private string GetEstimatedFillDate(double? fillLevel)
     {
         if (!fillLevel.HasValue || fillLevel >= 100)
@@ -251,6 +286,33 @@
         DateTime estimatedDate = DateTime.Now.AddDays(daysUntilFull);
 
         return estimatedDate.ToString("dd.MM.yyyy");
+    }
+
+    // Tahmini doluluk için yeni metodlar
+    private string GetEstimatedFillStatusBadge(double? estimatedFillLevel)
+    {
+        if (!estimatedFillLevel.HasValue) return "bg-gray-100 text-gray-800";
+
+        return estimatedFillLevel switch
+        {
+            >= 90 => "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
+            >= 70 => "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400",
+            >= 50 => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
+            _ => "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
+        };
+    }
+
+    private string GetEstimatedFillStatusText(double? estimatedFillLevel)
+    {
+        if (!estimatedFillLevel.HasValue) return "Tahmin Yok";
+
+        return estimatedFillLevel switch
+        {
+            >= 90 => "Yakında Dolu",
+            >= 70 => "Artış Trendi",
+            >= 50 => "Orta Tahmin",
+            _ => "Düşük Risk"
+        };
     }
 
     private string GetDeviceStatusTextColor(string status)

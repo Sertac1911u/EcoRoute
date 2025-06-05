@@ -6,18 +6,12 @@
 </div>
 
 @code {
-    /// <summary>
-    /// Gösterilecek yükleniyor mesajı
-    /// </summary>
+
     [Parameter] public string Message { get; set; } = "Yükleniyor...";
 
-    /// <summary>
-    /// Tam sayfa yükleniyor gösterimi mi yoksa içerik içinde mi
-    /// </summary>
+
     [Parameter] public bool FullPage { get; set; } = true;
 
-    /// <summary>
-    /// Özel CSS sınıfları
-    /// </summary>
+
     [Parameter] public string CssClass { get; set; } = "";
 }

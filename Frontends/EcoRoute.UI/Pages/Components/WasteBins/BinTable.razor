@@ -1,6 +1,5 @@
 ﻿@using EcoRoute.DtoLayer.WasteBinDtos
 
-<!-- Tablo Bölümü -->
 <div class="p-6">
     <div class="overflow-x-auto">
         <table class="min-w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
@@ -135,14 +134,12 @@
                                 </span>
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap">
-                                <!-- Doluluk Çubuğu -->
                                 <div class="relative w-full h-5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden bg-stripes mb-2">
                                     <div class="@GetFillLevelColor(bin.FillLevel) h-full transition-all duration-500 ease-in-out flex items-center justify-center"
                                          style="width: @(bin.FillLevel ?? 0)%">
                                         <span class="text-xs font-bold text-white">@(bin.FillLevel ?? 0)%</span>
                                     </div>
                                 </div>
-                                <!-- Sensör Bilgisi -->
                                 <div class="flex items-center justify-between text-xs">
                                     <div class="flex items-center">
                                         <i class="fas fa-lightbulb text-yellow-500 mr-1"></i>
@@ -249,7 +246,6 @@
     [Parameter] public int StartPage { get; set; }
     [Parameter] public int EndPage { get; set; }
 
-    // Loading states - YENİ PARAMETRELER
     [Parameter] public bool IsDeleting { get; set; }
     [Parameter] public HashSet<Guid> LoadingSensorIds { get; set; } = new HashSet<Guid>();
 
@@ -262,7 +258,6 @@
     [Parameter] public EventCallback<Tuple<Guid, bool, bool>> OnToggleSensorStatus { get; set; }
     [Parameter] public EventCallback<Tuple<Guid, bool, bool>> OnToggleSensorWorking { get; set; }
 
-    // Helper methods for UI styling
     private string GetDeviceStatusColor(string status)
     {
         return status switch

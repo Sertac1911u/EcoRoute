@@ -1,7 +1,6 @@
 ﻿@using EcoRoute.DtoLayer.RouteOptimizationDtos
 
 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <!-- Genel Bilgiler -->
     <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
@@ -43,7 +42,6 @@
         </div>
     </div>
 
-    <!-- Rota Özeti -->
     <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
@@ -74,7 +72,6 @@
         </div>
     </div>
 
-    <!-- İlerleme Durumu ve Simülasyon Kontrolleri -->
     <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center">
@@ -84,7 +81,6 @@
         </div>
 
         <div class="space-y-4">
-            <!-- Progress Circle -->
             <div class="flex justify-center">
                 @{
                     double progressPercentage = Route.Steps.Any()
@@ -102,7 +98,6 @@
                 </div>
             </div>
 
-            <!-- Progress Bar -->
             <div>
                 <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2">
                     <div class="@GetProgressColor(progressPercentage) h-2.5 rounded-full transition-all duration-500" style="width: @progressPercentage%" id="progress-bar-@Route.Id"></div>
@@ -114,7 +109,6 @@
                 </div>
             </div>
 
-            <!-- Simülasyon Kontrolleri -->
             @if (Route.Status != RouteStatus.Completed)
             {
                 <div id="simulation-controls-@Route.Id">
@@ -152,7 +146,6 @@
                     else
                     {
                         <div class="space-y-3">
-                            <!-- Hız Kontrolü -->
                             <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
                                 <div class="flex justify-between items-center mb-2">
                                     <span class="text-sm font-medium text-blue-800 dark:text-blue-200">Simülasyon Hızı</span>
@@ -169,7 +162,6 @@
                                 </div>
                             </div>
 
-                            <!-- Kontrol Butonları -->
                             <div class="flex space-x-2">
                                 <button class="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                                         @onclick:stopPropagation="true"
@@ -199,7 +191,6 @@
                                 </button>
                             </div>
 
-                            <!-- Simülasyon Durumu -->
                             <div class="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
                                 <div class="flex items-center justify-center mb-2">
                                     <i class="fas fa-spinner fa-spin text-green-500 mr-2"></i>
@@ -223,7 +214,6 @@
     </div>
 </div>
 
-<!-- Adımlar Listesi -->
 <div class="mt-6">
     <h4 class="font-semibold text-gray-800 dark:text-white mb-3 flex items-center">
         <i class="fas fa-list-check mr-2 text-primary-500"></i> Rota Adımları
@@ -261,7 +251,6 @@
 </div>
 
 <style>
-    /* Animate pulse for processing steps */
     @@keyframes pulse {
         0%, 100%
 
@@ -279,7 +268,6 @@
         animation: pulse 1.5s ease-in-out infinite;
     }
 
-    /* Improved step status indicators */
     .step-status-indicator {
         display: flex;
         align-items: center;

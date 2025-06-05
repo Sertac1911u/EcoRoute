@@ -14,7 +14,6 @@ namespace EcoRoute.DataCollection.Mapping
             CreateMap<Sensor, UpdateSensorDto>().ReverseMap();
             CreateMap<Sensor, GetByIdSensorDto>().ReverseMap();
 
-            // WasteBin mappings - Entity'deki WasteBinId'yi DTO'daki Id'ye map et
             CreateMap<WasteBin, ResultWasteBinDto>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.WasteBinId))
                 .ReverseMap()
@@ -24,7 +23,6 @@ namespace EcoRoute.DataCollection.Mapping
 
             CreateMap<WasteBin, UpdateWasteBinDto>().ReverseMap();
 
-            // GetByIdWasteBinDto mapping'ini de düzelt
             CreateMap<WasteBin, GetByIdWasteBinDto>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.WasteBinId))
                 .ReverseMap()

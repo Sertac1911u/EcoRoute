@@ -21,7 +21,7 @@ namespace EcoRoute.Notifications.Services
                   IMapper mapper,
                   IHubContext<NotificationHub> hubContext,
                   IHttpContextAccessor httpContextAccessor,
-                  ILogger<NotificationService> logger) // Eklenmesi gereken parametre
+                  ILogger<NotificationService> logger) 
         {
             _context = context;
             _mapper = mapper;
@@ -31,14 +31,12 @@ namespace EcoRoute.Notifications.Services
         }
         public async Task<ResultNotificationDto> CreateAsync(CreateNotificationDto dto)
         {
-            // 1) Veritabanına ekle
             var notificationEntity = _mapper.Map<Notification>(dto);
             _context.Notifications.Add(notificationEntity);
             await _context.SaveChangesAsync();
 
             var result = _mapper.Map<ResultNotificationDto>(notificationEntity);
 
-            // LOG için ekleyin:
             _logger.LogInformation(
                 "Publishing notification. UserId={UserId}, UserRole={UserRole}",
                 dto.UserId, dto.UserRole);
@@ -55,7 +53,7 @@ namespace EcoRoute.Notifications.Services
                 var roles = dto.UserRole
                     .Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(r => r.Trim())
-                    .Distinct(); // ARTIK FİLTRE YOK
+                    .Distinct(); 
 
                 foreach (var role in roles)
                 {
@@ -67,7 +65,6 @@ namespace EcoRoute.Notifications.Services
 
 
 
-            // 3) Hiçbir hedef yoksa AllUsers
             if (string.IsNullOrWhiteSpace(dto.UserId)
              && string.IsNullOrWhiteSpace(dto.UserRole))
             {
@@ -82,7 +79,6 @@ namespace EcoRoute.Notifications.Services
 
         public async Task<List<ResultNotificationDto>> GetAllForUserAsync(string userId)
         {
-            // Kullanıcı rollerini al
             var userRoles = new List<string>();
 
             if (_httpContextAccessor.HttpContext != null)
@@ -94,13 +90,10 @@ namespace EcoRoute.Notifications.Services
                     .ToList();
             }
 
-            // Filtreleme mantığı
             var notifications = await _context.Notifications
                 .Where(n =>
-                    // UserId ile gönderilen bildirimler (sadece belirli kullanıcı için)
                     n.UserId == userId ||
 
-                    // Rolüne göre gönderilen bildirimler
                     (!string.IsNullOrEmpty(n.UserRole) &&
                     userRoles.Any(role => n.UserRole.Contains(role))))
                 .OrderByDescending(n => n.CreatedDate)
@@ -111,7 +104,6 @@ namespace EcoRoute.Notifications.Services
 
         public async Task<List<ResultNotificationDto>> GetUnreadForUserAsync(string userId)
         {
-            // Kullanıcı rollerini al
             var userRoles = new List<string>();
 
             if (_httpContextAccessor.HttpContext != null)
@@ -125,9 +117,7 @@ namespace EcoRoute.Notifications.Services
 
             var notifications = await _context.Notifications
                 .Where(n =>
-                    // UserId ile gönderilen bildirimleri göster
                     (n.UserId == userId && !n.IsRead) ||
-                    // Kullanıcının rollerine göre gönderilen bildirimleri göster
                     (!string.IsNullOrEmpty(n.UserRole) &&
                      userRoles.Any(role => n.UserRole.Contains(role)) &&
                      !n.IsRead))
@@ -151,7 +141,6 @@ namespace EcoRoute.Notifications.Services
 
         public async Task<bool> MarkAllAsReadAsync(string userId)
         {
-            // Get user roles
             var userRoles = new List<string>();
             if (_httpContextAccessor.HttpContext != null)
             {
@@ -162,12 +151,9 @@ namespace EcoRoute.Notifications.Services
                     .ToList();
             }
 
-            // Find all notifications for this user (matching ID or roles)
             var notifications = await _context.Notifications
                 .Where(n =>
-                    // Direct user notifications
                     (n.UserId == userId && !n.IsRead) ||
-                    // Role-based notifications
                     (!string.IsNullOrEmpty(n.UserRole) &&
                      userRoles.Any(role => n.UserRole.Contains(role)) &&
                      !n.IsRead))
@@ -187,7 +173,6 @@ namespace EcoRoute.Notifications.Services
         }
         public async Task<int> GetUnreadCountAsync(string userId)
         {
-            // Kullanıcı rollerini al
             var userRoles = new List<string>();
 
             if (_httpContextAccessor.HttpContext != null)
@@ -201,9 +186,7 @@ namespace EcoRoute.Notifications.Services
 
             return await _context.Notifications
                 .CountAsync(n =>
-                    // UserId ile gönderilen bildirimler
                     (n.UserId == userId && !n.IsRead) ||
-                    // Kullanıcının rollerine göre gönderilen bildirimler
                     (!string.IsNullOrEmpty(n.UserRole) &&
                      userRoles.Any(role => n.UserRole.Contains(role)) &&
                      !n.IsRead));

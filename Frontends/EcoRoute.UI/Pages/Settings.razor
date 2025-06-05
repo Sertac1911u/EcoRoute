@@ -92,7 +92,6 @@
     {
         if (firstRender && !isLoading)
         {
-            // Apply the current font if available
             if (settings.FontTypeId != null)
             {
                 var selectedFont = fontTypes.FirstOrDefault(f => f.Id == settings.FontTypeId);
@@ -134,11 +133,9 @@
         selectedColorShades = color.Shades;
         await JS.InvokeVoidAsync("themeManager.applyTheme", color.Value, color.Shades);
         
-        // Auto-save when color is selected
         await SaveSettingsOnChange();
     }
     
-    // Lists for font types, languages, and date formats
     private List<FontTypeDto> fontTypes = new();
     private List<LanguageDto> languages = new();
     private List<DateFormatDto> dateFormats = new();
@@ -150,7 +147,6 @@
 
         await localStorage.SetItemAsync("avatarUrl", url);
         
-        // Auto-save when avatar is changed
         await SaveSettingsOnChange();
     }
 
@@ -177,7 +173,6 @@
             await JS.InvokeVoidAsync("eval", $"document.documentElement.classList.{(settings.DarkMode ? "add" : "remove")}('dark')");
             await localStorage.SetItemAsync("avatarUrl", settings.AvatarUrl);
             
-            // Show toast notification briefly
             showSavedToast = true;
             StateHasChanged();
             await Task.Delay(1500);
@@ -203,7 +198,7 @@
             LocationTracking = dto.LocationTracking,
             SessionTimeout = dto.SessionTimeout,
             ActiveSessionLimit = dto.ActiveSessionLimit,
-                AvatarUrl = dto.AvatarUrl ?? "https://api.dicebear.com/9.x/shapes/svg?seed=TEST",
+            AvatarUrl = dto.AvatarUrl ?? "https://api.dicebear.com/9.x/shapes/svg?seed=TEST",
             EmailNotifications = dto.EmailNotifications,
             SmsNotifications = dto.SmsNotifications,
             PushNotifications = dto.PushNotifications,
@@ -245,7 +240,6 @@
             await localStorage.SetItemAsync("darkMode", "false");
             toastService.ShowSuccess("Ayarlar varsayılan değerlere döndürüldü.");
             
-            // Reload settings after reset
             await LoadUserSettings();
         }
         else
@@ -286,7 +280,6 @@
         public string MapboxToken { get; set; }
         public string WeatherApiKey { get; set; }
         
-        // Additional properties to match API model
         public Guid? FontTypeId { get; set; }
         public string FontTypeName { get; set; }
         public string FontTypeCss { get; set; }

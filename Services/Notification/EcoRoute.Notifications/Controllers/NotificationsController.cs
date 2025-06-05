@@ -21,7 +21,7 @@ namespace EcoRoute.Notifications.Controllers
         }
 
         [HttpPost]
-        [AllowAnonymous] // Yetkilendirme gerektirmeyen metot
+        [AllowAnonymous] 
         public async Task<ActionResult<ResultNotificationDto>> Create([FromBody] CreateNotificationDto dto)
         {
             var result = await _notificationService.CreateAsync(dto);
@@ -72,7 +72,6 @@ namespace EcoRoute.Notifications.Controllers
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var success = await _notificationService.MarkAllAsReadAsync(userId);
-            // success false olsa bile 204 No Content dönün
             return NoContent();
         }
     }

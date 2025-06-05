@@ -27,32 +27,26 @@ namespace EcoRoute.RouteOptimization.Entities
         [Required]
         public RouteStatus Status { get; set; } = RouteStatus.Scheduled;
 
-        // Distance and performance metrics
         public double TotalDistanceKm { get; set; }
         public int EstimatedDurationMin { get; set; }
         public double EstimatedFuelL { get; set; }
         public double EstimatedCO2Kg { get; set; }
 
-        // Google Maps polyline for route visualization
         [StringLength(10000)]
         public string? OverviewPolyline { get; set; }
 
-        // Route metadata
         [StringLength(200)]
         public string? RouteName { get; set; }
 
         [StringLength(1000)]
         public string? Notes { get; set; }
 
-        // Audit fields
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
 
-        // Navigation properties
         public ICollection<RouteStep> Steps { get; set; } = new List<RouteStep>();
 
-        // Computed properties
         public int TotalSteps => Steps?.Count ?? 0;
         public int CompletedSteps => Steps?.Count(s => s.IsCompleted) ?? 0;
         public int RemainingSteps => TotalSteps - CompletedSteps;
@@ -62,14 +56,12 @@ namespace EcoRoute.RouteOptimization.Entities
         public bool IsActive => Status == RouteStatus.Active;
         public bool IsScheduled => Status == RouteStatus.Scheduled;
 
-        // Helper methods
         public void MarkAsCompleted()
         {
             Status = RouteStatus.Completed;
             CompletedAt = DateTime.UtcNow;
             UpdatedAt = DateTime.UtcNow;
 
-            // Mark all steps as completed
             foreach (var step in Steps)
             {
                 step.IsCompleted = true;
@@ -119,14 +111,12 @@ namespace EcoRoute.RouteOptimization.Entities
                 .ToList() ?? new List<RouteStep>();
         }
 
-        // For debugging and logging
         public override string ToString()
         {
             return $"RouteTask(Id={Id}, Status={Status}, Steps={TotalSteps}, Progress={ProgressPercentage:F1}%, Driver={DriverId}, Vehicle={VehicleId})";
         }
     }
 
-    // Enums
     public enum RouteStatus
     {
         Scheduled = 0,
