@@ -35,7 +35,7 @@ This project was shaped based on the insights of the following academic works:
 
 ## 🔍 System Architecture
 
-![microservices (1)](https://github.com/user-attachments/assets/8efa827e-3e75-4f6c-bfe5-ef21467e699a)
+> ![microservices (1)](https://github.com/user-attachments/assets/8efa827e-3e75-4f6c-bfe5-ef21467e699a)
 
 
 - Raspberry Pi devices transmit fill level data to the central server via HTTP.
