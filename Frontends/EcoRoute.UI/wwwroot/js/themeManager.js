@@ -1,13 +1,9 @@
-﻿// wwwroot/js/themeManager.js
-
+﻿
 window.themeManager = {
-    // Update CSS variables for the theme
     updateCssVariables: function (colorValue, colorShades) {
         try {
-            // Set the primary color variable
             document.documentElement.style.setProperty('--color-primary', colorValue);
 
-            // If we have shade variants, set them too
             if (colorShades) {
                 if (colorShades['300']) {
                     document.documentElement.style.setProperty('--color-primary-light', colorShades['300']);
@@ -26,12 +22,9 @@ window.themeManager = {
         }
     },
 
-    // Reset theme to default
     resetToDefault: function () {
-        // Varsayılan ana renk (EcoRoute'nin orijinal yeşil rengi)
         const defaultColor = '#2ba86d';
 
-        // Varsayılan gölgeler
         const defaultShades = {
             '50': '#e7f8ef',
             '100': '#c5edd8',
@@ -45,35 +38,27 @@ window.themeManager = {
             '900': '#06321d'
         };
 
-        // CSS değişkenlerini güncelle
         this.updateCssVariables(defaultColor, defaultShades);
 
-        // Tailwind temayı uygula
         this.applyTailwindTheme(defaultColor, defaultShades);
 
-        // localStorage'daki tema ayarlarını sıfırla
         this.saveThemePreference(defaultColor, defaultShades);
 
         return true;
     },
 
-    // Apply a Tailwind primary color override 
     applyTailwindTheme: function (colorValue, colorShades) {
         try {
-            // Create a style tag for dynamic Tailwind color overrides
             const styleId = 'dynamic-theme-styles';
             let styleTag = document.getElementById(styleId);
 
-            // Remove existing style tag if it exists
             if (styleTag) {
                 styleTag.remove();
             }
 
-            // Create new style tag
             styleTag = document.createElement('style');
             styleTag.id = styleId;
 
-            // Build CSS for various color classes
             let cssContent = `
                 .bg-primary-500 { background-color: ${colorValue} !important; }
                 .text-primary-500 { color: ${colorValue} !important; }
@@ -82,7 +67,6 @@ window.themeManager = {
                 .hover\\:bg-primary-600:hover { background-color: ${colorShades && colorShades['600'] ? colorShades['600'] : colorValue} !important; }
             `;
 
-            // Add all shade variants if available
             if (colorShades) {
                 Object.keys(colorShades).forEach(shade => {
                     const color = colorShades[shade];
@@ -105,7 +89,6 @@ window.themeManager = {
         }
     },
 
-    // Save theme preferences to localStorage
     saveThemePreference: function (colorValue, colorShades) {
         try {
             const themeData = {
@@ -121,14 +104,12 @@ window.themeManager = {
         }
     },
 
-    // Apply the complete theme (CSS variables, Tailwind overrides, and save preference)
     applyTheme: function (colorValue, colorShades) {
         this.updateCssVariables(colorValue, colorShades);
         this.applyTailwindTheme(colorValue, colorShades);
         this.saveThemePreference(colorValue, colorShades);
     },
 
-    // Load and apply saved theme on page load
     loadSavedTheme: function () {
         try {
             const savedTheme = localStorage.getItem('themeColors');
@@ -145,7 +126,6 @@ window.themeManager = {
     }
 };
 
-// Initialize theme from localStorage on page load
 document.addEventListener('DOMContentLoaded', function () {
     window.themeManager.loadSavedTheme();
 });

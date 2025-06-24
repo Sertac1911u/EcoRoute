@@ -37,13 +37,11 @@
     opacity: 1;
 }
 
-/* Progress Bar Styles */
 .bg-stripes {
     background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.15) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.15) 75%, transparent 75%, transparent);
     background-size: 1rem 1rem;
 }
 
-/* Row Expansion Animation */
 @keyframes expandRow {
     from {
         opacity: 0;
@@ -64,7 +62,6 @@
     animation: expandRow 0.3s ease-out forwards;
 }
 
-/* Modal Animation */
 @keyframes modalShow {
     from {
         opacity: 0;
@@ -81,7 +78,6 @@
     animation: modalShow 0.2s ease-out forwards;
 }
 
-/* Slider Thumb Styles */
 input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
@@ -108,7 +104,6 @@ input[type=range]::-moz-range-thumb {
     z-index: 2;
 }
 
-/* Map Button Styles */
 .map-button {
     transition: all 0.2s ease;
 }
@@ -122,7 +117,6 @@ input[type=range]::-moz-range-thumb {
         transform: translateY(0);
     }
 
-/* Map InfoWindow Styles */
 :global(.gm-style .gm-style-iw-c) {
     padding: 0 !important;
     border-radius: 8px !important;
@@ -133,7 +127,6 @@ input[type=range]::-moz-range-thumb {
     overflow: hidden !important;
 }
 
-/* Card hover effects */
 .detail-card {
     transition: all 0.3s ease;
     transform-origin: center;
@@ -145,7 +138,6 @@ input[type=range]::-moz-range-thumb {
         box-shadow: 0 10px 20px rgba(0,0,0,0.1);
     }
 
-/* Pulse animation for critical elements */
 @keyframes pulse {
     0% {
         opacity: 1;
@@ -164,7 +156,6 @@ input[type=range]::-moz-range-thumb {
     animation: pulse 1.5s infinite;
 }
 
-/* Marker/Pin pulsing effect */
 @keyframes markerPulse {
     0% {
         transform: scale(1);
@@ -186,7 +177,6 @@ input[type=range]::-moz-range-thumb {
     animation: markerPulse 1.5s infinite;
 }
 
-/* Sidebar Animation */
 .sidebar-active #main-map {
     width: calc(100% - 400px);
     transition: width 0.4s ease;
@@ -196,7 +186,6 @@ input[type=range]::-moz-range-thumb {
     right: 0;
 }
 
-/* Loading Animation */
 @keyframes spin {
     0% {
         transform: rotate(0deg);
@@ -211,7 +200,6 @@ input[type=range]::-moz-range-thumb {
     animation: spin 1s linear infinite;
 }
 
-/* Hover Effects */
 .transition-all {
     transition: all 0.3s ease;
 }
@@ -224,14 +212,12 @@ input[type=range]::-moz-range-thumb {
     transition: transform 0.2s ease;
 }
 
-/* Focus States */
 .focus-ring:focus {
     outline: 2px solid transparent;
     outline-offset: 2px;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
 }
 
-/* Custom Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
 }
@@ -250,7 +236,6 @@ input[type=range]::-moz-range-thumb {
         background: #94a3b8;
     }
 
-/* Dark mode scrollbar */
 .dark .custom-scrollbar::-webkit-scrollbar-track {
     background: #374151;
 }
@@ -263,38 +248,32 @@ input[type=range]::-moz-range-thumb {
         background: #9ca3af;
     }
 
-/* Radio Button Animations */
 input[type="radio"]:checked + label {
     transform: scale(1.02);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Checkbox Animations */
 input[type="checkbox"]:checked {
     transform: scale(1.1);
     transition: transform 0.1s ease;
 }
 
-/* Table Row Hover */
 .table-row-hover:hover {
     background-color: rgba(59, 130, 246, 0.05);
     transform: translateX(2px);
     transition: all 0.2s ease;
 }
 
-/* Button Press Effect */
 .btn-press:active {
     transform: scale(0.98);
     transition: transform 0.1s ease;
 }
 
-/* Gradient Border */
 .gradient-border {
     background: linear-gradient(white, white) padding-box, linear-gradient(45deg, #3b82f6, #8b5cf6) border-box;
     border: 2px solid transparent;
 }
 
-/* Glassmorphism Effect */
 .glass-effect {
     background: rgba(255, 255, 255, 0.25);
     backdrop-filter: blur(10px);
@@ -306,7 +285,6 @@ input[type="checkbox"]:checked {
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Shine Effect */
 @keyframes shine {
     0% {
         background-position: -200% 0;
@@ -323,7 +301,6 @@ input[type="checkbox"]:checked {
     animation: shine 2s infinite;
 }
 
-/* Floating Animation */
 @keyframes float {
     0%, 100% {
         transform: translateY(0px);
@@ -338,7 +315,6 @@ input[type="checkbox"]:checked {
     animation: float 3s ease-in-out infinite;
 }
 
-/* Ripple Effect */
 .ripple {
     position: relative;
     overflow: hidden;

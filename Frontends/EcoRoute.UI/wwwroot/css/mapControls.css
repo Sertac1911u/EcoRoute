@@ -1,9 +1,8 @@
-﻿/* Custom Map Controls (3D Toggle, User Location) */
-.custom-map-control-button {
+﻿.custom-map-control-button {
     border-radius: 6px;
     box-shadow: 0 3px 8px rgba(0,0,0,.2);
     cursor: pointer;
-    font-family: 'Inter', -apple-system, sans-serif; /* Ensure font matches UI */
+    font-family: 'Inter', -apple-system, sans-serif;
     font-size: 14px;
     font-weight: 500;
     margin: 10px;
@@ -18,9 +17,9 @@
 
 .toggle-view-button {
     padding: 10px 16px;
-    background-color: #fff; /* Light mode default */
-    border: 2px solid #fff; /* Light mode default */
-    color: #555; /* Light mode default */
+    background-color: #fff; 
+    border: 2px solid #fff; 
+    color: #555; 
 }
 
     .toggle-view-button i {
@@ -35,52 +34,48 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #fff; /* Light mode default */
-    border: 2px solid #fff; /* Light mode default */
-    color: #666; /* Light mode default */
+    background-color: #fff; 
+    border: 2px solid #fff; 
+    color: #666; 
 }
 
     .location-button i {
         font-size: 16px;
     }
 
-/* Dark mode styles for custom map controls */
-/* These will be applied by JS when dark mode is detected */
 .dark .toggle-view-button {
-    background-color: #1F2937; /* gray-800 */
-    border: 2px solid #374151; /* gray-700 */
-    color: #E5E7EB; /* gray-200 */
+    background-color: #1F2937; 
+    border: 2px solid #374151; 
+    color: #E5E7EB; 
 }
 
     .dark .toggle-view-button:hover {
-        background-color: #374151; /* gray-700 */
+        background-color: #374151; 
     }
 
 .dark .location-button {
-    background-color: #1F2937; /* gray-800 */
-    border: 2px solid #374151; /* gray-700 */
-    color: #E5E7EB; /* gray-200 */
+    background-color: #1F2937; 
+    border: 2px solid #374151; 
+    color: #E5E7EB; 
 }
 
     .dark .location-button:hover {
-        background-color: #374151; /* gray-700 */
+        background-color: #374151; 
     }
 
 
-/* Map InfoWindow Styles */
-/* :global is not needed here as this is a global CSS file */
-.gm-style .gm-style-iw-c { /* Outer container */
+.gm-style .gm-style-iw-c { 
     padding: 0 !important;
     border-radius: 8px !important;
     box-shadow: 0 6px 16px rgba(0,0,0,0.15) !important;
-    max-width: none !important; /* Allow content to define width */
+    max-width: none !important; 
 }
 
-.gm-style .gm-style-iw-d { /* Inner content container */
-    overflow: hidden !important; /* Crucial for custom styling */
+.gm-style .gm-style-iw-d { 
+    overflow: hidden !important; 
     padding: 0 !important;
 }
 
-.gm-style .gm-style-iw-t::after { /* Arrow */
-    display: none; /* Often good to hide default arrow for fully custom popups */
+.gm-style .gm-style-iw-t::after { 
+    display: none; 
 }

@@ -1,12 +1,7 @@
-﻿// waste-bin-markers.js - EcoRoute Waste Bin Markers
-// This file contains additional functionality for waste bin markers
-// Most functionality is now implemented in googlemaps.js
-
-// Utility function for calculating distance between two points
+﻿
 window.wasteBinMarkers = {
-    // Calculate distance between two coordinates (haversine formula)
     calculateDistance: function (lat1, lon1, lat2, lon2) {
-        const R = 6371; // Radius of the earth in km
+        const R = 6371; 
         const dLat = this.deg2rad(lat2 - lat1);
         const dLon = this.deg2rad(lon2 - lon1);
         const a =
@@ -14,16 +9,14 @@ window.wasteBinMarkers = {
             Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
             Math.sin(dLon / 2) * Math.sin(dLon / 2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c; // Distance in km
+        const distance = R * c; 
         return distance;
     },
 
-    // Convert degrees to radians
     deg2rad: function (deg) {
         return deg * (Math.PI / 180);
     },
 
-    // Find nearest bins to a location
     findNearestBins: function (bins, lat, lng, maxDistance = 2) {
         if (!bins || !bins.length) return [];
 
@@ -40,7 +33,6 @@ window.wasteBinMarkers = {
         });
     },
 
-    // Get marker icon based on bin status and fill level
     getMarkerIcon: function (bin) {
         let markerColor = 'blue';
 
@@ -69,9 +61,7 @@ window.wasteBinMarkers = {
         };
     },
 
-    // Format bin info for display
     formatBinInfo: function (bin) {
-        // Format date
         const lastUpdate = new Date(bin.UpdatedAt).toLocaleString('tr-TR', {
             day: '2-digit',
             month: '2-digit',
@@ -80,12 +70,10 @@ window.wasteBinMarkers = {
             minute: '2-digit'
         });
 
-        // Get status text
         const statusText = bin.DeviceStatus === 'Active' ? 'Aktif' :
             bin.DeviceStatus === 'Inactive' ? 'Pasif' :
                 bin.DeviceStatus === 'Maintenance' ? 'Bakımda' : 'Arızalı';
 
-        // Get fill level text
         const fillLevelText = bin.FillLevel >= 90 ? 'Acil Boşaltılmalı' :
             bin.FillLevel >= 70 ? 'Yakında Boşaltılmalı' :
                 bin.FillLevel >= 50 ? 'Orta Doluluk' : 'Boşaltma Gerekmiyor';
@@ -102,25 +90,17 @@ window.wasteBinMarkers = {
     }
 };
 
-// When the page loads, establish connection with the googleMapsInterop
 document.addEventListener('DOMContentLoaded', function () {
     console.log('Waste bin markers module loaded');
 
-    // Redirect method calls to the googleMapsInterop namespace
-    // This allows for compatibility with any existing code
     if (window.googleMapsInterop) {
-        // Extend googleMapsInterop with methods from wasteBinMarkers
         Object.assign(window.googleMapsInterop, {
-            // Calculate distance between coordinates
             calculateDistance: window.wasteBinMarkers.calculateDistance.bind(window.wasteBinMarkers),
 
-            // Find nearest bins
             findNearestBins: window.wasteBinMarkers.findNearestBins.bind(window.wasteBinMarkers),
 
-            // Get marker icon based on bin status
             getMarkerIcon: window.wasteBinMarkers.getMarkerIcon.bind(window.wasteBinMarkers),
 
-            // Format bin info for display
             formatBinInfo: window.wasteBinMarkers.formatBinInfo.bind(window.wasteBinMarkers)
         });
 
@@ -128,16 +108,12 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// Custom function to create styled markers for waste bins
 window.createCustomBinMarker = function (map, bin, position) {
-    // Create a custom marker using a div instead of an image
     const fillLevel = bin.FillLevel || 0;
 
-    // Determine colors and status
     let statusColor = '#6c757d'; // Default gray
     let fillColor = '#28a745'; // Default green
 
-    // Set status color
     switch (bin.DeviceStatus) {
         case 'Active': statusColor = '#28a745'; break; // green
         case 'Inactive': statusColor = '#6c757d'; break; // gray
@@ -145,7 +121,6 @@ window.createCustomBinMarker = function (map, bin, position) {
         case 'Faulty': statusColor = '#dc3545'; break; // red
     }
 
-    // Set fill color based on level
     if (fillLevel >= 90) {
         fillColor = '#dc3545'; // red
     } else if (fillLevel >= 70) {
@@ -158,7 +133,6 @@ window.createCustomBinMarker = function (map, bin, position) {
         fillColor = '#28a745'; // green
     }
 
-    // Create marker as an overlay view
     const customMarker = new google.maps.OverlayView();
 
     customMarker.onAdd = function () {
@@ -177,7 +151,6 @@ window.createCustomBinMarker = function (map, bin, position) {
         div.style.justifyContent = 'center';
         div.style.alignItems = 'center';
 
-        // Create inner fill level indicator
         const innerDiv = document.createElement('div');
         innerDiv.style.width = '30px';
         innerDiv.style.height = '30px';
@@ -187,7 +160,6 @@ window.createCustomBinMarker = function (map, bin, position) {
         innerDiv.style.justifyContent = 'center';
         innerDiv.style.alignItems = 'center';
 
-        // Create fill level circle
         const fillDiv = document.createElement('div');
         fillDiv.style.width = '24px';
         fillDiv.style.height = '24px';
@@ -205,7 +177,6 @@ window.createCustomBinMarker = function (map, bin, position) {
         innerDiv.appendChild(fillDiv);
         div.appendChild(innerDiv);
 
-        // Add hover effect
         div.addEventListener('mouseover', function () {
             div.style.transform = 'scale(1.1)';
             div.style.transition = 'transform 0.2s ease-in-out';
@@ -215,16 +186,13 @@ window.createCustomBinMarker = function (map, bin, position) {
             div.style.transform = 'scale(1)';
         });
 
-        // Handle click event
         div.addEventListener('click', function () {
-            // If there's an infoWindow in googleMapsInterop, use it
             if (window.googleMapsInterop && window.googleMapsInterop.infoWindow) {
                 const infoContent = window.googleMapsInterop.createInfoWindowContent(bin);
                 window.googleMapsInterop.infoWindow.setContent(infoContent);
                 window.googleMapsInterop.infoWindow.setPosition(position);
                 window.googleMapsInterop.infoWindow.open(map);
 
-                // If we have a dotNetRef, call the OpenBinDetail method
                 if (window.googleMapsInterop.dotNetRef) {
                     window.googleMapsInterop.dotNetRef.invokeMethodAsync('OpenBinDetail', bin.WasteBinId);
                 }
@@ -237,11 +205,9 @@ window.createCustomBinMarker = function (map, bin, position) {
     };
 
     customMarker.draw = function () {
-        // Position the marker
         const overlayProjection = this.getProjection();
         const point = overlayProjection.fromLatLngToDivPixel(position);
 
-        // Adjust position to center the marker on the coordinates
         const div = this.div_;
         div.style.left = (point.x - 20) + 'px';
         div.style.top = (point.y - 20) + 'px';

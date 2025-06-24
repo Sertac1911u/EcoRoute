@@ -16,7 +16,7 @@ namespace EcoRoute.DtoLayer.WasteBinDtos
         public bool? IsFilled { get; set; }
         public double? FillLevel { get; set; }
         public string DeviceStatus { get; set; }
-        public int SensorCount { get; set; } // Sensör adedi - 0-20 arası
+        public int SensorCount { get; set; } 
         public DateTime LastUpdated { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
     }

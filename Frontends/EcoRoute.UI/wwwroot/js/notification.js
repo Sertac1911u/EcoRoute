@@ -1,8 +1,6 @@
-﻿// Add this to your wwwroot/js/notifications.js file
-window.showToast = function (title, message, type, duration) {
+﻿window.showToast = function (title, message, type, duration) {
     console.log("showToast called:", title, message, type);
 
-    // Create toast container if it doesn't exist
     let toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
         toastContainer = document.createElement('div');
@@ -11,11 +9,10 @@ window.showToast = function (title, message, type, duration) {
         document.body.appendChild(toastContainer);
     }
 
-    // Create toast element
+    
     const toast = document.createElement('div');
     toast.className = "flex items-start p-4 mb-2 max-w-xs rounded-lg shadow-lg transform transition-all duration-300 ease-in-out translate-x-full opacity-0";
 
-    // Set background color based on type
     switch (type) {
         case 'success':
             toast.classList.add('bg-green-50', 'dark:bg-green-900/30', 'border-l-4', 'border-green-500');
@@ -30,7 +27,6 @@ window.showToast = function (title, message, type, duration) {
             toast.classList.add('bg-blue-50', 'dark:bg-blue-900/30', 'border-l-4', 'border-blue-500');
     }
 
-    // Get icon based on type
     let icon;
     switch (type) {
         case 'success':
@@ -42,11 +38,10 @@ window.showToast = function (title, message, type, duration) {
         case 'error':
             icon = '<i class="fas fa-times-circle text-red-500 dark:text-red-400"></i>';
             break;
-        default: // info
+        default: 
             icon = '<i class="fas fa-info-circle text-blue-500 dark:text-blue-400"></i>';
     }
 
-    // Set toast content
     toast.innerHTML = `
         <div class="flex-shrink-0 w-6 h-6 flex items-center justify-center mr-3">
             ${icon}
@@ -60,21 +55,17 @@ window.showToast = function (title, message, type, duration) {
         </button>
     `;
 
-    // Add toast to container
     toastContainer.appendChild(toast);
 
-    // Add click event to close button
     const closeButton = toast.querySelector('button');
     closeButton.addEventListener('click', function () {
         removeToast(toast);
     });
 
-    // Animate toast entry
     setTimeout(function () {
         toast.classList.remove('translate-x-full', 'opacity-0');
     }, 10);
 
-    // Set timeout to remove toast
     setTimeout(function () {
         removeToast(toast);
     }, duration || 5000);

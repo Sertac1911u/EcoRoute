@@ -115,7 +115,7 @@
                         var bin = DisplayedBins[i];
                         var rowIndex = ((CurrentPage - 1) * PageSize) + i + 1;
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer @(ExpandedRowId == bin.Id ? "bg-gray-50 dark:bg-gray-700" : "")"
-                            @onclick="() => OnRowExpand.InvokeAsync(bin.Id)">
+                        @onclick="() => OnRowExpand.InvokeAsync(bin.Id)">
                             <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">@rowIndex</td>
                             <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
                                 <div class="flex items-center">
@@ -136,7 +136,7 @@
                             <td class="px-4 py-4 whitespace-nowrap">
                                 <div class="relative w-full h-5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden bg-stripes mb-2">
                                     <div class="@GetFillLevelColor(bin.FillLevel) h-full transition-all duration-500 ease-in-out flex items-center justify-center"
-                                         style="width: @(bin.FillLevel ?? 0)%">
+                                    style="width: @(bin.FillLevel ?? 0)%">
                                         <span class="text-xs font-bold text-white">@(bin.FillLevel ?? 0)%</span>
                                     </div>
                                 </div>
@@ -157,13 +157,13 @@
                                         <span class="tooltip">Düzenle</span>
                                     </button>
                                     <button class="text-primary-500 hover:text-primary-700 text-lg tooltip-container"
-                                            @onclick="() => OnFocusOnBin.InvokeAsync(bin.Id)">
+                                    @onclick="() => OnFocusOnBin.InvokeAsync(bin.Id)">
                                         <i class="fas fa-map-marker"></i>
                                         <span class="tooltip">Haritada Göster</span>
                                     </button>
                                     <button class="text-red-500 hover:text-red-700 text-lg tooltip-container disabled:opacity-50 disabled:cursor-not-allowed"
-                                            @onclick="() => OnDelete.InvokeAsync(bin.Id)"
-                                            disabled="@IsDeleting">
+                                    @onclick="() => OnDelete.InvokeAsync(bin.Id)"
+                                    disabled="@IsDeleting">
                                         @if (IsDeleting)
                                         {
                                             <i class="fas fa-circle-notch fa-spin"></i>
@@ -181,9 +181,9 @@
                         @if (ExpandedRowId == bin.Id)
                         {
                             <BinExpandedRow Bin="@bin"
-                                            LoadingSensorIds="@LoadingSensorIds"
-                                            OnToggleSensorStatus="@OnToggleSensorStatus"
-                                            OnToggleSensorWorking="@OnToggleSensorWorking" />
+                            LoadingSensorIds="@LoadingSensorIds"
+                            OnToggleSensorStatus="@OnToggleSensorStatus"
+                            OnToggleSensorWorking="@OnToggleSensorWorking" />
                         }
                     }
                 }
@@ -196,13 +196,13 @@
         <div class="flex justify-center mt-4">
             <div class="flex space-x-1">
                 <button @onclick="() => OnPageChange.InvokeAsync(1)"
-                        disabled="@(CurrentPage == 1)"
-                        class="@(CurrentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                disabled="@(CurrentPage == 1)"
+                class="@(CurrentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
                     <i class="fas fa-angle-double-left"></i>
                 </button>
                 <button @onclick="() => OnPageChange.InvokeAsync(CurrentPage - 1)"
-                        disabled="@(CurrentPage == 1)"
-                        class="@(CurrentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                disabled="@(CurrentPage == 1)"
+                class="@(CurrentPage == 1 ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
                     <i class="fas fa-angle-left"></i>
                 </button>
 
@@ -210,19 +210,19 @@
                 {
                     var pageNumber = i;
                     <button @onclick="() => OnPageChange.InvokeAsync(pageNumber)"
-                            class="@(CurrentPage == pageNumber ? "bg-primary-500 text-white" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                    class="@(CurrentPage == pageNumber ? "bg-primary-500 text-white" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
                         @pageNumber
                     </button>
                 }
 
                 <button @onclick="() => OnPageChange.InvokeAsync(CurrentPage + 1)"
-                        disabled="@(CurrentPage == TotalPages)"
-                        class="@(CurrentPage == TotalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                disabled="@(CurrentPage == TotalPages)"
+                class="@(CurrentPage == TotalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
                     <i class="fas fa-angle-right"></i>
                 </button>
                 <button @onclick="() => OnPageChange.InvokeAsync(TotalPages)"
-                        disabled="@(CurrentPage == TotalPages)"
-                        class="@(CurrentPage == TotalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
+                disabled="@(CurrentPage == TotalPages)"
+                class="@(CurrentPage == TotalPages ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white text-primary-500 hover:bg-primary-50") px-3 py-1 rounded-md border border-gray-200">
                     <i class="fas fa-angle-double-right"></i>
                 </button>
             </div>

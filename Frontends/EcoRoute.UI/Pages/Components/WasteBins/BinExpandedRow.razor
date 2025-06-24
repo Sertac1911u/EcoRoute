@@ -1,4 +1,6 @@
 ﻿@using EcoRoute.DtoLayer.WasteBinDtos
+@using EcoRoute.UI.Services.WasteBinServices
+@inject WasteBinService WasteBinService
 
 <tr class="bg-gray-50 dark:bg-gray-700 animate-expandRow">
     <td colspan="7" class="px-6 py-6">
@@ -55,15 +57,15 @@
                             <svg class="w-full h-full" viewBox="0 0 36 36">
                                 <path class="stroke-current text-gray-200 dark:text-gray-700" fill="none" stroke-width="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                 <path class="@GetStrokeFillColor(Bin.FillLevel) stroke-current" fill="none" stroke-width="3.8" stroke-linecap="round"
-                                      stroke-dasharray="@((Bin.FillLevel ?? 0) * 100 / 100), 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831">
+                                stroke-dasharray="@((Bin.FillLevel ?? 0) * 100 / 100), 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831">
                                     <animate attributeName="stroke-dasharray"
-                                             from="0, 100"
-                                             to="@((Bin.FillLevel ?? 0) * 100 / 100), 100"
-                                             dur="1s"
-                                             fill="freeze"
-                                             calcMode="spline"
-                                             keyTimes="0; 1"
-                                             keySplines="0.42 0 0.58 1" />
+                                    from="0, 100"
+                                    to="@((Bin.FillLevel ?? 0) * 100 / 100), 100"
+                                    dur="1s"
+                                    fill="freeze"
+                                    calcMode="spline"
+                                    keyTimes="0; 1"
+                                    keySplines="0.42 0 0.58 1" />
                                 </path>
                                 <text x="18" y="20.5" class="fill-current font-bold text-gray-700 dark:text-gray-200" text-anchor="middle" font-size="@(Bin.FillLevel >= 100 ? "6" : "7")">@(Bin.FillLevel ?? 0)%</text>
                             </svg>
@@ -76,6 +78,11 @@
                         </div>
 
                         <div class="mt-2 space-y-2">
+                            <button class="ml-2 px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm"
+                                    @onclick="Fill">
+                                Sensörden Oku
+                            </button>
+
                             <div class="flex justify-between items-center border-t border-gray-200 dark:border-gray-700 pt-2">
                                 <span class="text-sm text-gray-500 dark:text-gray-400">Tahmini dolma tarihi:</span>
                                 <span class="font-medium text-gray-700 dark:text-gray-300">@GetEstimatedFillDate(Bin.FillLevel)</span>
@@ -104,6 +111,7 @@
                 <!-- Tahmini Doluluk Durumu -->
                 <div class="bg-white dark:bg-gray-800 p-5 rounded-lg shadow-md transform transition-all duration-300 hover:scale-105 border-l-4 border-purple-500">
                     <div class="flex justify-between items-center mb-4">
+                        <button @onclick="Tahminle">Tahmini Yenile</button>
                         <h3 class="!text-lg font-semibold text-gray-800 dark:text-white flex items-center">
                             <i class="fas fa-crystal-ball mr-2 text-purple-500"></i>
                             Tahmini Doluluk
@@ -115,17 +123,19 @@
                             <svg class="w-full h-full" viewBox="0 0 36 36">
                                 <path class="stroke-current text-gray-200 dark:text-gray-700" fill="none" stroke-width="3.8" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                 <path class="@GetStrokeFillColor(Bin.estimatedFillLevel) stroke-current" fill="none" stroke-width="3.8" stroke-linecap="round"
-                                      stroke-dasharray="@((Bin.estimatedFillLevel ?? 0) * 100 / 100), 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831">
+                                stroke-dasharray="@((Bin.estimatedFillLevel ?? 0) * 100 / 100), 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831">
                                     <animate attributeName="stroke-dasharray"
-                                             from="0, 100"
-                                             to="@((Bin.estimatedFillLevel ?? 0) * 100 / 100), 100"
-                                             dur="1.5s"
-                                             fill="freeze"
-                                             calcMode="spline"
-                                             keyTimes="0; 1"
-                                             keySplines="0.42 0 0.58 1" />
+                                    from="0, 100"
+                                    to="@((Bin.estimatedFillLevel ?? 0) * 100 / 100), 100"
+                                    dur="1.5s"
+                                    fill="freeze"
+                                    calcMode="spline"
+                                    keyTimes="0; 1"
+                                    keySplines="0.42 0 0.58 1" />
                                 </path>
-                                <text x="18" y="20.5" class="fill-current font-bold text-gray-700 dark:text-gray-200" text-anchor="middle" font-size="@(Bin.estimatedFillLevel >= 100 ? "5" : "6")">@(Bin.estimatedFillLevel ?? 0)%</text>
+                                <text x="18" y="20.5" class="fill-current font-bold text-gray-700 dark:text-gray-200" text-anchor="middle" font-size="@(Bin.estimatedFillLevel >= 100 ? "5" : "6")">
+                                    @(Bin.estimatedFillLevel?.ToString("0.##") ?? "0")%
+                                </text>
                             </svg>
                         </div>
 
@@ -179,8 +189,8 @@
                                             </div>
                                             <div class="flex items-center space-x-1">
                                                 <button class="@(sensor.IsActive ? "text-green-500 hover:text-green-700" : "text-gray-400 hover:text-green-500") text-sm tooltip-container disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        @onclick="() => OnToggleSensorStatus.InvokeAsync(new Tuple<Guid, bool, bool>(sensor.SensorId, sensor.IsActive, sensor.IsWorking))"
-                                                        disabled="@isLoading">
+                                                @onclick="() => OnToggleSensorStatus.InvokeAsync(new Tuple<Guid, bool, bool>(sensor.SensorId, sensor.IsActive, sensor.IsWorking))"
+                                                disabled="@isLoading">
                                                     @if (isLoading)
                                                     {
                                                         <i class="fas fa-circle-notch fa-spin"></i>
@@ -195,8 +205,8 @@
                                                 @if (sensor.IsActive)
                                                 {
                                                     <button class="@(sensor.IsWorking ? "text-blue-500 hover:text-blue-700" : "text-orange-500 hover:text-blue-500") text-sm tooltip-container disabled:opacity-50 disabled:cursor-not-allowed"
-                                                            @onclick="() => OnToggleSensorWorking.InvokeAsync(new Tuple<Guid, bool, bool>(sensor.SensorId, sensor.IsActive, sensor.IsWorking))"
-                                                            disabled="@isLoading">
+                                                    @onclick="() => OnToggleSensorWorking.InvokeAsync(new Tuple<Guid, bool, bool>(sensor.SensorId, sensor.IsActive, sensor.IsWorking))"
+                                                    disabled="@isLoading">
                                                         @if (isLoading)
                                                         {
                                                             <i class="fas fa-circle-notch fa-spin"></i>
@@ -266,6 +276,31 @@
     [Parameter] public EventCallback<Tuple<Guid, bool, bool>> OnToggleSensorWorking { get; set; }
 
     private const double DAILY_FILL_RATE = 5.0;
+
+    private async Task Tahminle()
+    {
+        // Sadece mevcut doluluk (FillLevel) değerini kullan
+        double fill = Bin.FillLevel ?? 0;
+        var fillLevels = new List<double> { fill }; // Sadece 1 değer gönderiyoruz!
+
+        Bin.estimatedFillLevel = await WasteBinService.GetEstimatedFillLevelAsync(fillLevels);
+        StateHasChanged();
+    }
+
+    private async Task Fill()
+    {
+        var fillLevel = await WasteBinService.GetFillLevelFromSensorAsync();
+        if (fillLevel.HasValue)
+        {
+            Bin.FillLevel = fillLevel.Value;
+            Bin.UpdatedAt = DateTime.Now;
+        }
+
+        StateHasChanged();
+    }
+
+
+
 
     private double GetEstimatedFillRate(double? currentFillLevel, int daysFromNow)
     {

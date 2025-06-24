@@ -8,7 +8,7 @@ namespace EcoRoute.DtoLayer.WasteBinDtos
 {
     public class GetByIdWasteBinDto
     {
-        public Guid Id { get; set; } // WasteBinId yerine Id
+        public Guid Id { get; set; } 
         public string Label { get; set; }
         public string Address { get; set; }
         public double Latitude { get; set; }
@@ -21,7 +21,6 @@ namespace EcoRoute.DtoLayer.WasteBinDtos
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
 
-        // Sensör detayları için
         public List<ResultSensorDto> Sensors { get; set; } = new();
     }
 }

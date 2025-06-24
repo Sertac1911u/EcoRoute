@@ -17,7 +17,6 @@ namespace EcoRoute.DtoLayer.WasteBinDtos
         public DateTime InstallationDate { get; set; }
         public DateTime? LastUpdate { get; set; }
 
-        // UI için ek bilgiler
         public string StatusText => IsActive ? (IsWorking ? "Aktif ve Çalışıyor" : "Aktif ama Arızalı") : "Pasif";
         public string StatusColor => IsActive ? (IsWorking ? "green" : "orange") : "red";
     }
