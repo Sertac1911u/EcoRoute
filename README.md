@@ -1,98 +1,104 @@
-# ♻️ EcoRoute - Akıllı Atık Toplama ve Rota Optimizasyon Sistemi
-> Bu proje, Tekirdağ Namık Kemal Üniversitesi Bilgisayar Mühendisliği öğrencisi Sertaç Yıldırım tarafından 2024-2025 eğitim-öğretim yılı kapsamında **TÜBİTAK 2209-A** programı desteğiyle geliştirilmiştir.
+# ♻️ EcoRoute - Smart Waste Collection and Route Optimization System
 
-## 📌 Proje Özeti
-**EcoRoute**, şehirlerdeki atık toplama sürecini daha verimli ve çevreci hale getirmek için geliştirilmiş IoT ve yapay zeka tabanlı bir sistemdir. Proje kapsamında:
-- Raspberry Pi tabanlı sensör donanımı ile çöp kutularının doluluk oranları ölçülür.
-- Mobil (Flutter) ve web (Blazor) uygulamalarıyla anlık izleme ve yönetim sağlanır.
-- Yapay zeka destekli atık kutusu doluluk oranı tahmini ve rota optimizasyonu ile yakıt ve zaman tasarrufu hedeflenir.
-- Google Maps API ile harita üzerinde görselleştirme yapılır.
+> Developed as part of the 2024-2025 senior year graduation project at Tekirdağ Namık Kemal University, Department of Computer Engineering, and supported by the **TÜBİTAK 2209-A** Research Support Program.
 
-## 🧠 Literatür Taraması
+## 📌 Project Summary
 
-Proje, aşağıdaki akademik çalışmalardan faydalanılarak şekillendirilmiştir:
-- Sahoo et al. (2004), **atık toplama için rota optimizasyonu**.
-- Gürcan ve Açıksöz (2023), **akıllı şehir uygulamaları ve görselleştirme**.
-- Medvedev et al. (2015), **IoT cihazlarında HTTP ile veri iletişimi**.
-- Sosunova & Porras (2022), **akıllı atık sistemleri sistematik inceleme**.
-- Cormen et al. (2009), **algoritma temelleri ve dinamik programlama**.
+**EcoRoute** is an IoT and AI-powered system developed to make the urban waste collection process more efficient and environmentally friendly. The project includes:
+- Measuring waste bin fill levels with Raspberry Pi-based sensor hardware.
+- Real-time monitoring and management via mobile (Flutter) and web (Blazor) applications.
+- AI-assisted waste fill level prediction and route optimization to save time and fuel.
+- Visualization through Google Maps API.
 
-## 🛠️ Kullanılan Teknolojiler
-| Alan | Teknoloji |
-|------|-----------|
-| Web Uygulama | ASP.NET Blazor |
-| Mobil Uygulama | Flutter (iOS & Android) |
-| Donanım | Raspberry Pi Zero WH, LDR, Lazer Modül |
-| Veri İletişimi | HTTP protokolü |
-| Harita & Görselleştirme | Google Maps API |
-| Veritabanı | SQL Server |
-| Kimlik Doğrulama | JWT Token |
-| Mimari | Mikroservis + Docker |
-| Yapay Zeka | LSTM |
+## 🧠 Literature Review
 
-## 🔍 Sistem Mimarisi
-- Raspberry Pi cihazları doluluk verilerini HTTP ile sunucuya iletir.
-- Sunucu Blazor Web UI ile yönetilir.
-- Mobil uygulama görevli kullanıcıya rota önerir.
-- Rotalar, trafik, doluluk ve araç kapasitesine göre optimize edilir.
+This project was shaped based on the insights of the following academic works:
+- Sahoo et al. (2004), **route optimization in waste collection**.
+- Gürcan & Açıksöz (2023), **smart city applications and data visualization**.
+- Medvedev et al. (2015), **HTTP-based communication in IoT devices**.
+- Sosunova & Porras (2022), **systematic review of smart waste systems**.
+- Cormen et al. (2009), **fundamentals of algorithms and dynamic programming**.
+
+## 🛠️ Technologies Used
+
+| Area | Technology |
+|------|------------|
+| Web Application | ASP.NET Blazor |
+| Mobile Application | Flutter (iOS & Android) |
+| Hardware | Raspberry Pi Zero WH, LDR, Laser Module |
+| Data Communication | HTTP protocol |
+| Map & Visualization | Google Maps API |
+| Database | SQL Server |
+| Authentication | JWT Token |
+| Architecture | Microservices + Docker |
+| Artificial Intelligence | LSTM |
+
+## 🔍 System Architecture
+
+![microservices (1)](https://github.com/user-attachments/assets/8efa827e-3e75-4f6c-bfe5-ef21467e699a)
 
 
-## 🧠 Kullanılan Yapay Zeka Algoritmaları
+- Raspberry Pi devices transmit fill level data to the central server via HTTP.
+- The server is managed through a Blazor-based web UI.
+- Mobile users (field workers) are provided with optimized routes.
+- Routes are optimized based on traffic, bin fill status, or minimum distance.
+
+## 🧠 AI Algorithms Used
+
 ### 🔹 LSTM (Long Short-Term Memory)
-- Geçmiş doluluk verilerine göre doluluk tahmini.
-- Rota oluşturma öncesinde kestirimsel planlama yapılır.
+- Predicts bin fill levels using historical data.
+- Supports proactive route planning before bin overflows.
+
+## 📱 Application Screenshots
+
+### Web Interface (Blazor)
+> ![routepage0](https://github.com/user-attachments/assets/38a8e76f-b641-460f-aa48-da14df2ce2f6)
+> ![routepage1](https://github.com/user-attachments/assets/0232ede3-6eee-431d-957d-425bb3573888)
+> ![userpagenot](https://github.com/user-attachments/assets/fff0c3cc-85c9-4b86-8166-af902060c2ce)
 
 
-## 📱 Uygulama Ekran Görüntüleri
-### Web Arayüzü (Blazor)
-### Mobil Uygulama (Flutter)
 
 
-## 🧪 Donanım ve Fiziksel Kurulum
-- Raspberry Pi cihazlarına 4 adet LDR sensör ve lazer modülü bağlandı.
-- Doluluk hesaplama:
-  - 0 ışık → %0
-  - 1 ışık gelmiyorsa → %25
-  - 2 ışık gelmiyorsa → %50
-  gibi
-- GPIO pinleri ile okuma yapılır.
-
-## 📈 Rota Optimizasyonu Sonuçları
-| Kriter | İyileşme |
-|--------|----------|
-| Ortalama Rota Süresi | ↓ %25 |
-| Yakıt Tüketimi | ↓ %20 |
-| CO₂ Salınımı | ↓ %18 |
-
-Rotalar trafik verisi ve araç kapasitesiyle birlikte hesaplanmıştır.
+### Mobile App (Flutter)
+> ![1](https://github.com/user-attachments/assets/70af344e-cd06-4afa-b83c-450624d9e29a)
+> ![2](https://github.com/user-attachments/assets/55318ccf-4dc0-4911-9fc1-d09e6fb57859)
 
 
-## ✅ Projenin Katkıları
 
-- Çevresel sürdürülebilirlik
-- Verimli atık toplama
-- Görselleştirilmiş veri sunumu
-- Mobil ve web arayüz entegrasyonu
-- Akademik yayın potansiyeli
+## 🧪 Hardware & Physical Setup
 
+- Each Raspberry Pi device is connected to 4 LDR sensors and a laser module.
+- Fill level logic:
+  - All sensors active → 0% full
+  - Bottom 1 sensor blocked → 25% full
+  - Bottom 2 sensors blocked → 50% full
+  - etc.
+- GPIO pins are used for real-time sensor readings.
 
-## 📚 Kaynakça
+## ✅ Project Contributions
 
-- Gürcan, C., & Açıksöz, S. (2023). *Akıllı Atık Yönetimi ve Örnek Uygulamalar*. Kent Akademisi.
+- Environmental sustainability
+- Efficient waste collection routes
+- Visualized data for monitoring and decision-making
+- Seamless mobile and web integration
+- Academic publication potential
+
+## 📚 References
+
+- Gürcan, C., & Açıksöz, S. (2023). *Smart Waste Management and Case Studies*. Kent Akademisi.
 - Sahoo, S. P. et al. (2004). *Routing Optimization for Waste Management*.
 - Medvedev, A. et al. (2015). *Waste Management as an IoT-enabled Service in Smart Cities*.
 - Cormen, T. H. et al. (2009). *Introduction to Algorithms*.
 - Sosunova, I., & Porras, J. (2022). *IoT-enabled Smart Waste Management Systems*.
 - Dreyfus, S. E. *Dynamic Programming Principles and Applications*.
 
-## 🧑‍💻 Geliştirici
+## 🧑‍💻 Developer
 
 > **Sertaç YILDIRIM**  
-Namık Kemal Üniversitesi - Bilgisayar Mühendisliği  
-📬 sertacyildirim@projeadresim.com  
-🔗 [LinkedIn](https://linkedin.com/in/sertacyildirim)  
+Tekirdağ Namık Kemal University - Computer Engineering  
+📬 sertac1911u@gmail.com  
+🔗 [LinkedIn](https://www.linkedin.com/in/sertaç-yıldırım/)
 
-## 🧪 TÜBİTAK 2209-A Projesi
+## 🧪 TÜBİTAK 2209-A Research Project
 
-> Bu çalışma, 2024 yılı TÜBİTAK 2209-A - Üniversite Öğrencileri Araştırma Projeleri Desteği Programı kapsamında desteklenmektedir.
-
+> This study is supported by **TÜBİTAK 2209-A**, a national research funding program for university students in Turkey in the year 2024.
