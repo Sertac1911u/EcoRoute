@@ -1,9 +1,4 @@
-﻿// ===========================
-// UNIFIED GOOGLE MAPS INTEGRATION
-// ===========================
-
-// Global variables - Single definitions to avoid conflicts
-let mainMap;
+﻿let mainMap;
 let locationPickerMap;
 let markers = [];
 let routePolylines = [];
@@ -21,7 +16,6 @@ let activeSimulations = {};
 let simulationIntervals = {};
 let directionsService = null;
 
-// Constants - Unified definitions
 const DEFAULT_CENTER = { lat: 41.1634, lng: 27.7951 }; // Çorlu merkez
 const DEFAULT_ZOOM = 13;
 const FOCUS_ZOOM = 16;
@@ -32,16 +26,9 @@ const MAP_ID = '8b70db4a26fb9f4cd11929e3';
 const PRIMARY_COLOR = '#3B82F4';
 const RECYCLING_GREEN = "#10B981";
 const SIMULATION_SPEED_KMH = 40;
-
-// ===========================
-// COMMON UTILITIES
-// ===========================
-
-// Utility function to validate and convert coordinates
 function safeCoordinate(coord) {
     if (!coord) return null;
 
-    // Handle Google Maps LatLng objects
     if (typeof coord.lat === 'function' && typeof coord.lng === 'function') {
         const lat = coord.lat();
         const lng = coord.lng();
@@ -50,7 +37,6 @@ function safeCoordinate(coord) {
         }
     }
 
-    // Handle plain objects
     if (typeof coord.lat === 'number' && typeof coord.lng === 'number') {
         if (isFinite(coord.lat) && isFinite(coord.lng) &&
             coord.lat >= -90 && coord.lat <= 90 &&
@@ -62,7 +48,6 @@ function safeCoordinate(coord) {
     return null;
 }
 
-// Safe coordinate interpolation
 function interpolateCoordinates(start, end, progress) {
     const safeStart = safeCoordinate(start);
     const safeEnd = safeCoordinate(end);
@@ -79,7 +64,6 @@ function interpolateCoordinates(start, end, progress) {
     };
 }
 
-// Debounced progress update to prevent spam
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -92,14 +76,12 @@ function debounce(func, wait) {
     };
 }
 
-// Dark mode detection and theme management
 function detectDarkMode() {
     isDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ||
         document.documentElement.classList.contains('dark');
     return isDarkMode;
 }
 
-// Watch for dark mode changes
 if (window.matchMedia) {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
         isDarkMode = e.matches || document.documentElement.classList.contains('dark');
@@ -107,7 +89,6 @@ if (window.matchMedia) {
     });
 }
 
-// Observer for dark class changes
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
         if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
@@ -269,17 +250,14 @@ function getMapStyles() {
     }
 }
 
-// Load MarkerClusterer library if not available
 function loadMarkerClusterer() {
     return new Promise((resolve, reject) => {
-        // Check if MarkerClusterer is already available
         if (window.MarkerClusterer || window.markerClusterer) {
             console.log("MarkerClusterer already available");
             resolve();
             return;
         }
 
-        // Try loading the newer version first
         const script1 = document.createElement('script');
         script1.src = 'https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js';
         script1.onload = () => {
@@ -289,7 +267,6 @@ function loadMarkerClusterer() {
         script1.onerror = () => {
             console.log("Failed to load new MarkerClusterer, trying legacy version");
 
-            // Fallback to legacy version
             const script2 = document.createElement('script');
             script2.src = 'https://cdnjs.cloudflare.com/ajax/libs/js-marker-clusterer/1.0.0/markerclusterer.min.js';
             script2.onload = () => {
@@ -306,7 +283,6 @@ function loadMarkerClusterer() {
     });
 }
 
-// Common smooth pan function
 function smoothPanTo(map, position) {
     const safePos = safeCoordinate(position);
     if (!safePos) {
@@ -327,7 +303,6 @@ function smoothPanTo(map, position) {
             return;
         }
 
-        // Calculate distance for animation timing
         const distance = google.maps.geometry.spherical.computeDistanceBetween(
             new google.maps.LatLng(currentLat, currentLng),
             new google.maps.LatLng(targetLat, targetLng)
@@ -347,7 +322,6 @@ function smoothPanTo(map, position) {
                 return;
             }
 
-            // Cubic bezier easing (ease-in-out)
             const t = frame / frames;
             const progress = t < 0.5 ?
                 4 * t * t * t :
@@ -379,7 +353,6 @@ function smoothPanTo(map, position) {
     }
 }
 
-// Common smooth zoom function
 function smoothZoomTo(map, targetZoom) {
     const currentZoom = map.getZoom();
     if (currentZoom === targetZoom) return;
@@ -413,10 +386,6 @@ function darkenColor(color, percent) {
     const B = Math.max(0, Math.min(255, (num & 0x0000FF) - amt));
     return "#" + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
 }
-
-// ===========================
-// ICON CREATION FUNCTIONS
-// ===========================
 
 function getDepotIcon(scale = 1.5) {
     const size = 45 * scale;
@@ -504,7 +473,6 @@ function getTruckIcon(routeColor = '#4285F4', scale = 1.5) {
 }
 
 function getBinMarkerIcon(status, fillLevel, opacity = 1, scale = 1.5) {
-    // Determine colors based on fill level
     let fillColor, strokeColor;
 
     if (fillLevel >= 90) {
@@ -524,7 +492,6 @@ function getBinMarkerIcon(status, fillLevel, opacity = 1, scale = 1.5) {
         strokeColor = '#059669';
     }
 
-    // Adjust for status
     if (status === 'Inactive') {
         fillColor = '#9CA3AF';
         strokeColor = '#6B7280';
@@ -539,7 +506,6 @@ function getBinMarkerIcon(status, fillLevel, opacity = 1, scale = 1.5) {
     const size = 32 * scale;
     const iconSize = 16 * scale;
 
-    // Enhanced SVG with better design and animations
     const svg = `
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size + 16} ${size + 20}" width="${size + 16}" height="${size + 20}">
                 <defs>
@@ -646,9 +612,6 @@ function createClusterIcon(size, color) {
     return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
 }
 
-// ===========================
-// GLOBAL INITIALIZATION
-// ===========================
 
 /**
  * Initialize Google Maps integration
@@ -665,18 +628,7 @@ window.initializeGoogleMaps = function (reference) {
     });
 };
 
-// ===========================
-// MAIN GOOGLE MAPS INTEROP OBJECT
-// ===========================
-
-/**
- * Main object containing all Google Maps related functions
- */
 window.googleMapsInterop = {
-
-    // ===========================
-    // COMMON MAP FUNCTIONS
-    // ===========================
 
     /**
      * Initialize the main 3D map - Enhanced version
@@ -691,7 +643,6 @@ window.googleMapsInterop = {
             return false;
         }
 
-        // Hide loading indicator when map is fully loaded
         const hideLoading = () => {
             const loadingIndicator = document.getElementById('map-loading-indicator');
             if (loadingIndicator) {
@@ -703,7 +654,6 @@ window.googleMapsInterop = {
         };
 
         try {
-            // Create map centered on Çorlu with better default options
             mainMap = new google.maps.Map(mapElement, {
                 center: DEFAULT_CENTER,
                 zoom: DEFAULT_ZOOM,
@@ -711,13 +661,11 @@ window.googleMapsInterop = {
                 heading: 0,
                 mapTypeId: 'roadmap',
                 mapId: MAP_ID,
-                // Improved UI controls
                 streetViewControl: false,
                 mapTypeControl: false,
                 rotateControl: true,
                 zoomControl: true,
                 fullscreenControl: true,
-                // Enhanced interaction controls
                 draggable: true,
                 scrollwheel: true,
                 disableDoubleClickZoom: false,
@@ -726,7 +674,6 @@ window.googleMapsInterop = {
                 styles: getMapStyles()
             });
 
-            // Initialize Directions Service for route optimization
             directionsService = new google.maps.DirectionsService();
 
             // Add custom controls
@@ -743,7 +690,6 @@ window.googleMapsInterop = {
                 }
             });
 
-            // Maintain map interactivity on resize
             google.maps.event.addListener(mainMap, 'resize', () => {
                 this.ensureMapInteractivity();
             });
@@ -756,9 +702,6 @@ window.googleMapsInterop = {
         }
     },
 
-    /**
-     * Ensure map interactivity remains active
-     */
     ensureMapInteractivity: function () {
         if (mainMap) {
             mainMap.setOptions({
@@ -773,7 +716,7 @@ window.googleMapsInterop = {
     },
 
     /**
-     * Add 3D/2D toggle button to map
+     * 3D/2D toggle button to map
      * @param {google.maps.Map} map - Map object
      */
     add3DToggle: function (map) {
@@ -900,7 +843,6 @@ window.googleMapsInterop = {
 
         map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(locationButton);
 
-        // Add styles for the location button
         const style = document.createElement('style');
         style.textContent = `
                 .location-button {
@@ -932,10 +874,6 @@ window.googleMapsInterop = {
         document.head.appendChild(style);
     },
 
-    // ===========================
-    // BIN MANAGEMENT FUNCTIONS
-    // ===========================
-
     /**
      * Initialize the location picker map for bin creation/editing
      * @param {string} mapElementId - HTML element ID for the map container
@@ -958,7 +896,6 @@ window.googleMapsInterop = {
                 styles: getMapStyles()
             });
 
-            // Place marker at initial position
             const marker = new google.maps.Marker({
                 position: initialPosition,
                 map: locationPickerMap,
@@ -967,13 +904,11 @@ window.googleMapsInterop = {
                 animation: google.maps.Animation.DROP
             });
 
-            // Update coordinates when marker is dragged
             google.maps.event.addListener(marker, 'dragend', function () {
                 const position = marker.getPosition();
                 if (dotNetRef) {
                     dotNetRef.invokeMethodAsync('UpdateCoordinates', position.lat(), position.lng());
 
-                    // Get address from coordinates (reverse geocoding)
                     const geocoder = new google.maps.Geocoder();
                     geocoder.geocode({ location: position }, function (results, status) {
                         if (status === 'OK' && results[0]) {
@@ -982,18 +917,15 @@ window.googleMapsInterop = {
                     });
                 }
 
-                // Update displayed coordinates
                 const coordsDisplay = document.getElementById('selected-coordinates');
                 if (coordsDisplay) {
                     coordsDisplay.textContent = `Koordinat: ${position.lat().toFixed(6)}, ${position.lng().toFixed(6)}`;
                 }
             });
 
-            // Allow clicking on map to move marker
             google.maps.event.addListener(locationPickerMap, 'click', function (event) {
                 marker.setPosition(event.latLng);
 
-                // Trigger dragend to update coordinates
                 google.maps.event.trigger(marker, 'dragend');
             });
 
@@ -1014,27 +946,23 @@ window.googleMapsInterop = {
             return false;
         }
 
-        // Clear existing markers and clusters
         this.clearMarkers();
 
         try {
             const bins = JSON.parse(binsJson);
             console.log(`Showing ${bins.length} bins on map`);
 
-            // Store the bins data globally for later use
             window.binsData = bins;
 
-            // Create bounds object to fit all markers
             const bounds = new google.maps.LatLngBounds();
 
             bins.forEach(bin => {
                 if (bin.Latitude && bin.Longitude) {
                     const position = { lat: bin.Latitude, lng: bin.Longitude };
 
-                    // Create enhanced marker
                     const marker = new google.maps.Marker({
                         position: position,
-                        map: null, // Don't add to map yet, will be added via clusterer
+                        map: null,
                         title: bin.Label,
                         icon: getBinMarkerIcon(bin.DeviceStatus, bin.FillLevel, 1, 1.5),
                         binId: bin.Id,
@@ -1042,18 +970,14 @@ window.googleMapsInterop = {
                         animation: google.maps.Animation.DROP
                     });
 
-                    // Add marker to markers array
                     markers.push(marker);
 
-                    // Add marker to bounds
                     bounds.extend(position);
 
-                    // Add enhanced click listener
                     marker.addListener('click', () => {
                         this.onMarkerClick(marker, bin);
                     });
 
-                    // Add hover effects
                     marker.addListener('mouseover', () => {
                         marker.setIcon(getBinMarkerIcon(bin.DeviceStatus, bin.FillLevel, 1, 1.7));
                     });
@@ -1064,14 +988,11 @@ window.googleMapsInterop = {
                 }
             });
 
-            // Initialize marker clustering
             this.initializeMarkerClustering();
 
-            // Adjust map to fit all markers if there are any
             if (markers.length > 0) {
                 mainMap.fitBounds(bounds);
 
-                // If only one marker, zoom out a bit
                 if (markers.length === 1) {
                     google.maps.event.addListenerOnce(mainMap, 'bounds_changed', () => {
                         mainMap.setZoom(Math.min(15, mainMap.getZoom()));
@@ -1086,9 +1007,6 @@ window.googleMapsInterop = {
         }
     },
 
-    /**
-     * Initialize marker clustering with multiple fallback methods
-     */
     initializeMarkerClustering: function () {
         if (markerCluster) {
             markerCluster.clearMarkers();
@@ -1100,7 +1018,6 @@ window.googleMapsInterop = {
             return;
         }
 
-        // Custom cluster styles using recycling theme
         const clusterStyles = [
             {
                 textColor: 'white',
@@ -1132,7 +1049,6 @@ window.googleMapsInterop = {
         ];
 
         try {
-            // Try multiple approaches to find the MarkerClusterer
             if (window.markerClusterer && window.markerClusterer.MarkerClusterer) {
                 console.log("Using new MarkerClusterer (window.markerClusterer.MarkerClusterer)");
                 markerCluster = new window.markerClusterer.MarkerClusterer({
@@ -1187,7 +1103,6 @@ window.googleMapsInterop = {
             }
             else {
                 console.warn("MarkerClusterer library not found, displaying individual markers");
-                // Fallback: display individual markers
                 markers.forEach(marker => marker.setMap(mainMap));
             }
 
@@ -1196,7 +1111,6 @@ window.googleMapsInterop = {
             }
         } catch (error) {
             console.error("Error creating marker clusterer:", error);
-            // Fallback: display individual markers
             markers.forEach(marker => marker.setMap(mainMap));
         }
     },
@@ -1207,45 +1121,36 @@ window.googleMapsInterop = {
      * @param {object} bin - Bin data
      */
     onMarkerClick: function (marker, bin) {
-        // Close currently open info window if any
         if (currentInfoWindow) {
             currentInfoWindow.close();
             currentInfoWindow = null;
         }
 
-        // Get position from marker
         const position = marker.getPosition();
 
-        // Smooth zoom with current level preservation
         const currentZoom = mainMap.getZoom();
         const targetZoom = currentZoom < 15 ? 15 : Math.min(currentZoom + 1, 17);
 
         smoothZoomTo(mainMap, targetZoom);
 
-        // Set tilt
         mainMap.setTilt(DEFAULT_TILT);
 
-        // Smooth pan
         smoothPanTo(mainMap, {
             lat: position.lat(),
             lng: position.lng()
         });
 
-        // Brief marker animation
         marker.setAnimation(google.maps.Animation.BOUNCE);
         setTimeout(() => {
             marker.setAnimation(null);
         }, 800);
 
-        // Open sidebar
         setTimeout(() => {
             this.openEnhancedBinSidebar(bin);
         }, 900);
 
-        // Store selected bin ID
         selectedBinId = bin.Id;
 
-        // Notify Blazor of bin selection
         if (dotNetRef) {
             dotNetRef.invokeMethodAsync('OpenBinDetail', bin.Id);
         }
@@ -1256,14 +1161,11 @@ window.googleMapsInterop = {
      * @param {object} bin - Bin data
      */
     openEnhancedBinSidebar: function (bin) {
-        // Get sidebar element
         const sidebar = document.getElementById('bin-sidebar');
         if (!sidebar) return;
 
-        // Maintain map controls
         this.ensureMapInteractivity();
 
-        // Calculate estimates with improved algorithm
         const getEstimatedFillDate = (fillLevel) => {
             if (!fillLevel || fillLevel >= 100) return "Bilinmiyor";
 
@@ -1284,7 +1186,6 @@ window.googleMapsInterop = {
             return Math.min(estimatedFill, 100).toFixed(0);
         };
 
-        // Enhanced styling functions
         const getFillLevelColor = (level) => {
             if (!level) return '#6B7280';
             if (level >= 90) return '#EF4444';
@@ -1294,7 +1195,6 @@ window.googleMapsInterop = {
             return '#10B981';
         };
 
-        // Get device status with icons
         const getDeviceStatusDisplay = (status) => {
             const statusMap = {
                 'Active': { text: "Aktif", icon: "fa-check-circle", color: "#10B981" },
@@ -1445,10 +1345,8 @@ window.googleMapsInterop = {
                 </div>
             `;
 
-        // Show sidebar with better animation
         sidebar.classList.add('active');
 
-        // Update map dimensions but maintain interactivity
         setTimeout(() => {
             google.maps.event.trigger(mainMap, 'resize');
             this.ensureMapInteractivity();
@@ -1461,7 +1359,6 @@ window.googleMapsInterop = {
      * @returns {string} - HTML for nearby bins list
      */
     getNearbyBins: function (currentBin) {
-        // Find nearby bins based on actual distance from current bin
         if (!currentBin || !markers || markers.length === 0) {
             return `<div class="text-center text-gray-500 dark:text-gray-400 p-4">
                           <i class="fas fa-map-marked-alt text-2xl mb-2 opacity-50"></i>
@@ -1470,26 +1367,21 @@ window.googleMapsInterop = {
         }
 
         try {
-            // Get current bin's position
             const currentPosition = { lat: currentBin.Latitude, lng: currentBin.Longitude };
 
-            // Calculate distances for all other bins
             const nearbyBins = [];
             markers.forEach(marker => {
-                // Skip the current bin
                 if (marker.binId === currentBin.Id) return;
 
                 const markerPosition = marker.getPosition();
 
-                // Use the Google Maps geometry library to calculate distance
                 const distance = google.maps.geometry.spherical.computeDistanceBetween(
                     new google.maps.LatLng(currentPosition),
                     markerPosition
                 );
 
-                // Find the bin data for this marker
                 const bin = this.findBinById(marker.binId);
-                if (bin && distance <= 2000) { // Only show bins within 2km
+                if (bin && distance <= 2000) { 
                     nearbyBins.push({
                         bin: bin,
                         distance: distance,
@@ -1498,7 +1390,6 @@ window.googleMapsInterop = {
                 }
             });
 
-            // Sort by distance and take the closest 4
             nearbyBins.sort((a, b) => a.distance - b.distance);
             const closestBins = nearbyBins.slice(0, 4);
 
@@ -1509,7 +1400,6 @@ window.googleMapsInterop = {
                             </div>`;
             }
 
-            // Create HTML for the closest bins with improved styling
             let html = '';
             closestBins.forEach((item, index) => {
                 const bin = item.bin;
@@ -1518,7 +1408,6 @@ window.googleMapsInterop = {
                     `${distanceInMeters}m` :
                     `${(distanceInMeters / 1000).toFixed(1)}km`;
 
-                // Get color and icon based on bin's fill level
                 let fillColor = '#10B981';
                 let fillIcon = 'fa-battery-quarter';
                 let fillText = 'Az Dolu';
@@ -1600,7 +1489,6 @@ window.googleMapsInterop = {
         const marker = markers.find(m => m.binId === binId);
         if (!marker) return;
 
-        // Add click feedback animation
         const clickedElement = event.currentTarget;
         if (clickedElement) {
             clickedElement.style.transform = 'scale(0.98)';
@@ -1609,30 +1497,24 @@ window.googleMapsInterop = {
             }, 150);
         }
 
-        // Close current sidebar with smooth animation
         this.closeBinSidebar();
 
         setTimeout(() => {
             const position = marker.getPosition();
 
-            // Enhanced smooth zoom and pan with easing
             const currentZoom = mainMap.getZoom();
             if (currentZoom < FOCUS_ZOOM) {
                 smoothZoomTo(mainMap, FOCUS_ZOOM);
             }
 
-            // Smooth pan with custom timing
             smoothPanTo(mainMap, {
                 lat: position.lat(),
                 lng: position.lng()
             });
 
-            // Enhanced marker highlight with multiple effects
             setTimeout(() => {
-                // Bounce animation
                 marker.setAnimation(google.maps.Animation.BOUNCE);
 
-                // Scale animation
                 const originalIcon = marker.getIcon();
                 marker.setIcon(getBinMarkerIcon(
                     marker.binData.DeviceStatus,
@@ -1645,12 +1527,11 @@ window.googleMapsInterop = {
                     marker.setAnimation(null);
                     marker.setIcon(originalIcon);
 
-                    // Trigger click to open sidebar
                     google.maps.event.trigger(marker, 'click');
                 }, 1000);
             }, 400);
 
-        }, 300 + (animationDelay * 50)); // Staggered animation delay
+        }, 300 + (animationDelay * 50));
     },
 
     /**
@@ -1678,39 +1559,31 @@ window.googleMapsInterop = {
                 return false;
             }
 
-            // Current zoom level
             const currentZoom = mainMap.getZoom();
 
-            // Smoother and user-friendly zoom
             const targetZoom = currentZoom < FOCUS_ZOOM ? FOCUS_ZOOM : Math.min(currentZoom + 1, MAX_FOCUS_ZOOM);
 
-            // Move map smoothly
             smoothPanTo(mainMap, {
                 lat: position.lat(),
                 lng: position.lng()
             });
 
-            // Gradual zoom
             setTimeout(() => {
                 smoothZoomTo(mainMap, targetZoom);
             }, 500);
 
-            // Set 3D mode but smoother
             setTimeout(() => {
                 mainMap.setTilt(DEFAULT_TILT);
             }, 800);
 
-            // Marker animation - shorter duration
             setTimeout(() => {
                 marker.setAnimation(google.maps.Animation.BOUNCE);
                 setTimeout(() => {
                     marker.setAnimation(null);
-                    // Open sidebar but don't restrict map controls
                     this.openEnhancedBinSidebar(marker.binData);
-                }, 1000); // 1 second instead of 1.5 seconds
+                }, 1000); 
             }, 1000);
 
-            // Ensure map controls remain active
             this.ensureMapInteractivity();
 
             return true;
@@ -1737,7 +1610,6 @@ window.googleMapsInterop = {
                 if (bin.Latitude && bin.Longitude) {
                     const position = { lat: bin.Latitude, lng: bin.Longitude };
 
-                    // Create marker with semi-transparent icon
                     const marker = new google.maps.Marker({
                         position: position,
                         map: locationPickerMap,
@@ -1755,16 +1627,12 @@ window.googleMapsInterop = {
         }
     },
 
-    /**
-     * Close the bin sidebar - Enhanced version
-     */
     closeBinSidebar: function () {
         const sidebar = document.getElementById('bin-sidebar');
         if (sidebar) {
             sidebar.classList.remove('active');
         }
 
-        // Update map dimensions and maintain controls
         setTimeout(() => {
             google.maps.event.trigger(mainMap, 'resize');
             this.ensureMapInteractivity();
@@ -1791,13 +1659,6 @@ window.googleMapsInterop = {
         return window.binsData.find(bin => bin.Id === binId) || null;
     },
 
-    // ===========================
-    // ROUTE MANAGEMENT FUNCTIONS
-    // ===========================
-
-    /**
-     * Initialize the start point mini map
-     */
     initializeStartPointMap: function () {
         const mapElement = document.getElementById("start-point-mini-map");
         if (!mapElement) {
@@ -1863,7 +1724,6 @@ window.googleMapsInterop = {
             const bounds = new google.maps.LatLngBounds();
             bounds.extend(DEFAULT_CENTER);
 
-            // Fixed: Single consistent color per route
             const colors = ['#4285F4', '#EA4335', '#FBBC05', '#34A853', '#8E24AA', '#16A085', '#E67E22', '#E74C3C', '#2980B9', '#27AE60'];
 
             routes.forEach((route, routeIndex) => {
@@ -1872,7 +1732,7 @@ window.googleMapsInterop = {
 
                 if (!route.steps || route.steps.length === 0) return;
 
-                const routeColor = colors[routeIndex % colors.length]; // Fixed: Consistent color for entire route
+                const routeColor = colors[routeIndex % colors.length];
                 let path = null;
 
                 if (route.overviewPolyline) {
@@ -1898,7 +1758,7 @@ window.googleMapsInterop = {
 
                         if (path.length > 0) {
                             path.unshift(DEFAULT_CENTER);
-                            path.push(DEFAULT_CENTER); // Fixed: Return to depot
+                            path.push(DEFAULT_CENTER);
                         } else {
                             path = [DEFAULT_CENTER];
                         }
@@ -1911,7 +1771,7 @@ window.googleMapsInterop = {
                     const routePolyline = new google.maps.Polyline({
                         path: path,
                         geodesic: true,
-                        strokeColor: routeColor, // Fixed: Use consistent color
+                        strokeColor: routeColor,
                         strokeOpacity: 0.7,
                         strokeWeight: 4
                     });
@@ -1919,10 +1779,8 @@ window.googleMapsInterop = {
                     routePolyline.setMap(mainMap);
                     routePolylines.push(routePolyline);
 
-                    // Store route color for simulation consistency
                     route._simulationColor = routeColor;
 
-                    // Add click event to polyline to show route info
                     routePolyline.addListener('click', (event) => {
                         this.focusRouteOnMap(route.id);
                     });
@@ -1932,7 +1790,7 @@ window.googleMapsInterop = {
                             position: path[0],
                             map: mainMap,
                             icon: {
-                                url: getTruckIcon(routeColor, 1.0), // Fixed: Use consistent color
+                                url: getTruckIcon(routeColor, 1.0),
                                 scaledSize: new google.maps.Size(36, 43),
                                 anchor: new google.maps.Point(18, 39)
                             },
@@ -1959,7 +1817,6 @@ window.googleMapsInterop = {
                 }
             });
 
-            // Add depot marker
             const depotMarker = new google.maps.Marker({
                 position: DEFAULT_CENTER,
                 map: mainMap,
@@ -2003,7 +1860,6 @@ window.googleMapsInterop = {
         }
 
         try {
-            // Create waypoints from route steps
             const waypoints = routeSteps
                 .filter(step => step.latitude && step.longitude &&
                     isFinite(step.latitude) && isFinite(step.longitude))
@@ -2017,21 +1873,20 @@ window.googleMapsInterop = {
             }
 
             const origin = DEFAULT_CENTER;
-            const destination = DEFAULT_CENTER; // Fixed: Return to depot
+            const destination = DEFAULT_CENTER;
             const intermediateWaypoints = waypoints;
 
             return new Promise((resolve, reject) => {
                 directionsService.route({
                     origin: origin,
                     destination: destination,
-                    waypoints: intermediateWaypoints.slice(0, 23), // Google limits to 23 waypoints
+                    waypoints: intermediateWaypoints.slice(0, 23),
                     travelMode: google.maps.TravelMode.DRIVING,
                     avoidTolls: false,
                     avoidHighways: false,
-                    optimizeWaypoints: true // Fixed: Route optimization
+                    optimizeWaypoints: true
                 }, (result, status) => {
                     if (status === google.maps.DirectionsStatus.OK) {
-                        // Extract detailed path from directions result
                         const detailedPath = [];
                         const route = result.routes[0];
 
@@ -2077,7 +1932,6 @@ window.googleMapsInterop = {
                 return false;
             }
 
-            // Generate real road path
             console.log('Generating optimized route path for:', routeId);
             const routePathData = await this.generateRealRoutePath(route.steps);
 
@@ -2087,10 +1941,9 @@ window.googleMapsInterop = {
             if (routePathData && routePathData.path && routePathData.path.length > 1) {
                 path = routePathData.path.map(p => safeCoordinate(p)).filter(p => p);
                 waypoints = routePathData.waypoints;
-                console.log(`✅ Optimized route generated with ${path.length} points`);
+                console.log(`Optimized route generated with ${path.length} points`);
             } else {
-                // Fallback path
-                console.warn('⚠️ Using fallback path');
+                console.warn('Using fallback path');
                 path = route.steps
                     .filter(step => step.latitude && step.longitude &&
                         isFinite(step.latitude) && isFinite(step.longitude))
@@ -2101,7 +1954,7 @@ window.googleMapsInterop = {
 
                 if (path.length > 0) {
                     path.unshift(DEFAULT_CENTER);
-                    path.push(DEFAULT_CENTER); // Fixed: Return to depot
+                    path.push(DEFAULT_CENTER); 
                 }
             }
 
@@ -2110,10 +1963,8 @@ window.googleMapsInterop = {
                 return false;
             }
 
-            // Use consistent route color
             const routeColor = route._simulationColor || '#FF6B35';
 
-            // Create simulation vehicle marker
             const simulationMarker = new google.maps.Marker({
                 position: path[0],
                 map: mainMap,
@@ -2122,11 +1973,10 @@ window.googleMapsInterop = {
                     scaledSize: new google.maps.Size(65, 78),
                     anchor: new google.maps.Point(32.5, 74)
                 },
-                title: `🚛 Simülasyon - ${route.routeName || 'Rota'}`,
+                title: `Simülasyon - ${route.routeName || 'Rota'}`,
                 zIndex: 2000
             });
 
-            // Create polylines with consistent color
             const traveledPath = new google.maps.Polyline({
                 path: [path[0]],
                 geodesic: true,
@@ -2147,20 +1997,18 @@ window.googleMapsInterop = {
             });
             remainingPath.setMap(mainMap);
 
-            // Fixed: Calculate smooth progress parameters
             const totalDistance = route.totalDistanceKm || 10;
             const baseSpeed = SIMULATION_SPEED_KMH;
             let currentSpeed = 1;
 
-            const intervalMs = 500; // Fixed: Longer interval for better performance
-            const totalSimulationTime = Math.max(30000, totalDistance * 3000); // Min 30 seconds
+            const intervalMs = 500;
+            const totalSimulationTime = Math.max(30000, totalDistance * 3000);
             const totalSteps = Math.floor(totalSimulationTime / intervalMs);
 
             let currentStep = 0;
             let currentPathIndex = 0;
             let completedRouteSteps = 0;
 
-            // Store simulation data
             activeSimulations[routeId] = {
                 marker: simulationMarker,
                 traveledPath: traveledPath,
@@ -2174,10 +2022,9 @@ window.googleMapsInterop = {
                 speed: currentSpeed,
                 completedRouteSteps: completedRouteSteps,
                 lastStepTime: 0,
-                currentProgress: 0 // Fixed: Track smooth progress
+                currentProgress: 0
             };
 
-            // 3D focus and camera settings
             mainMap.setTilt(67.5);
             mainMap.setHeading(0);
             mainMap.setZoom(17);
@@ -2188,25 +2035,21 @@ window.googleMapsInterop = {
                 mainMap.setZoom(16);
             }, 500);
 
-            // Show simulation start notification
             if (dotNetRef) {
-                dotNetRef.invokeMethodAsync('ShowToastFromJs', '🚀 Rota simülasyonu başlatıldı!');
+                dotNetRef.invokeMethodAsync('ShowToastFromJs', 'Rota simülasyonu başlatıldı!');
                 dotNetRef.invokeMethodAsync('OnSimulationStarted', routeId);
             }
 
-            // Fixed: Debounced progress update to prevent spam
             const debouncedProgressUpdate = debounce((routeId, progress, steps) => {
                 this.updateSimulationProgress(routeId, progress, steps);
             }, 100);
 
-            // Start simulation interval
             simulationIntervals[routeId] = setInterval(async () => {
                 const simulation = activeSimulations[routeId];
                 if (!simulation || !simulation.isRunning) {
                     return;
                 }
 
-                // Update current step
                 simulation.currentStep += simulation.speed;
                 const pathProgress = (simulation.currentStep / simulation.totalSteps) * path.length;
                 currentPathIndex = Math.min(Math.floor(pathProgress), path.length - 1);
@@ -2216,7 +2059,6 @@ window.googleMapsInterop = {
                     return;
                 }
 
-                // Calculate current position with safe interpolation
                 let currentPosition = path[currentPathIndex];
 
                 if (currentPathIndex < path.length - 1) {
@@ -2228,7 +2070,6 @@ window.googleMapsInterop = {
                     );
                 }
 
-                // Validate and set marker position
                 const safePosition = safeCoordinate(currentPosition);
                 if (safePosition) {
                     try {
@@ -2239,7 +2080,6 @@ window.googleMapsInterop = {
                     }
                 }
 
-                // Update polylines
                 const traveledSegment = path.slice(0, currentPathIndex + 1);
                 if (currentPathIndex < path.length - 1 && safePosition) {
                     traveledSegment.push(safePosition);
@@ -2252,11 +2092,9 @@ window.googleMapsInterop = {
                     console.error('Error updating polylines:', error);
                 }
 
-                // Fixed: Smooth progress calculation (0-100%)
                 const currentProgress = Math.min((simulation.currentStep / simulation.totalSteps) * 100, 100);
                 simulation.currentProgress = currentProgress;
 
-                // Step completion logic based on route steps
                 const totalRouteSteps = route.steps.length;
                 const expectedCompletedSteps = Math.floor((currentProgress / 100) * totalRouteSteps);
 
@@ -2269,7 +2107,6 @@ window.googleMapsInterop = {
                     try {
                         await dotNetRef.invokeMethodAsync('CompleteNextSimulationStep', routeId);
 
-                        // Step completion notification
                         const stepNumber = expectedCompletedSteps;
                         if (stepNumber === 1) {
                             dotNetRef.invokeMethodAsync('ShowToastFromJs', `🚀 ${stepNumber}. adım: Başlangıç noktasından ayrıldı`);
@@ -2285,12 +2122,9 @@ window.googleMapsInterop = {
                     }
                 }
 
-                // Fixed: Update progress smoothly
                 debouncedProgressUpdate(routeId, currentProgress, simulation.completedRouteSteps);
 
-                // Fixed: Optimized camera tracking (less frequent updates)
                 if (simulation.currentStep % 15 === 0 && safePosition) {
-                    // Calculate heading based on movement
                     if (currentPathIndex > 0 && currentPathIndex < path.length - 1) {
                         try {
                             const prevPoint = safeCoordinate(path[currentPathIndex - 1]);
@@ -2306,11 +2140,9 @@ window.googleMapsInterop = {
                         }
                     }
 
-                    // Smooth camera follow
                     try {
                         mainMap.panTo(safePosition);
 
-                        // Maintain 3D view
                         if (mainMap.getTilt() < 60) {
                             mainMap.setTilt(67.5);
                         }
@@ -2337,13 +2169,11 @@ window.googleMapsInterop = {
         if (activeSimulations[routeId]) {
             activeSimulations[routeId].speed = Math.max(0.1, Math.min(10, newSpeed));
 
-            // Update speed display
             const speedDisplay = document.getElementById(`speed-display-${routeId}`);
             if (speedDisplay) {
                 speedDisplay.textContent = `${newSpeed}x`;
             }
 
-            // Show speed change notification
             if (dotNetRef) {
                 dotNetRef.invokeMethodAsync('ShowToastFromJs', `⚡ Simülasyon hızı ${newSpeed}x olarak ayarlandı`);
             }
@@ -2360,34 +2190,28 @@ window.googleMapsInterop = {
         const simulation = activeSimulations[routeId];
         simulation.isRunning = false;
 
-        // Clear interval
         if (simulationIntervals[routeId]) {
             clearInterval(simulationIntervals[routeId]);
             delete simulationIntervals[routeId];
         }
 
-        // Complete all remaining steps in database
         if (dotNetRef) {
             dotNetRef.invokeMethodAsync('CompleteRouteSimulation', routeId);
         }
 
-        // Update marker to show completion
         simulation.marker.setIcon({
             url: getTruckIcon('#28a745', 1.4),
             scaledSize: new google.maps.Size(55, 66),
             anchor: new google.maps.Point(27.5, 62)
         });
 
-        // Fixed: Final progress update
         this.updateSimulationProgress(routeId, 100, simulation.route.steps.length);
 
-        // Show completion notification
         if (dotNetRef) {
             dotNetRef.invokeMethodAsync('ShowToastFromJs', '🎉 Rota simülasyonu başarıyla tamamlandı!');
             dotNetRef.invokeMethodAsync('OnSimulationCompleted', routeId);
         }
 
-        // Clean up after 5 seconds
         setTimeout(() => {
             this.cleanupSimulation(routeId);
         }, 5000);
@@ -2408,7 +2232,6 @@ window.googleMapsInterop = {
             delete simulationIntervals[routeId];
         }
 
-        // Show stop notification
         if (dotNetRef) {
             dotNetRef.invokeMethodAsync('ShowToastFromJs', '⏹️ Rota simülasyonu durduruldu');
             dotNetRef.invokeMethodAsync('OnSimulationStopped', routeId);
@@ -2427,7 +2250,6 @@ window.googleMapsInterop = {
 
         const simulation = activeSimulations[routeId];
 
-        // Remove markers and polylines safely
         try {
             if (simulation.marker) simulation.marker.setMap(null);
             if (simulation.traveledPath) simulation.traveledPath.setMap(null);
@@ -2436,10 +2258,8 @@ window.googleMapsInterop = {
             console.error('Error cleaning up simulation:', error);
         }
 
-        // Clear from active simulations
         delete activeSimulations[routeId];
 
-        // Refresh the route data
         if (dotNetRef) {
             dotNetRef.invokeMethodAsync('RefreshData');
         }
@@ -2455,31 +2275,26 @@ window.googleMapsInterop = {
         const safeProgress = Math.max(0, Math.min(100, progress || 0));
 
         try {
-            // Update progress circle
             const progressCircle = document.getElementById(`progress-circle-${routeId}`);
             if (progressCircle) {
                 progressCircle.setAttribute('stroke-dasharray', `${safeProgress}, 100`);
             }
 
-            // Update progress text
             const progressText = document.getElementById(`progress-text-${routeId}`);
             if (progressText) {
                 progressText.textContent = `${Math.round(safeProgress)}%`;
             }
 
-            // Update progress bar
             const progressBar = document.getElementById(`progress-bar-${routeId}`);
             if (progressBar) {
                 progressBar.style.width = `${safeProgress}%`;
 
-                // Update color based on progress
                 const colorClass = safeProgress >= 100 ? 'bg-green-500' :
                     safeProgress >= 75 ? 'bg-blue-500' :
                         safeProgress >= 50 ? 'bg-yellow-500' : 'bg-red-500';
                 progressBar.className = `${colorClass} h-2.5 rounded-full transition-all duration-500 ease-in-out`;
             }
 
-            // Update step counts
             const completedStepsEl = document.getElementById(`completed-steps-${routeId}`);
             if (completedStepsEl) {
                 completedStepsEl.textContent = `${completedSteps || 0} adet`;
@@ -2491,7 +2306,6 @@ window.googleMapsInterop = {
                 remainingStepsEl.textContent = `${Math.max(0, totalSteps - (completedSteps || 0))} adet`;
             }
 
-            // Update simulation status
             const statusEl = document.getElementById(`simulation-status-${routeId}`);
             if (statusEl) {
                 if (safeProgress >= 100) {
@@ -2503,7 +2317,6 @@ window.googleMapsInterop = {
                 }
             }
 
-            // Fixed: CSS class based selectors
             const progressElements = document.querySelectorAll(`[data-route-id="${routeId}"]`);
             progressElements.forEach(element => {
                 if (element.classList.contains('progress-bar')) {
@@ -2515,7 +2328,6 @@ window.googleMapsInterop = {
                 }
             });
 
-            // Fixed: Window event dispatch for C# to catch
             window.dispatchEvent(new CustomEvent('simulationProgressUpdate', {
                 detail: {
                     routeId: routeId,
@@ -2685,7 +2497,6 @@ window.googleMapsInterop = {
                 }, 1500);
             }
 
-            // Trigger route expansion in table
             if (dotNetRef) {
                 dotNetRef.invokeMethodAsync('FocusRouteOnMap', routeId);
             }
@@ -2697,13 +2508,6 @@ window.googleMapsInterop = {
         }
     },
 
-    // ===========================
-    // CLEANUP AND UTILITY FUNCTIONS
-    // ===========================
-
-    /**
-     * Clear all markers from the map
-     */
     clearMarkers: function () {
         markers.forEach(marker => {
             try {
@@ -2719,9 +2523,6 @@ window.googleMapsInterop = {
         truckMarkers = [];
     },
 
-    /**
-     * Clear all polylines from the map
-     */
     clearPolylines: function () {
         routePolylines.forEach(polyline => {
             try {
@@ -2731,9 +2532,6 @@ window.googleMapsInterop = {
         routePolylines = [];
     },
 
-    /**
-     * Clear waste bin markers
-     */
     clearWasteBinMarkers: function () {
         if (markerCluster) {
             try {
@@ -2749,9 +2547,6 @@ window.googleMapsInterop = {
         wasteBinMarkers = [];
     },
 
-    /**
-     * Reset the map state - Enhanced version
-     */
     resetMapState: function () {
         if (currentInfoWindow) {
             currentInfoWindow.close();
@@ -2762,27 +2557,20 @@ window.googleMapsInterop = {
         selectedBinId = null;
         selectedRouteId = null;
 
-        // Stop all active simulations
         Object.keys(activeSimulations).forEach(routeId => {
             this.stopSimulation(routeId);
         });
 
-        // Return map to default state
         if (mainMap) {
-            // Smooth zoom-out
             const currentZoom = mainMap.getZoom();
             if (currentZoom > DEFAULT_ZOOM + 2) {
                 smoothZoomTo(mainMap, DEFAULT_ZOOM + 1);
             }
 
-            // Ensure map controls
             this.ensureMapInteractivity();
         }
     },
 
-    /**
-     * Dispose all resources
-     */
     disposeResources: function () {
         this.clearMarkers();
         this.clearPolylines();
@@ -2791,13 +2579,6 @@ window.googleMapsInterop = {
     }
 };
 
-// ===========================
-// GLOBAL UTILITY FUNCTIONS
-// ===========================
-
-/**
- * Reset filter dropdowns (called from Blazor)
- */
 window.resetFilterDropdowns = function () {
     const statusDropdown = document.querySelector('select[onchange*="FilterByStatus"]');
     const fillLevelDropdown = document.querySelector('select[onchange*="FilterByFillLevel"]');
@@ -2806,11 +2587,6 @@ window.resetFilterDropdowns = function () {
     if (fillLevelDropdown) fillLevelDropdown.value = '';
 };
 
-// ===========================
-// INITIALIZATION
-// ===========================
-
-// Initialize when DOM is ready
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
         detectDarkMode();
@@ -2819,6 +2595,6 @@ if (document.readyState === 'loading') {
 } else {
     detectDarkMode();
     console.log('Google Maps Integration: Script loaded');
-}// JavaScript helper functions for Bin Management
+}
 
     
